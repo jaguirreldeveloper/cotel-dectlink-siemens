@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/apiFetch';
 import {
   Database,
   Terminal,
@@ -252,8 +253,13 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
     fetchStatusAndSchema();
   }, []);
 
-  // Fetch table data in browser
+  // Fetch table data in browser (aborta peticiones anteriores para evitar respuestas fuera de orden)
+  const tableAbortRef = React.useRef<AbortController | null>(null);
   const fetchTableData = async (targetTable: string, targetPage: number, targetLimit: number, search: string) => {
+    tableAbortRef.current?.abort();
+    const controller = new AbortController();
+    tableAbortRef.current = controller;
+
     setIsLoadingTableData(true);
     try {
       const params = new URLSearchParams({
@@ -263,7 +269,9 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
       if (search.trim()) {
         params.append('search', search.trim());
       }
-      const res = await fetch(`/api/database/tables/${targetTable}/data?${params.toString()}`);
+      const res = await fetch(`/api/database/tables/${targetTable}/data?${params.toString()}`, {
+        signal: controller.signal,
+      });
       if (res.ok) {
         const data = await res.json();
         setTableData(data.rows || []);
@@ -272,10 +280,14 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
         setTotalPages(data.totalPages || 1);
         setPage(data.page || 1);
       }
-    } catch (err) {
-      console.error('Error fetching table data:', err);
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.error('Error fetching table data:', err);
+      }
     } finally {
-      setIsLoadingTableData(false);
+      if (tableAbortRef.current === controller) {
+        setIsLoadingTableData(false);
+      }
     }
   };
 
@@ -292,7 +304,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
     setIsExecuting(true);
     setQueryResult(null);
     try {
-      const res = await fetch('/api/database/query', {
+      const res = await apiFetch('/api/database/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sql: queryToRun }),

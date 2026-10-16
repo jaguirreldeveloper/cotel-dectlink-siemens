@@ -25,6 +25,8 @@ import { SupabaseMigrationModal } from './components/SupabaseMigrationModal';
 import { GitMigrationModal } from './components/GitMigrationModal';
 import { INITIAL_SUBSCRIBERS, EXPANDED_DECT_RECORDS, parseCSV } from './data/initialData';
 import { enrichRecords, detectAuditIssues, ZONE_NORMALIZATION } from './utils/analysis';
+import { apiFetch } from './utils/apiFetch';
+import { downloadTextFile } from './utils/downloadTextFile';
 import {
   EnrichedSubscriberRecord,
   RawSubscriberRecord,
@@ -73,6 +75,7 @@ export default function App() {
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
   const [dbProvider, setDbProvider] = useState<string>('PostgreSQL');
   const [isNormalizedApplied, setIsNormalizedApplied] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   // External filters for cross-chart navigation to table
   const [externalZoneFilter, setExternalZoneFilter] = useState<string>('');
@@ -134,47 +137,78 @@ export default function App() {
       .catch(() => {});
 
     // 2. Connect to Server-Sent Events (SSE) for real-time live sync
-    const eventSource = new EventSource('/api/events');
-    eventSource.addEventListener('subscriber_updated', (event: MessageEvent) => {
-      try {
-        const updated = JSON.parse(event.data);
-        if (isMounted && updated && updated.nro) {
-          setRawRecords(prev =>
-            prev.map(r =>
-              r.nro === updated.nro
-                ? {
-                    ...r,
-                    estado: updated.estado,
-                    estadoOperativo: updated.estadoOperativo,
-                    fallaDescripcion: updated.fallaDescripcion,
-                    deudaMeses: updated.deudaMeses,
-                    tiempoDepositoMeses: updated.tiempoDepositoMeses,
-                    signalDect: updated.signalDect,
-                  }
-                : r
-            )
-          );
-        }
-      } catch (err) {
-        console.error('Error handling SSE real-time event:', err);
-      }
-    });
+    //    con reconexión exponencial controlada (el EventSource nativo reintenta,
+    //    pero sin límite ni visibilidad; aquí lo gestionamos explícitamente).
+    let eventSource: EventSource | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryDelayMs = 1000;
+    let disposed = false;
 
-    eventSource.addEventListener('database_switched', (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (isMounted && data.provider) {
-          setDbProvider(data.provider);
-          loadSubscribersFromDb();
+    const attachHandlers = (source: EventSource) => {
+      source.addEventListener('open', () => {
+        retryDelayMs = 1000; // al reconectar, se reinicia el backoff
+      });
+
+      source.addEventListener('subscriber_updated', (event: MessageEvent) => {
+        try {
+          const updated = JSON.parse(event.data);
+          if (isMounted && updated && updated.nro) {
+            setRawRecords(prev =>
+              prev.map(r =>
+                r.nro === updated.nro
+                  ? {
+                      ...r,
+                      estado: updated.estado,
+                      estadoOperativo: updated.estadoOperativo,
+                      fallaDescripcion: updated.fallaDescripcion,
+                      deudaMeses: updated.deudaMeses,
+                      tiempoDepositoMeses: updated.tiempoDepositoMeses,
+                      signalDect: updated.signalDect,
+                    }
+                  : r
+              )
+            );
+          }
+        } catch (err) {
+          console.error('Error handling SSE real-time event:', err);
         }
-      } catch (err) {
-        console.error('Error handling database_switched event:', err);
-      }
-    });
+      });
+
+      source.addEventListener('database_switched', (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (isMounted && data.provider) {
+            setDbProvider(data.provider);
+            loadSubscribersFromDb();
+          }
+        } catch (err) {
+          console.error('Error handling database_switched event:', err);
+        }
+      });
+
+      source.addEventListener('error', () => {
+        // El stream se cayó: se cierra y se reintenta con backoff exponencial (máx 30s)
+        source.close();
+        if (disposed) return;
+        retryDelayMs = Math.min(retryDelayMs * 2, 30000);
+        retryTimer = setTimeout(connect, retryDelayMs);
+      });
+    };
+
+    const connect = () => {
+      if (disposed) return;
+      eventSource?.close();
+      eventSource = new EventSource('/api/events');
+      attachHandlers(eventSource);
+    };
+
+    connect();
 
     return () => {
+      disposed = true;
       isMounted = false;
-      eventSource.close();
+      if (retryTimer) clearTimeout(retryTimer);
+      eventSource?.close();
     };
   }, []);
 
@@ -273,13 +307,19 @@ export default function App() {
       );
     }
 
-    // 2. Persist to PostgreSQL via backend API
-    fetch(`/api/subscribers/${nro}/status`, {
+    // 2. Persist to PostgreSQL via backend API (con rollback vía recarga ante fallo)
+    apiFetch(`/api/subscribers/${nro}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus, details, tecnico: 'Operador Central COTEL' }),
+    }).then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
     }).catch(err => {
       console.error('Error persisting status update to PostgreSQL:', err);
+      setBackendError('No se pudo guardar el cambio de estado en la base de datos. Se restauró el último valor conocido.');
+      loadSubscribersFromDb();
     });
   };
 
@@ -322,13 +362,19 @@ export default function App() {
       );
     }
 
-    // Persist to PostgreSQL via backend API
-    fetch(`/api/subscribers/${nro}/coordinates`, {
+    // Persist to PostgreSQL via backend API (con rollback vía recarga ante fallo)
+    apiFetch(`/api/subscribers/${nro}/coordinates`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lat, lng, precision, tecnico }),
+    }).then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
     }).catch(err => {
       console.error('Error persisting coordinates update to PostgreSQL:', err);
+      setBackendError('No se pudieron guardar las coordenadas en la base de datos. Se restauró el último valor conocido.');
+      loadSubscribersFromDb();
     });
   };
 
@@ -401,14 +447,7 @@ export default function App() {
       r.clientType,
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `cotel_dectlink_eai_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadTextFile(`cotel_dectlink_eai_${new Date().toISOString().slice(0, 10)}.csv`, csvContent);
   };
 
   const handlePrint = () => {
@@ -469,6 +508,22 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Backend error banner (visible, no solo consola) */}
+        {backendError && (
+          <div
+            role="alert"
+            className="flex items-start justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200"
+          >
+            <span>{backendError}</span>
+            <button
+              onClick={() => setBackendError(null)}
+              aria-label="Descartar aviso de error"
+              className="font-bold px-2 rounded hover:bg-amber-100 dark:hover:bg-amber-900"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {/* Dataset Scope Toggle & Info Bar */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">

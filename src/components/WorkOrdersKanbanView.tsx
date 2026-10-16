@@ -1,24 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   ClipboardList,
   Plus,
-  Users,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   Truck,
-  Wrench,
   Search,
-  Filter,
   ArrowRight,
   ArrowLeft,
+  CheckCircle2,
   MapPin,
-  Phone,
-  Calendar,
-  FileText,
-  Radio,
-  Sparkles,
   ExternalLink,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   WorkOrder,
@@ -27,15 +19,80 @@ import {
   FieldCrew,
   EnrichedSubscriberRecord,
 } from '../types/subscriber';
-import { INITIAL_FIELD_CREWS, INITIAL_WORK_ORDERS } from '../data/fieldOperationsData';
+import { INITIAL_FIELD_CREWS } from '../data/fieldOperationsData';
+import { apiFetch } from '../utils/apiFetch';
 
 interface WorkOrdersKanbanViewProps {
   records: EnrichedSubscriberRecord[];
 }
 
+/** Fila cruda devuelta por GET /api/work-orders (Drizzle, camelCase). */
+interface WorkOrderRow {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descripcion: string | null;
+  tipoTrabajo: WorkOrderType;
+  prioridad: 'ALTA' | 'MEDIA' | 'BAJA';
+  estado: WorkOrderStatus;
+  cuadrillaId: string | null;
+  cuadrillaNombre: string | null;
+  tecnicoLider: string | null;
+  abonadoNro: number | null;
+  materiales: string[];
+  fechaProgramada: string | null;
+  resultadoTecnico: string | null;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  fechaCierre: string | null;
+}
+
+const STATUS_FLOW: WorkOrderStatus[] = ['PENDIENTE', 'EN_CAMINO', 'EN_PROGRESO', 'COMPLETADO'];
+
+const WORK_TYPE_LABELS: Record<WorkOrderType, string> = {
+  REUBICACION_ANTENA: 'Reubicación Antena FAU',
+  MEDICION_RSSI: 'Medición Señal / RSSI',
+  REEMPLAZO_FAU: 'Reemplazo FAU-200/300',
+  RETIRO_EQUIPO: 'Retiro de Equipo (Baja)',
+  INSPECCION_TORRE: 'Inspección Torre / RFP',
+  MIGRACION_FIBRA: 'Migración GPON / Fibra',
+};
+
+/** Combina la fila de la BD con el padrón en memoria para enriquecer la tarjeta. */
+function mapRowToWorkOrder(row: WorkOrderRow, records: EnrichedSubscriberRecord[]): WorkOrder {
+  const sub = records.find(r => r.nro === row.abonadoNro);
+  return {
+    id: row.id,
+    codigoOt: row.codigo,
+    abonadoNro: row.abonadoNro ?? sub?.nro ?? 0,
+    abonadoNumero: sub?.numero || '—',
+    abonadoNombre: sub?.nombre || row.titulo,
+    direccion: sub?.direccion || 'Sin dirección registrada',
+    zona: sub?.normalizedZona || '—',
+    celda: sub?.celda || '—',
+    tipoTrabajo: row.tipoTrabajo,
+    prioridad: row.prioridad,
+    estado: row.estado,
+    cuadrillaId: row.cuadrillaId || '',
+    cuadrillaNombre: row.cuadrillaNombre || 'Sin cuadrilla',
+    tecnicoLider: row.tecnicoLider || 'Sin asignar',
+    fechaProgramada: row.fechaProgramada || new Date().toISOString().slice(0, 10),
+    materiales: row.materiales || [],
+    observaciones: row.descripcion || '',
+    resultadoTecnico: row.resultadoTecnico || undefined,
+    lat: sub?.lat ?? 0,
+    lng: sub?.lng ?? 0,
+    fechaCreacion: row.fechaCreacion ? row.fechaCreacion.slice(0, 16).replace('T', ' ') : '',
+    fechaCierre: row.fechaCierre ? row.fechaCierre.slice(0, 16).replace('T', ' ') : undefined,
+  };
+}
+
 export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ records }) => {
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>(INITIAL_WORK_ORDERS);
-  const [crews, setCrews] = useState<FieldCrew[]>(INITIAL_FIELD_CREWS);
+  const [rows, setRows] = useState<WorkOrderRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [crews] = useState<FieldCrew[]>(INITIAL_FIELD_CREWS);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCrew, setFilterCrew] = useState<string>('ALL');
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
@@ -48,7 +105,44 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
   const [newPrioridad, setNewPrioridad] = useState<'ALTA' | 'MEDIA' | 'BAJA'>('ALTA');
   const [newCrewId, setNewCrewId] = useState<string>(crews[0]?.id || 'crew-1');
   const [newObservaciones, setNewObservaciones] = useState<string>('');
-  const [newMateriales, setNewMateriales] = useState<string>('Mástil galvanizado 3m, Cable coaxial RG-58, Conector SMA');
+  const [newMateriales, setNewMateriales] = useState<string>(
+    'Mástil galvanizado 3m, Cable coaxial RG-58, Conector SMA'
+  );
+
+  const loadOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/work-orders');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: WorkOrderRow[] = await res.json();
+      setRows(Array.isArray(data) ? data : []);
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError('No se pudieron cargar las órdenes de trabajo desde PostgreSQL.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  // Realtime: cualquier operador ve cambios de OT al instante
+  useEffect(() => {
+    const eventSource = new EventSource('/api/events');
+    eventSource.addEventListener('work_order_updated', () => {
+      loadOrders();
+    });
+    eventSource.addEventListener('error', () => {
+      // EventSource reintenta solo; se ignora para evitar ruido
+    });
+    return () => eventSource.close();
+  }, [loadOrders]);
+
+  const workOrders = useMemo(
+    () => rows.map(row => mapRowToWorkOrder(row, records)),
+    [rows, records]
+  );
 
   // Filtered orders
   const filteredOrders = useMemo(() => {
@@ -83,61 +177,78 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
     return buckets;
   }, [filteredOrders]);
 
-  // Advance or regress status
-  const handleMoveStatus = (orderId: string, direction: 'forward' | 'backward') => {
-    const statusFlow: WorkOrderStatus[] = ['PENDIENTE', 'EN_CAMINO', 'EN_PROGRESO', 'COMPLETADO'];
-    setWorkOrders(prev =>
-      prev.map(o => {
-        if (o.id === orderId) {
-          const currentIndex = statusFlow.indexOf(o.estado);
-          let newIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
-          if (newIndex < 0) newIndex = 0;
-          if (newIndex >= statusFlow.length) newIndex = statusFlow.length - 1;
-          const newStatus = statusFlow[newIndex];
-          return {
-            ...o,
-            estado: newStatus,
-            fechaCierre: newStatus === 'COMPLETADO' ? new Date().toISOString().slice(0, 16).replace('T', ' ') : undefined,
-          };
-        }
-        return o;
-      })
-    );
+  // Advance or regress status (persisted via PATCH + SSE broadcast)
+  const handleMoveStatus = async (orderId: string, direction: 'forward' | 'backward') => {
+    const current = rows.find(r => r.id === orderId);
+    if (!current) return;
+
+    const currentIndex = STATUS_FLOW.indexOf(current.estado);
+    let newIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= STATUS_FLOW.length) newIndex = STATUS_FLOW.length - 1;
+    const newStatus = STATUS_FLOW[newIndex];
+    if (newStatus === current.estado) return;
+
+    setIsSaving(true);
+    try {
+      const res = await apiFetch(`/api/work-orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: newStatus }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await loadOrders();
+      setLoadError(null);
+    } catch {
+      setLoadError('No se pudo actualizar el estado de la orden de trabajo.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Create new order handler
-  const handleCreateOrder = (e: React.FormEvent) => {
+  // Create new order handler (persisted in PostgreSQL)
+  const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     const subscriber = records.find(r => r.nro === newSubNro) || records[0];
     const assignedCrew = crews.find(c => c.id === newCrewId) || crews[0];
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const newOrder: WorkOrder = {
-      id: `ot-${Date.now()}`,
-      codigoOt: `OT-2026-${randomSuffix}`,
-      abonadoNro: subscriber.nro,
-      abonadoNumero: subscriber.numero,
-      abonadoNombre: subscriber.nombre,
-      direccion: subscriber.direccion,
-      zona: subscriber.normalizedZona,
-      celda: subscriber.celda,
-      tipoTrabajo: newTipo,
-      prioridad: newPrioridad,
-      estado: 'PENDIENTE',
-      cuadrillaId: assignedCrew.id,
-      cuadrillaNombre: assignedCrew.nombre,
-      tecnicoLider: assignedCrew.integrantes[0] || 'Téc. Responsable',
-      fechaProgramada: new Date().toISOString().slice(0, 10),
-      materiales: newMateriales.split(',').map(m => m.trim()).filter(Boolean),
-      observaciones: newObservaciones || 'Inspección técnica y verificación de parámetros de enlace radio DECT Siemens.',
-      lat: subscriber.lat,
-      lng: subscriber.lng,
-      fechaCreacion: new Date().toISOString().slice(0, 16).replace('T', ' '),
-    };
-
-    setWorkOrders(prev => [newOrder, ...prev]);
-    setIsCreateModalOpen(false);
-    setNewObservaciones('');
+    setIsSaving(true);
+    try {
+      const res = await apiFetch('/api/work-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: `${WORK_TYPE_LABELS[newTipo]} - ${subscriber.nombre}`,
+          descripcion:
+            newObservaciones ||
+            'Inspección técnica y verificación de parámetros de enlace radio DECT Siemens.',
+          tipoTrabajo: newTipo,
+          prioridad: newPrioridad,
+          estado: 'PENDIENTE',
+          cuadrillaId: assignedCrew.id,
+          cuadrillaNombre: assignedCrew.nombre,
+          tecnicoLider: assignedCrew.integrantes[0] || 'Téc. Responsable',
+          abonadoNro: subscriber.nro,
+          materiales: newMateriales
+            .split(',')
+            .map(m => m.trim())
+            .filter(Boolean),
+          fechaProgramada: new Date().toISOString().slice(0, 10),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      await loadOrders();
+      setIsCreateModalOpen(false);
+      setNewObservaciones('');
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError(err.message || 'No se pudo crear la orden de trabajo.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getPriorityBadge = (p: 'ALTA' | 'MEDIA' | 'BAJA') => {
@@ -164,22 +275,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
     }
   };
 
-  const getTipoLabel = (t: WorkOrderType) => {
-    switch (t) {
-      case 'REUBICACION_ANTENA':
-        return 'Reubicación Antena FAU';
-      case 'MEDICION_RSSI':
-        return 'Medición Señal / RSSI';
-      case 'REEMPLAZO_FAU':
-        return 'Reemplazo FAU-200/300';
-      case 'RETIRO_EQUIPO':
-        return 'Retiro de Equipo (Baja)';
-      case 'INSPECCION_TORRE':
-        return 'Inspección Torre / RFP';
-      case 'MIGRACION_FIBRA':
-        return 'Migración GPON / Fibra';
-    }
-  };
+  const getTipoLabel = (t: WorkOrderType) => WORK_TYPE_LABELS[t] || t;
 
   return (
     <div className="space-y-6">
@@ -198,6 +294,10 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
             Despacho en tiempo real de órdenes de trabajo para reparación, reubicación de antenas,
             cambio de módulos FAU Siemens DECTlink y fiscalización en El Alto y Viacha.
           </p>
+          <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+            Persistido en PostgreSQL · sincronizado por SSE entre todos los operadores
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -210,6 +310,26 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
           </button>
         </div>
       </div>
+
+      {/* Backend error banner */}
+      {loadError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200"
+        >
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            {loadError}
+          </span>
+          <button
+            onClick={() => setLoadError(null)}
+            aria-label="Descartar aviso de error"
+            className="font-bold px-2 rounded hover:bg-amber-100 dark:hover:bg-amber-900"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Field Crews Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -369,7 +489,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       e.stopPropagation();
                       handleMoveStatus(order.id, 'forward');
                     }}
-                    className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/80 cursor-pointer"
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/80 cursor-pointer disabled:opacity-50"
                   >
                     <span>Despachar</span>
                     <ArrowRight className="w-3 h-3" />
@@ -430,7 +551,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       e.stopPropagation();
                       handleMoveStatus(order.id, 'backward');
                     }}
-                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    disabled={isSaving}
+                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer disabled:opacity-50"
                     title="Regresar a Pendiente"
                   >
                     <ArrowLeft className="w-3 h-3" />
@@ -443,7 +565,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       e.stopPropagation();
                       handleMoveStatus(order.id, 'forward');
                     }}
-                    className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:text-amber-700 font-bold px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/80 cursor-pointer"
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:text-amber-700 font-bold px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/80 cursor-pointer disabled:opacity-50"
                   >
                     <span>Llegada</span>
                     <ArrowRight className="w-3 h-3" />
@@ -504,7 +627,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       e.stopPropagation();
                       handleMoveStatus(order.id, 'backward');
                     }}
-                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    disabled={isSaving}
+                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer disabled:opacity-50"
                   >
                     <ArrowLeft className="w-3 h-3" />
                   </button>
@@ -516,7 +640,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       e.stopPropagation();
                       handleMoveStatus(order.id, 'forward');
                     }}
-                    className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/80 cursor-pointer"
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/80 cursor-pointer disabled:opacity-50"
                   >
                     <span>Finalizar</span>
                     <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -580,7 +705,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       e.stopPropagation();
                       handleMoveStatus(order.id, 'backward');
                     }}
-                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    disabled={isSaving}
+                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer disabled:opacity-50"
                     title="Reabrir a En Progreso"
                   >
                     <ArrowLeft className="w-3 h-3" />
@@ -610,6 +736,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
+                aria-label="Cerrar detalle de orden"
                 className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
@@ -648,19 +775,21 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 </div>
               </div>
 
-              <div>
-                <span className="font-semibold text-slate-300 block mb-1">Materiales y Repuestos Despachados:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedOrder.materiales.map((m, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]"
-                    >
-                      ✓ {m}
-                    </span>
-                  ))}
+              {selectedOrder.materiales.length > 0 && (
+                <div>
+                  <span className="font-semibold text-slate-300 block mb-1">Materiales y Repuestos Despachados:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedOrder.materiales.map((m, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]"
+                      >
+                        ✓ {m}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <span className="font-semibold text-slate-300 block mb-1">Instrucciones & Observaciones:</span>
@@ -717,6 +846,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
+                aria-label="Cerrar formulario"
                 className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
@@ -822,9 +952,10 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs"
+                disabled={isSaving}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs disabled:opacity-60"
               >
-                Emitir Orden de Trabajo
+                {isSaving ? 'Emitiendo...' : 'Emitir Orden de Trabajo'}
               </button>
             </div>
           </form>
