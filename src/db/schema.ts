@@ -1,13 +1,21 @@
-import { pgTable, serial, text, integer, doublePrecision, timestamp } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  serial,
+  uuid,
+  text,
+  integer,
+  doublePrecision,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-// Users table (Firebase Auth linkage)
+// Users table (Supabase Auth / operator accounts)
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  uid: text('uid').notNull().unique(), // Firebase Auth UID
+  uid: text('uid').notNull().unique(),
   email: text('email').notNull(),
   role: text('role').notNull().default('OPERADOR'),
-  createdAt: timestamp('created_at').defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // Siemens DECTlink Base Stations (RFP)
@@ -20,7 +28,7 @@ export const celdasDect = pgTable('celdas_dect', {
   radioCoberturaKm: doublePrecision('radio_cobertura_km').notNull(),
   latitud: doublePrecision('latitud').notNull(),
   longitud: doublePrecision('longitud').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // Subscribers table
@@ -48,7 +56,7 @@ export const abonadosDect = pgTable('abonados_dect', {
   lng: doublePrecision('lng').notNull(),
   distanciaKm: doublePrecision('distancia_km').notNull().default(0),
   azimutGrados: integer('azimut_grados').notNull().default(0),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // Field logs and technician operations log
@@ -59,7 +67,28 @@ export const bitacoraDect = pgTable('bitacora_dect', {
   nuevoEstado: text('nuevo_estado').notNull(),
   detalle: text('detalle'),
   tecnico: text('tecnico').default('Operador Sistema'),
-  timestamp: timestamp('timestamp').defaultNow(),
+  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Work orders (Kanban de cuadrillas de planta externa)
+export const workOrders = pgTable('work_orders', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  codigo: text('codigo').notNull().unique(),
+  titulo: text('titulo').notNull(),
+  descripcion: text('descripcion'),
+  tipoTrabajo: text('tipo_trabajo').notNull().default('REUBICACION_ANTENA'),
+  prioridad: text('prioridad').notNull().default('MEDIA'), // BAJA | MEDIA | ALTA
+  estado: text('estado').notNull().default('PENDIENTE'), // PENDIENTE | EN_CAMINO | EN_PROGRESO | COMPLETADO
+  cuadrillaId: text('cuadrilla_id'),
+  cuadrillaNombre: text('cuadrilla_nombre'),
+  tecnicoLider: text('tecnico_lider'),
+  abonadoNro: integer('abonado_nro').references(() => abonadosDect.nro, { onDelete: 'set null' }),
+  materiales: text('materiales').array().notNull().default([]),
+  fechaProgramada: text('fecha_programada'),
+  resultadoTecnico: text('resultado_tecnico'),
+  fechaCreacion: timestamp('fecha_creacion', { withTimezone: true }).defaultNow().notNull(),
+  fechaActualizacion: timestamp('fecha_actualizacion', { withTimezone: true }).defaultNow().notNull(),
+  fechaCierre: timestamp('fecha_cierre', { withTimezone: true }),
 });
 
 // Relationships
@@ -67,9 +96,17 @@ export const celdasRelations = relations(celdasDect, ({ many }) => ({
   abonados: many(abonadosDect),
 }));
 
-export const abonadosRelations = relations(abonadosDect, ({ one }) => ({
+export const abonadosRelations = relations(abonadosDect, ({ one, many }) => ({
   celda: one(celdasDect, {
     fields: [abonadosDect.celdaId],
     references: [celdasDect.id],
+  }),
+  workOrders: many(workOrders),
+}));
+
+export const workOrdersRelations = relations(workOrders, ({ one }) => ({
+  abonado: one(abonadosDect, {
+    fields: [workOrders.abonadoNro],
+    references: [abonadosDect.nro],
   }),
 }));

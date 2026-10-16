@@ -5,6 +5,8 @@
     "useDefineForClassFields": false,
     "module": "ESNext",
     "types": ["vite/client"],
+    "strict": true,
+    "noImplicitAny": true,
     "lib": [
       "ES2022",
       "DOM",

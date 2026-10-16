@@ -3,35 +3,52 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const sqlHost = process.env.SQL_HOST;
-const sqlDbName = process.env.SQL_DB_NAME;
-const user = process.env.SQL_ADMIN_USER;
-const password = process.env.SQL_ADMIN_PASSWORD;
+/**
+ * Fuente de credenciales para drizzle-kit (npm run db:generate / db:push):
+ * 1. DATABASE_URL (misma variable que usa la aplicación).
+ * 2. SQL_HOST / SQL_DB_NAME / SQL_ADMIN_USER / SQL_ADMIN_PASSWORD.
+ */
+const connectionString = process.env.DATABASE_URL;
 
-if (!sqlHost) {
-  throw new Error('SQL_HOST must be set in environment variables.');
-}
-if (!sqlDbName) {
-  throw new Error('SQL_DB_NAME must be set in environment variables.');
-}
-if (!user) {
-  throw new Error('SQL_ADMIN_USER must be set in environment variables.');
-}
-if (!password) {
-  throw new Error('SQL_ADMIN_PASSWORD must be set in environment variables.');
+let config: ReturnType<typeof defineConfig>;
+
+if (connectionString) {
+  config = defineConfig({
+    schema: './src/db/schema.ts',
+    out: './supabase/migrations',
+    dialect: 'postgresql',
+    schemaFilter: ['public'],
+    dbCredentials: {
+      url: connectionString,
+    },
+    verbose: true,
+  });
+} else {
+  const sqlHost = process.env.SQL_HOST;
+  const sqlDbName = process.env.SQL_DB_NAME;
+  const user = process.env.SQL_ADMIN_USER;
+  const password = process.env.SQL_ADMIN_PASSWORD;
+
+  if (!sqlHost || !sqlDbName || !user || !password) {
+    throw new Error(
+      'Defina DATABASE_URL, o bien SQL_HOST, SQL_DB_NAME, SQL_ADMIN_USER y SQL_ADMIN_PASSWORD para usar drizzle-kit.'
+    );
+  }
+
+  config = defineConfig({
+    schema: './src/db/schema.ts',
+    out: './supabase/migrations',
+    dialect: 'postgresql',
+    schemaFilter: ['public'],
+    dbCredentials: {
+      host: sqlHost,
+      user,
+      password,
+      database: sqlDbName,
+      ssl: false,
+    },
+    verbose: true,
+  });
 }
 
-export default defineConfig({
-  schema: './src/db/schema.ts',
-  out: './drizzle',
-  dialect: 'postgresql',
-  schemaFilter: ['public'],
-  dbCredentials: {
-    host: sqlHost,
-    user: user,
-    password: password,
-    database: sqlDbName,
-    ssl: false,
-  },
-  verbose: true,
-});
+export default config;
