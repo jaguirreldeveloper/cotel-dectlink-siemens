@@ -19,7 +19,6 @@ import {
   FieldCrew,
   EnrichedSubscriberRecord,
 } from '../types/subscriber';
-import { INITIAL_FIELD_CREWS } from '../data/fieldOperationsData';
 import { apiFetch } from '../utils/apiFetch';
 
 interface WorkOrdersKanbanViewProps {
@@ -39,12 +38,25 @@ interface WorkOrderRow {
   cuadrillaNombre: string | null;
   tecnicoLider: string | null;
   abonadoNro: number | null;
-  materiales: string[];
+  materiales: { nombre: string; cantidad: number }[];
   fechaProgramada: string | null;
   resultadoTecnico: string | null;
   fechaCreacion: string;
   fechaActualizacion: string;
   fechaCierre: string | null;
+}
+
+/** Fila cruda devuelta por GET /api/cuadrillas (Drizzle, camelCase). */
+interface CrewRow {
+  id: string;
+  nombre: string;
+  integrantes: string[];
+  vehiculo: string | null;
+  zonaAsignada: string | null;
+  estado: FieldCrew['estado'];
+  telefonoContacto: string | null;
+  latActual: number | null;
+  lngActual: number | null;
 }
 
 const STATUS_FLOW: WorkOrderStatus[] = ['PENDIENTE', 'EN_CAMINO', 'EN_PROGRESO', 'COMPLETADO'];
@@ -92,7 +104,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [crews] = useState<FieldCrew[]>(INITIAL_FIELD_CREWS);
+  const [crews, setCrews] = useState<FieldCrew[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCrew, setFilterCrew] = useState<string>('ALL');
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
@@ -109,6 +121,29 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
     'Mástil galvanizado 3m, Cable coaxial RG-58, Conector SMA'
   );
 
+  const loadCrews = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cuadrillas');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: CrewRow[] = await res.json();
+      setCrews(
+        (Array.isArray(data) ? data : []).map(c => ({
+          id: c.id,
+          nombre: c.nombre,
+          integrantes: c.integrantes ?? [],
+          vehiculo: c.vehiculo ?? '',
+          zonaAsignada: c.zonaAsignada ?? '',
+          estado: c.estado,
+          telefonoContacto: c.telefonoContacto ?? '',
+          latActual: c.latActual ?? 0,
+          lngActual: c.lngActual ?? 0,
+        }))
+      );
+    } catch {
+      // Sin cuadrillas el tablero sigue operativo: las OT aparecen como "Sin cuadrilla".
+    }
+  }, []);
+
   const loadOrders = useCallback(async () => {
     try {
       const res = await fetch('/api/work-orders');
@@ -124,6 +159,10 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
   }, []);
 
   useEffect(() => {
+    loadCrews();
+  }, [loadCrews]);
+
+  useEffect(() => {
     loadOrders();
   }, [loadOrders]);
 
@@ -132,12 +171,13 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
     const eventSource = new EventSource('/api/events');
     eventSource.addEventListener('work_order_updated', () => {
       loadOrders();
+      loadCrews();
     });
     eventSource.addEventListener('error', () => {
       // EventSource reintenta solo; se ignora para evitar ruido
     });
     return () => eventSource.close();
-  }, [loadOrders]);
+  }, [loadOrders, loadCrews]);
 
   const workOrders = useMemo(
     () => rows.map(row => mapRowToWorkOrder(row, records)),
@@ -225,14 +265,14 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
           tipoTrabajo: newTipo,
           prioridad: newPrioridad,
           estado: 'PENDIENTE',
-          cuadrillaId: assignedCrew.id,
-          cuadrillaNombre: assignedCrew.nombre,
-          tecnicoLider: assignedCrew.integrantes[0] || 'Téc. Responsable',
+          cuadrillaId: assignedCrew?.id || null,
+          tecnicoLider: assignedCrew?.integrantes[0] || 'Téc. Responsable',
           abonadoNro: subscriber.nro,
           materiales: newMateriales
             .split(',')
             .map(m => m.trim())
-            .filter(Boolean),
+            .filter(Boolean)
+            .map(nombre => ({ nombre, cantidad: 1 })),
           fechaProgramada: new Date().toISOString().slice(0, 10),
         }),
       });
@@ -779,12 +819,13 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 <div>
                   <span className="font-semibold text-slate-300 block mb-1">Materiales y Repuestos Despachados:</span>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedOrder.materiales.map((m, idx) => (
+                    {selectedOrder.materiales.map(m => (
                       <span
-                        key={idx}
+                        key={m.nombre}
                         className="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]"
                       >
-                        ✓ {m}
+                        ✓ {m.nombre}
+                        {m.cantidad > 1 ? ` × ${m.cantidad}` : ''}
                       </span>
                     ))}
                   </div>

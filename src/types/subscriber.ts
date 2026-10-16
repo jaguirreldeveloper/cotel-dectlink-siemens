@@ -127,7 +127,7 @@ export interface WorkOrder {
   cuadrillaNombre: string;
   tecnicoLider: string;
   fechaProgramada: string;
-  materiales: string[];
+  materiales: { nombre: string; cantidad: number }[];
   observaciones: string;
   resultadoTecnico?: string;
   lat: number;

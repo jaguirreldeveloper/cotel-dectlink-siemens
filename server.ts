@@ -30,6 +30,23 @@ import {
   WorkOrderPatch,
 } from './src/db/workOrdersRepo.ts';
 import {
+  listCuadrillas,
+  createCuadrilla,
+  updateCuadrilla,
+  deleteCuadrilla,
+  cuadrillaExists,
+  CuadrillaInput,
+  CuadrillaPatch,
+} from './src/db/cuadrillasRepo.ts';
+import {
+  listMateriales,
+  createMaterial,
+  updateMaterial,
+  deleteMaterial,
+  MaterialInput,
+  MaterialPatch,
+} from './src/db/materialesRepo.ts';
+import {
   db,
   pool,
   getPool,
@@ -182,6 +199,10 @@ async function startServer() {
         return res.status(400).json({ error: `No existe un abonado con NRO ${input.abonadoNro}` });
       }
 
+      if (input.cuadrillaId && input.cuadrillaId.trim() && !(await cuadrillaExists(input.cuadrillaId.trim()))) {
+        return res.status(400).json({ error: `No existe una cuadrilla con id ${input.cuadrillaId}` });
+      }
+
       const created = await createWorkOrder(input);
 
       broadcastEvent('work_order_updated', { action: 'created', workOrder: created });
@@ -200,6 +221,10 @@ async function startServer() {
 
       if (patch.abonadoNro != null && !(await subscriberExists(patch.abonadoNro))) {
         return res.status(400).json({ error: `No existe un abonado con NRO ${patch.abonadoNro}` });
+      }
+
+      if (patch.cuadrillaId && patch.cuadrillaId.trim() && !(await cuadrillaExists(patch.cuadrillaId.trim()))) {
+        return res.status(400).json({ error: `No existe una cuadrilla con id ${patch.cuadrillaId}` });
       }
 
       const updated = await updateWorkOrder(id, patch);
@@ -230,6 +255,107 @@ async function startServer() {
     } catch (err: any) {
       console.error('Failed to delete work order:', err);
       res.status(500).json({ error: 'Error al eliminar la orden de trabajo' });
+    }
+  });
+
+  // 3d. Catálogo de cuadrillas: lectura pública, escritura protegida
+  app.get('/api/cuadrillas', async (_req, res) => {
+    try {
+      res.json(await listCuadrillas());
+    } catch (err: any) {
+      console.error('Failed to get cuadrillas:', err);
+      res.status(500).json({ error: 'Error al consultar cuadrillas' });
+    }
+  });
+
+  app.post('/api/cuadrillas', requireAdmin, async (req, res) => {
+    try {
+      const input: CuadrillaInput = req.body || {};
+      if (!input.nombre || typeof input.nombre !== 'string' || !input.nombre.trim()) {
+        return res.status(400).json({ error: 'El nombre de la cuadrilla es obligatorio' });
+      }
+      const created = await createCuadrilla(input);
+      broadcastEvent('work_order_updated', { action: 'cuadrilla_created', cuadrilla: created });
+      res.json({ success: true, cuadrilla: created });
+    } catch (err: any) {
+      console.error('Failed to create cuadrilla:', err);
+      res.status(500).json({ error: 'Error al crear la cuadrilla' });
+    }
+  });
+
+  app.patch('/api/cuadrillas/:id', requireAdmin, async (req, res) => {
+    try {
+      const patch: CuadrillaPatch = req.body || {};
+      const updated = await updateCuadrilla(req.params.id, patch);
+      if (!updated) return res.status(404).json({ error: 'Cuadrilla no encontrada' });
+      broadcastEvent('work_order_updated', { action: 'cuadrilla_updated', cuadrilla: updated });
+      res.json({ success: true, cuadrilla: updated });
+    } catch (err: any) {
+      console.error('Failed to update cuadrilla:', err);
+      res.status(500).json({ error: 'Error al actualizar la cuadrilla' });
+    }
+  });
+
+  app.delete('/api/cuadrillas/:id', requireAdmin, async (req, res) => {
+    try {
+      const deleted = await deleteCuadrilla(req.params.id);
+      if (!deleted) return res.status(404).json({ error: 'Cuadrilla no encontrada' });
+      broadcastEvent('work_order_updated', { action: 'cuadrilla_deleted', cuadrillaId: req.params.id });
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Failed to delete cuadrilla:', err);
+      res.status(500).json({ error: 'Error al eliminar la cuadrilla' });
+    }
+  });
+
+  // 3e. Catálogo de materiales: lectura pública, escritura protegida
+  app.get('/api/materiales', async (_req, res) => {
+    try {
+      res.json(await listMateriales());
+    } catch (err: any) {
+      console.error('Failed to get materiales:', err);
+      res.status(500).json({ error: 'Error al consultar materiales' });
+    }
+  });
+
+  app.post('/api/materiales', requireAdmin, async (req, res) => {
+    try {
+      const input: MaterialInput = req.body || {};
+      if (!input.nombre || typeof input.nombre !== 'string' || !input.nombre.trim()) {
+        return res.status(400).json({ error: 'El nombre del material es obligatorio' });
+      }
+      const created = await createMaterial(input);
+      res.json({ success: true, material: created });
+    } catch (err: any) {
+      console.error('Failed to create material:', err);
+      res.status(500).json({ error: 'Error al crear el material' });
+    }
+  });
+
+  app.patch('/api/materiales/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) return res.status(400).json({ error: 'Id de material inválido' });
+      const patch: MaterialPatch = req.body || {};
+      const updated = await updateMaterial(id, patch);
+      if (!updated) return res.status(404).json({ error: 'Material no encontrado' });
+      res.json({ success: true, material: updated });
+    } catch (err: any) {
+      console.error('Failed to update material:', err);
+      res.status(500).json({ error: 'Error al actualizar el material' });
+    }
+  });
+
+  app.delete('/api/materiales/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) return res.status(400).json({ error: 'Id de material inválido' });
+      const deleted = await deleteMaterial(id);
+      if (!deleted) return res.status(404).json({ error: 'Material no encontrado' });
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Failed to delete material:', err);
+      res.status(500).json({ error: 'Error al eliminar el material' });
     }
   });
 

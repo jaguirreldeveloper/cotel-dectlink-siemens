@@ -41,7 +41,10 @@ const EXPECTED_CONSTRAINTS: { table: string; name: string; kind: string }[] = [
   { table: 'work_orders', name: 'chk_work_orders_estado', kind: 'CHECK' },
   { table: 'work_orders', name: 'chk_work_orders_prioridad', kind: 'CHECK' },
   { table: 'work_orders', name: 'chk_work_orders_tipo', kind: 'CHECK' },
+  { table: 'work_orders', name: 'fk_work_orders_cuadrilla', kind: 'FK' },
   { table: 'bitacora_dect', name: 'fk_bitacora_abonado', kind: 'FK' },
+  { table: 'cuadrillas', name: 'chk_cuadrillas_estado', kind: 'CHECK' },
+  { table: 'work_order_materiales', name: 'chk_wo_materiales_cantidad', kind: 'CHECK' },
 ];
 
 /** Tablas internas que no interesan reportar como "extra". */

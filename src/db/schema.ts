@@ -7,6 +7,7 @@ import {
   doublePrecision,
   timestamp,
   check,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
@@ -76,6 +77,30 @@ export const bitacoraDect = pgTable('bitacora_dect', {
   timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Field crews (cuadrillas de planta externa)
+export const cuadrillas = pgTable('cuadrillas', {
+  id: text('id').primaryKey(), // 'crew-1', 'crew-2', 'crew-3'
+  nombre: text('nombre').notNull().unique(),
+  integrantes: text('integrantes').array().notNull().default([]),
+  vehiculo: text('vehiculo'),
+  zonaAsignada: text('zona_asignada'),
+  estado: text('estado').notNull().default('DISPONIBLE'), // DISPONIBLE | EN_DESPACHO | EN_CAMPO
+  telefonoContacto: text('telefono_contacto'),
+  latActual: doublePrecision('lat_actual'),
+  lngActual: doublePrecision('lng_actual'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  check('chk_cuadrillas_estado', sql`${t.estado} IN ('DISPONIBLE','EN_DESPACHO','EN_CAMPO')`),
+]);
+
+// Materials catalog (repuestos / insumos)
+export const materiales = pgTable('materiales', {
+  id: serial('id').primaryKey(),
+  nombre: text('nombre').notNull().unique(),
+  unidad: text('unidad').notNull().default('unidad'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Work orders (Kanban de cuadrillas de planta externa)
 export const workOrders = pgTable('work_orders', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -85,11 +110,9 @@ export const workOrders = pgTable('work_orders', {
   tipoTrabajo: text('tipo_trabajo').notNull().default('REUBICACION_ANTENA'),
   prioridad: text('prioridad').notNull().default('MEDIA'), // BAJA | MEDIA | ALTA
   estado: text('estado').notNull().default('PENDIENTE'), // PENDIENTE | EN_CAMINO | EN_PROGRESO | COMPLETADO
-  cuadrillaId: text('cuadrilla_id'),
-  cuadrillaNombre: text('cuadrilla_nombre'),
+  cuadrillaId: text('cuadrilla_id').references(() => cuadrillas.id, { onDelete: 'set null' }),
   tecnicoLider: text('tecnico_lider'),
   abonadoNro: integer('abonado_nro').references(() => abonadosDect.nro, { onDelete: 'set null' }),
-  materiales: text('materiales').array().notNull().default([]),
   fechaProgramada: text('fecha_programada'),
   resultadoTecnico: text('resultado_tecnico'),
   fechaCreacion: timestamp('fecha_creacion', { withTimezone: true }).defaultNow().notNull(),
@@ -99,6 +122,16 @@ export const workOrders = pgTable('work_orders', {
   check('chk_work_orders_estado', sql`${t.estado} IN ('PENDIENTE','EN_CAMINO','EN_PROGRESO','COMPLETADO')`),
   check('chk_work_orders_prioridad', sql`${t.prioridad} IN ('BAJA','MEDIA','ALTA')`),
   check('chk_work_orders_tipo', sql`${t.tipoTrabajo} IN ('REUBICACION_ANTENA','MEDICION_RSSI','REEMPLAZO_FAU','RETIRO_EQUIPO','INSPECCION_TORRE','MIGRACION_FIBRA')`),
+]);
+
+// Work order <-> material (M:N con cantidad)
+export const workOrderMateriales = pgTable('work_order_materiales', {
+  workOrderId: uuid('work_order_id').notNull().references(() => workOrders.id, { onDelete: 'cascade' }),
+  materialId: integer('material_id').notNull().references(() => materiales.id, { onDelete: 'cascade' }),
+  cantidad: integer('cantidad').notNull().default(1),
+}, (t) => [
+  primaryKey({ columns: [t.workOrderId, t.materialId] }),
+  check('chk_wo_materiales_cantidad', sql`${t.cantidad} > 0`),
 ]);
 
 // Relationships
@@ -114,9 +147,33 @@ export const abonadosRelations = relations(abonadosDect, ({ one, many }) => ({
   workOrders: many(workOrders),
 }));
 
-export const workOrdersRelations = relations(workOrders, ({ one }) => ({
+export const workOrdersRelations = relations(workOrders, ({ one, many }) => ({
   abonado: one(abonadosDect, {
     fields: [workOrders.abonadoNro],
     references: [abonadosDect.nro],
+  }),
+  cuadrilla: one(cuadrillas, {
+    fields: [workOrders.cuadrillaId],
+    references: [cuadrillas.id],
+  }),
+  materiales: many(workOrderMateriales),
+}));
+
+export const cuadrillasRelations = relations(cuadrillas, ({ many }) => ({
+  workOrders: many(workOrders),
+}));
+
+export const materialesRelations = relations(materiales, ({ many }) => ({
+  workOrderMateriales: many(workOrderMateriales),
+}));
+
+export const workOrderMaterialesRelations = relations(workOrderMateriales, ({ one }) => ({
+  workOrder: one(workOrders, {
+    fields: [workOrderMateriales.workOrderId],
+    references: [workOrders.id],
+  }),
+  material: one(materiales, {
+    fields: [workOrderMateriales.materialId],
+    references: [materiales.id],
   }),
 }));
