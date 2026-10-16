@@ -491,6 +491,64 @@ export default function App() {
     },
   ];
 
+  // Navegación agrupada: los 5 módulos estratégicos y las herramientas base.
+  // Renderizado a partir de datos para eliminar la repetición de 13 botones.
+  const strategicModules = [
+    { id: 'gps-calibration', label: '1. Calibración GPS', icon: Crosshair, accent: 'text-brand-400', live: true },
+    { id: 'field-crews', label: '2. Cuadrillas & Kanban', icon: ClipboardList, accent: 'text-indigo-400' },
+    { id: 'rf-simulation', label: '3. Línea de Vista RF (ITU)', icon: Radio, accent: 'text-blue-400' },
+    { id: 'tech-migration', label: '4. Migración GPON/LTE', icon: Network, accent: 'text-purple-400' },
+    { id: 'official-sheets', label: '5. Fichas Oficiales & ATT', icon: FileText, accent: 'text-brand-400' },
+  ] as const;
+
+  const baseTools = [
+    { id: 'map', label: 'Mapa GIS', icon: Globe, accent: 'text-brand-500' },
+    { id: 'dect', label: 'Operaciones DECT', icon: Radio, accent: 'text-indigo-500' },
+    { id: 'database', label: 'BD PostgreSQL', icon: Database, accent: 'text-brand-500' },
+    { id: 'overview', label: 'Diagnóstico', icon: Sparkles, accent: 'text-brand-500' },
+    { id: 'table', label: 'Padrón', icon: TableIcon, accent: 'text-blue-500', count: enrichedRecords.length },
+    { id: 'audit', label: 'Auditoría', icon: ShieldAlert, accent: 'text-amber-500', count: auditIssues.length || undefined, countClass: 'text-amber-600 dark:text-amber-400' },
+    { id: 'institutional', label: 'Cuentas Clave', icon: Building2, accent: 'text-indigo-500' },
+    { id: 'qa', label: 'Consultas', icon: HelpCircle, accent: 'text-slate-400' },
+  ] as const;
+
+  // Un botón de pestaña: acento de color en el icono, estado activo en verde de marca.
+  const renderTab = (tab: {
+    id: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accent: string;
+    live?: boolean;
+    count?: number;
+    countClass?: string;
+  }) => {
+    const isActive = activeTab === tab.id;
+    return (
+      <button
+        key={tab.id}
+        type="button"
+        onClick={() => setActiveTab(tab.id as typeof activeTab)}
+        aria-current={isActive ? 'page' : undefined}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-control transition cursor-pointer ${
+          isActive
+            ? 'bg-brand-600 text-white shadow-xs font-bold'
+            : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <tab.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : tab.accent}`} />
+        <span>{tab.label}</span>
+        {tab.live && (
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-ping inline-block" aria-hidden="true"></span>
+        )}
+        {tab.count !== undefined && (
+          <span className={`font-mono text-[10px] font-bold ${tab.countClass ?? 'opacity-75'}`}>
+            ({tab.count})
+          </span>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* Top Navbar */}
@@ -571,175 +629,26 @@ export default function App() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-          <div className="inline-flex p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-lg text-xs font-medium flex-wrap gap-1">
-            {/* The 5 Strategic Modules Requested */}
-            <button
-              onClick={() => setActiveTab('gps-calibration')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'gps-calibration'
-                  ? 'bg-emerald-600 text-white shadow-xs font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-emerald-500/10'
-              }`}
-            >
-              <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
-              <span>1. Calibración GPS</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('field-crews')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'field-crews'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-indigo-500/10'
-              }`}
-            >
-              <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
-              <span>2. Cuadrillas & Kanban</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('rf-simulation')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'rf-simulation'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-blue-500/10'
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5 text-blue-400" />
-              <span>3. Línea de Vista RF (ITU)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('tech-migration')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'tech-migration'
-                  ? 'bg-purple-600 text-white shadow-xs font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-purple-500/10'
-              }`}
-            >
-              <Network className="w-3.5 h-3.5 text-purple-400" />
-              <span>4. Migración GPON/LTE</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('official-sheets')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'official-sheets'
-                  ? 'bg-emerald-700 text-white shadow-xs font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-emerald-500/10'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 text-emerald-400" />
-              <span>5. Fichas Oficiales & ATT</span>
-            </button>
-
-            {/* Base Tools */}
-            <button
-              onClick={() => setActiveTab('map')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'map'
-                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Mapa GIS</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('dect')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'dect'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Operaciones DECT</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('database')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'database'
-                  ? 'bg-emerald-600 text-white shadow-xs font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-500" />
-              <span>BD PostgreSQL</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Diagnóstico</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'table'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <TableIcon className="w-3.5 h-3.5 text-blue-500" />
-              <span>Padrón</span>
-              <span className="font-mono text-[10px] opacity-75">({enrichedRecords.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'audit'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-              <span>Auditoría</span>
-              {auditIssues.length > 0 && (
-                <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 font-bold">
-                  ({auditIssues.length})
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('institutional')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'institutional'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Cuentas Clave</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('qa')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition cursor-pointer ${
-                activeTab === 'qa'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-              <span>Consultas</span>
-            </button>
+        {/* Navigation Tabs — agrupadas en Módulos Estratégicos y Herramientas Base */}
+        <nav aria-label="Módulos de la aplicación" className="border-b border-slate-200 dark:border-slate-800 pb-3 space-y-2">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-1">
+              Módulos Estratégicos
+            </span>
+            <div className="inline-flex flex-wrap p-1 bg-brand-500/10 rounded-panel text-xs font-medium gap-1 self-start">
+              {strategicModules.map(renderTab)}
+            </div>
           </div>
-        </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-1">
+              Herramientas Base
+            </span>
+            <div className="inline-flex flex-wrap p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-panel text-xs font-medium gap-1 self-start">
+              {baseTools.map(renderTab)}
+            </div>
+          </div>
+        </nav>
 
         {/* Global Key Metrics Bar */}
         <MetricCards

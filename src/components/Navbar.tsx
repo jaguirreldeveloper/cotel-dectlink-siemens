@@ -1,5 +1,6 @@
 import React from 'react';
-import { Network, Download, FileSpreadsheet, RefreshCw, Printer, ShieldCheck, Database, Github } from 'lucide-react';
+import { Network, FileSpreadsheet, RefreshCw, Printer, ShieldCheck, Database, Github, Cloud } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface NavbarProps {
   totalRecords: number;
@@ -29,30 +30,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-4">
           {/* Brand & Context */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="w-10 h-10 rounded-panel bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 shrink-0">
               <Network className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-base tracking-tight text-white">COTEL Telecom</span>
                 <span className="text-xs text-slate-400">·</span>
-                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Área EAI</span>
-                <span className="text-xs text-slate-400">·</span>
-                <span className="text-xs text-slate-400">El Alto / Viacha</span>
+                <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Área EAI</span>
+                <span className="hidden sm:inline text-xs text-slate-400">·</span>
+                <span className="hidden sm:inline text-xs text-slate-400">El Alto / Viacha</span>
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                <span>Auditoría técnica y planta externa</span>
-                <span>·</span>
+              <p className="text-xs text-slate-400 flex items-center gap-1.5 truncate">
+                <span className="hidden sm:inline">Auditoría técnica y planta externa</span>
+                <span className="hidden sm:inline">·</span>
                 <button
                   type="button"
                   onClick={onOpenDatabase}
-                  className="flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline transition cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] text-brand-400 hover:text-brand-300 hover:underline transition cursor-pointer"
                   title="Abrir Visor y Consola de Base de Datos"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-ping inline-block"></span>
                   <span>{dbProvider} Activo (Ver BD)</span>
                 </button>
               </p>
@@ -60,72 +61,78 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Quick Stats & Actions */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="hidden md:flex items-center space-x-4 text-xs text-slate-300 pr-3 border-r border-slate-800">
               <div>
                 <span className="text-slate-400">Líneas en BD:</span>{' '}
                 <strong className="text-white font-mono">{totalRecords}</strong>
               </div>
               <div className="flex items-center space-x-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
                 <span className="text-slate-400">Observaciones:</span>{' '}
                 <strong className="text-amber-400 font-mono">{auditIssuesCount}</strong>
               </div>
             </div>
 
-            <button
+            {/* Herramientas secundarias: solo icono (reducen ruido en la barra) */}
+            <Button
+              variant="soft"
+              size="md"
+              icon={Github}
               onClick={onOpenGitMigration}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-xs transition-colors cursor-pointer"
+              aria-label="Control de versiones Git y GitHub"
               title="Control de versiones Git, repositorio GitHub y migraciones Supabase"
-            >
-              <Github className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Git & GitHub</span>
-            </button>
-
-            <button
+              className="!px-2"
+            />
+            <Button
+              variant="soft"
+              size="md"
+              icon={Cloud}
               onClick={onOpenSupabaseMigration}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs transition-colors cursor-pointer"
+              aria-label="Migrar o conectar a Supabase"
               title="Asistente guiado para migración o conexión con Supabase PostgreSQL"
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Migrar a Supabase</span>
-            </button>
+              className="!px-2"
+            />
+            <Button
+              variant="soft"
+              size="md"
+              icon={RefreshCw}
+              onClick={onOpenUploader}
+              aria-label="Cargar datos CSV"
+              title="Cargar o cambiar datos CSV"
+              className="!px-2"
+            />
 
-            <button
+            {/* Acciones principales con etiqueta */}
+            <Button
+              variant="secondary"
+              size="md"
+              icon={Database}
               onClick={onOpenDatabase}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 shadow-xs transition-colors cursor-pointer"
+              className="hidden sm:inline-flex"
               title="Abrir explorador de tablas y consola SQL de PostgreSQL"
             >
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Base de Datos SQL</span>
-            </button>
-
-            <button
-              onClick={onOpenUploader}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition-colors"
-              title="Cargar o cambiar datos CSV"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden sm:inline">Cargar CSV</span>
-            </button>
-
-            <button
+              <span className="hidden lg:inline">Base de Datos</span>
+            </Button>
+            <Button
+              variant="soft"
+              size="md"
+              icon={FileSpreadsheet}
+              iconClassName="text-brand-400"
               onClick={onExportCsv}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition-colors"
               title="Exportar archivo CSV con normalización"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Exportar CSV</span>
-            </button>
-
-            <button
+              <span className="hidden md:inline">Exportar CSV</span>
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              icon={Printer}
               onClick={onPrint}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
               title="Generar informe para impresión / PDF"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Informe PDF</span>
-            </button>
+              Informe PDF
+            </Button>
           </div>
         </div>
       </div>
