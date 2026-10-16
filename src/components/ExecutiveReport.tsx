@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
-import { FileText, CheckCircle2, AlertOctagon, TrendingUp, Cpu, Landmark, Sparkles } from 'lucide-react';
+import { FileText, CheckCircle2, AlertOctagon, TrendingUp, Cpu, Landmark, Sparkles, ShieldAlert } from 'lucide-react';
 import { EnrichedSubscriberRecord, AuditIssue } from '../types/subscriber';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
 
 interface ExecutiveReportProps {
   records: EnrichedSubscriberRecord[];
@@ -60,7 +62,7 @@ export const ExecutiveReport: React.FC<ExecutiveReportProps> = ({ records, audit
       {/* Structured Key Findings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Finding 1 */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+        <Card>
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2 font-semibold text-sm">
             <TrendingUp className="w-4 h-4" />
             <span>1. Concentración Geográfica (Tilata)</span>
@@ -71,10 +73,10 @@ export const ExecutiveReport: React.FC<ExecutiveReportProps> = ({ records, audit
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
             Implicancia: Prioridad en mantenimiento de armarios de distribución y cables multipar en el eje Carretera a Viacha.
           </div>
-        </div>
+        </Card>
 
         {/* Finding 2 */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+        <Card>
           <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 mb-2 font-semibold text-sm">
             <Cpu className="w-4 h-4" />
             <span>2. Topología de Conmutación (Celdas)</span>
@@ -85,10 +87,10 @@ export const ExecutiveReport: React.FC<ExecutiveReportProps> = ({ records, audit
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
             Implicancia: La central o DSLAM de Celda 17 soporta prácticamente toda la carga operativa del sector analizado.
           </div>
-        </div>
+        </Card>
 
         {/* Finding 3 */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+        <Card>
           <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2 font-semibold text-sm">
             <Landmark className="w-4 h-4" />
             <span>3. Cuentas Corporativas e Institucionales</span>
@@ -99,13 +101,13 @@ export const ExecutiveReport: React.FC<ExecutiveReportProps> = ({ records, audit
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
             Implicancia: Clientes corporativos de alta criticidad que requieren Acuerdos de Nivel de Servicio (SLA) prioritarios.
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Deep-dive Technical Observations */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <Card>
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-emerald-500" />
+          <FileText className="w-4 h-4 text-brand-500" />
           <span>Conclusiones Estratégicas y Recomendaciones Operativas</span>
         </h3>
 
@@ -145,14 +147,16 @@ export const ExecutiveReport: React.FC<ExecutiveReportProps> = ({ records, audit
           <div className="text-xs text-slate-500">
             Puede revisar las discrepancias individuales y aplicar normalización automática en el módulo de auditoría.
           </div>
-          <button
+          <Button
+            variant="secondary"
+            size="md"
+            icon={ShieldAlert}
             onClick={() => onGoToTab('audit')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition"
           >
             Ver Módulo de Auditoría y Correcciones ({auditIssues.length})
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

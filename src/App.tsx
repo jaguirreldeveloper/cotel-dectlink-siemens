@@ -5,6 +5,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Navbar } from './components/Navbar';
+import { Card } from './components/ui/Card';
+import { SectionHeader } from './components/ui/SectionHeader';
 import { MetricCards } from './components/MetricCards';
 import { ExecutiveReport } from './components/ExecutiveReport';
 import { VisualCharts } from './components/VisualCharts';
@@ -763,33 +765,26 @@ export default function App() {
         {/* Active Tab: Quick Q&A */}
         {activeTab === 'qa' && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-1">
-                <Compass className="w-4 h-4" />
-                <span>Base de Conocimiento · Telefonía Inalámbrica WLL Siemens DECTlink</span>
-              </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Guía Rápida de Respuestas Técnicas y Operativas de COTEL
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-                Respuestas especializadas sobre la infraestructura de radio DECTlink, estaciones base RFP, unidades de abonado FAU, gestión de depósitos y morosidad.
-              </p>
-            </div>
+            <Card>
+              <SectionHeader
+                icon={Compass}
+                eyebrow="Base de Conocimiento · Telefonía Inalámbrica WLL Siemens DECTlink"
+                title="Guía Rápida de Respuestas Técnicas y Operativas de COTEL"
+                description="Respuestas especializadas sobre la infraestructura de radio DECTlink, estaciones base RFP, unidades de abonado FAU, gestión de depósitos y morosidad."
+              />
+            </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {quickQuestions.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5"
-                >
+                <Card key={idx}>
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-start gap-2 mb-2">
-                    <span className="text-emerald-500 font-mono">Q{idx + 1}.</span>
+                    <span className="text-brand-500 font-mono">Q{idx + 1}.</span>
                     <span>{item.q}</span>
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pl-5">
                     {item.a}
                   </p>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
