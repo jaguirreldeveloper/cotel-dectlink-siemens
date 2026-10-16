@@ -1,2 +1,33 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+
+/*
+ * Sistema de diseño COTEL — tokens en Tailwind v4 (@theme).
+ * Definen radios, elevación y color de marca de forma centralizada para
+ * que las 21 vistas compartan un lenguaje visual consistente.
+ */
+@theme {
+  /* ---- Radios consistentes ---- */
+  --radius-control: 0.5rem; /* 8px: botones, inputs, chips */
+  --radius-card: 0.75rem; /* 12px: tarjetas */
+  --radius-panel: 1rem; /* 16px: paneles elevados, modales */
+
+  /* ---- Elevación de superficies (jerarquía sutil, sin ruido) ---- */
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-card-hover: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
+  --shadow-panel: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.05);
+  --shadow-float: 0 20px 25px -5px rgb(15 23 42 / 0.10), 0 8px 10px -6px rgb(15 23 42 / 0.05);
+
+  /* ---- Color de marca (alias de emerald, identidad COTEL) ---- */
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+  --color-brand-900: #064e3b;
+  --color-brand-950: #022c22;
+}
