@@ -198,7 +198,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card overflow-hidden shadow-card">
       {/* Controls Header */}
       <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">

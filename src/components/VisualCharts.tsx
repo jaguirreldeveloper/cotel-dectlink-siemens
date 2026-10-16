@@ -42,7 +42,7 @@ export const VisualCharts: React.FC<VisualChartsProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Chart 1: Top Zones */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-emerald-500" />
@@ -92,7 +92,7 @@ export const VisualCharts: React.FC<VisualChartsProps> = ({
       </div>
 
       {/* Chart 2: Timeline of Installations */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-blue-500" />
@@ -146,7 +146,7 @@ export const VisualCharts: React.FC<VisualChartsProps> = ({
       </div>
 
       {/* Chart 3: Client Type Breakdown */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5">
         <div className="flex items-center gap-2 mb-3">
           <PieChart className="w-4 h-4 text-indigo-500" />
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -184,7 +184,7 @@ export const VisualCharts: React.FC<VisualChartsProps> = ({
       </div>
 
       {/* Chart 4: Celda Distribution & Capacity */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5">
         <div className="flex items-center gap-2 mb-3">
           <Layers className="w-4 h-4 text-violet-500" />
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
