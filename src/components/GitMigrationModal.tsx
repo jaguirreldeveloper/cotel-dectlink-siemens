@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/apiFetch';
+import { Modal } from './ui/Modal';
 import {
   X,
   GitBranch,
@@ -140,10 +141,13 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden my-auto text-slate-100">
-        {/* Header */}
-        <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      dark
+      panelClassName="max-w-3xl p-0 flex flex-col overflow-hidden max-h-[92vh]"
+      header={
+        <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
               <Github className="w-5 h-5" />
@@ -162,15 +166,17 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar diálogo"
             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
             title="Cerrar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+      }
+    >
+      {/* Body */}
+      <div className="p-6 overflow-y-auto flex-1 space-y-6">
           {/* Status banner */}
           <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
@@ -420,7 +426,6 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
             Cerrar
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

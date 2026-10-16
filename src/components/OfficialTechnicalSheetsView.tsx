@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { filterRecords } from '../utils/recordFilters';
 import {
   Printer,
   FileText,
@@ -38,17 +39,7 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
 
   // Filtered subscribers list
   const filteredSubscribers = useMemo(() => {
-    return records.filter(r => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          r.nombre.toLowerCase().includes(q) ||
-          r.numero.includes(q) ||
-          r.normalizedZona.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
+    return filterRecords(records, searchQuery);
   }, [records, searchQuery]);
 
   // Generate deterministic serial IPEI for DECT terminal

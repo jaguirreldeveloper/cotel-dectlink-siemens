@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { filterRecords } from '../utils/recordFilters';
 import {
   Search,
   Filter,
@@ -72,20 +73,9 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   // Filtering
   const filteredRecords = useMemo(() => {
-    return records.filter(r => {
-      // Search
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const matchName = r.nombre.toLowerCase().includes(q);
-        const matchNumber = r.numero.includes(q);
-        const matchCto = r.cto.toLowerCase().includes(q);
-        const matchAddress = r.direccion.toLowerCase().includes(q);
-        const matchZona = (showNormalized ? r.normalizedZona : r.zona).toLowerCase().includes(q);
-        if (!matchName && !matchNumber && !matchCto && !matchAddress && !matchZona) {
-          return false;
-        }
-      }
-
+    // Búsqueda unificada con filterRecords (superconjunto: nombre, número, CTO,
+    // dirección, zona cruda/normalizada y celda). Los demás filtros se aplican encima.
+    return filterRecords(records, search).filter(r => {
       // Zone
       if (activeZone) {
         const zoneValue = showNormalized ? r.normalizedZona : r.zona.trim().toUpperCase();

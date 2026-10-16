@@ -333,7 +333,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
                   <td className="py-2 px-3">{p.zona}</td>
                   <td className="py-2 px-3">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         p.tecnologiaRecomendada === 'FTTH_GPON'
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                           : p.tecnologiaRecomendada === 'FWA_LTE'

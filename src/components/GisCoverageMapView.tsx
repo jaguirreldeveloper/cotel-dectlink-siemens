@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { filterRecords } from '../utils/recordFilters';
 import L from 'leaflet';
 import {
   MapPin,
@@ -50,15 +51,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
 
   // Filtered subscribers for map display
   const mapSubscribers = useMemo(() => {
-    return records.filter(r => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = r.nombre.toLowerCase().includes(q);
-        const matchNum = r.numero.includes(q);
-        const matchDir = r.direccion.toLowerCase().includes(q);
-        const matchZona = r.normalizedZona.toLowerCase().includes(q);
-        if (!matchName && !matchNum && !matchDir && !matchZona) return false;
-      }
+    return filterRecords(records, searchQuery).filter(r => {
       if (filterStatus && r.estadoOperativo !== filterStatus) return false;
       if (filterCelda && r.celda !== filterCelda) return false;
       return true;

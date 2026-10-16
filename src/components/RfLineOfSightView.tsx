@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { filterRecords } from '../utils/recordFilters';
 import {
   Radio,
   Sliders,
@@ -76,17 +77,7 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
 
   // Filtered subscribers for selection dropdown
   const filteredSubscribers = useMemo(() => {
-    return records.filter(r => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          r.nombre.toLowerCase().includes(q) ||
-          r.numero.includes(q) ||
-          r.normalizedZona.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
+    return filterRecords(records, searchQuery);
   }, [records, searchQuery]);
 
   // SVG Chart Dimensions & Scaling for Elevation Cross-Section

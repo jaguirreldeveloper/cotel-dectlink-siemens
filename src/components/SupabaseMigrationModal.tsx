@@ -25,6 +25,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { downloadTextFile } from '../utils/downloadTextFile';
+import { Modal } from './ui/Modal';
 
 interface SupabaseMigrationModalProps {
   isOpen: boolean;
@@ -206,10 +207,13 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
   const isSupabaseDetected = connectionString.includes('supabase.co') || connectionString.includes('supabase.com') || connectionString.includes('pooler.supabase');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden my-auto text-slate-100">
-        {/* Header */}
-        <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800/80 flex items-center justify-between">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      dark
+      panelClassName="max-w-4xl p-0 flex flex-col overflow-hidden max-h-[92vh]"
+      header={
+        <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800/80 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <Database className="w-5 h-5" />
@@ -228,15 +232,17 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
             title="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Stepper Tabs */}
-        <div className="bg-slate-950/40 border-b border-slate-800 px-6 py-2 flex items-center gap-2 overflow-x-auto">
+      }
+    >
+      {/* Stepper Tabs */}
+      <div className="bg-slate-950/40 border-b border-slate-800 px-6 py-2 flex items-center gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveStep(1)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap cursor-pointer ${
@@ -929,7 +935,6 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

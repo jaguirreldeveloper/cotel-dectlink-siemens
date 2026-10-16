@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, RotateCcw, AlertCircle, FileText } from 'lucide-react';
 import { RAW_CSV_DATA } from '../data/initialData';
+import { Modal } from './ui/Modal';
 
 interface CsvUploaderModalProps {
   isOpen: boolean;
@@ -55,19 +56,24 @@ export const CsvUploaderModal: React.FC<CsvUploaderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      panelClassName="max-w-lg p-0 overflow-hidden max-h-[90vh]"
+      header={
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-t-xl">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               Cargar o Actualizar Datos CSV
             </h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} aria-label="Cerrar diálogo" className="text-slate-400 hover:text-slate-600 p-1 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
+      }
+    >
 
         <div className="p-5 space-y-4 text-xs">
           <p className="text-slate-600 dark:text-slate-300">
@@ -137,7 +143,6 @@ export const CsvUploaderModal: React.FC<CsvUploaderModalProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

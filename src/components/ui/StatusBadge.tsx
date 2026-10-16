@@ -69,7 +69,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const style = STATUS_STYLES[status] || STATUS_STYLES['S/SERV.'];
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-bold whitespace-nowrap ${style.className} ${className}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-bold whitespace-nowrap ${style.className} ${className}`}
     >
       {descriptive ? style.label : status}
     </span>

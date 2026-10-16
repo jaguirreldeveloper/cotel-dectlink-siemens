@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { filterRecords } from '../utils/recordFilters';
 import L from 'leaflet';
 import {
   Crosshair,
@@ -93,14 +94,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
 
   // Filtered subscribers list
   const filteredRecords = useMemo(() => {
-    return records.filter(r => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = r.nombre.toLowerCase().includes(q);
-        const matchNum = r.numero.includes(q);
-        const matchDir = r.direccion.toLowerCase().includes(q);
-        if (!matchName && !matchNum && !matchDir) return false;
-      }
+    return filterRecords(records, searchQuery).filter(r => {
       if (filterPrecision !== 'ALL' && r.precisionGps !== filterPrecision) return false;
       if (filterCelda && r.celda !== filterCelda) return false;
       return true;
@@ -412,7 +406,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
                   <span>Coordenadas Geodésicas WGS84</span>
                 </span>
                 {deltaDistanceMeters > 0 && (
-                  <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/20">
+                  <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/20">
                     Desplazamiento: Δ {deltaDistanceMeters}m
                   </span>
                 )}

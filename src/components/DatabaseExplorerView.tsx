@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/apiFetch';
 import { downloadTextFile } from '../utils/downloadTextFile';
+import { Modal } from './ui/Modal';
 import {
   Database,
   Terminal,
@@ -1133,9 +1134,12 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
 
       {/* Row Detail Modal */}
       {expandedRow && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+        <Modal
+          isOpen={!!expandedRow}
+          onClose={() => setExpandedRow(null)}
+          panelClassName="max-w-2xl p-0 max-h-[85vh] flex flex-col overflow-hidden"
+          header={
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-t-xl">
               <div className="flex items-center gap-2">
                 <TableIcon className="w-4 h-4 text-emerald-500" />
                 <h3 className="font-bold text-sm text-slate-900 dark:text-white">
@@ -1144,13 +1148,15 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
               </div>
               <button
                 onClick={() => setExpandedRow(null)}
+                aria-label="Cerrar diálogo"
                 className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs font-semibold"
               >
                 Cerrar (ESC)
               </button>
             </div>
-
-            <div className="p-5 overflow-y-auto space-y-4">
+          }
+        >
+          <div className="p-5 overflow-y-auto space-y-4 flex-1">
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 {Object.entries(expandedRow).map(([key, value]) => (
                   <div key={key} className="p-2 rounded bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
@@ -1185,8 +1191,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
                 <span>Copiar Registro</span>
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
