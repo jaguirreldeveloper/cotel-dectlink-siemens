@@ -6,8 +6,9 @@ import {
   integer,
   doublePrecision,
   timestamp,
+  check,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // Users table (Supabase Auth / operator accounts)
 export const users = pgTable('users', {
@@ -57,12 +58,17 @@ export const abonadosDect = pgTable('abonados_dect', {
   distanciaKm: doublePrecision('distancia_km').notNull().default(0),
   azimutGrados: integer('azimut_grados').notNull().default(0),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => [
+  check('chk_abonados_estado', sql`${t.estado} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
+  check('chk_abonados_estado_operativo', sql`${t.estadoOperativo} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
+  check('chk_abonados_signal', sql`${t.signalDect} IN ('EXCELENTE','BUENO','DEBIL','SIN_ENLACE')`),
+  check('chk_abonados_client_type', sql`${t.clientType} IN ('RESIDENCIAL','INSTITUCIONAL','COMERCIAL')`),
+]);
 
 // Field logs and technician operations log
 export const bitacoraDect = pgTable('bitacora_dect', {
   id: serial('id').primaryKey(),
-  abonadoNro: integer('abonado_nro').notNull(),
+  abonadoNro: integer('abonado_nro').notNull().references(() => abonadosDect.nro, { onDelete: 'cascade' }),
   estadoAnterior: text('estado_anterior'),
   nuevoEstado: text('nuevo_estado').notNull(),
   detalle: text('detalle'),
@@ -89,7 +95,11 @@ export const workOrders = pgTable('work_orders', {
   fechaCreacion: timestamp('fecha_creacion', { withTimezone: true }).defaultNow().notNull(),
   fechaActualizacion: timestamp('fecha_actualizacion', { withTimezone: true }).defaultNow().notNull(),
   fechaCierre: timestamp('fecha_cierre', { withTimezone: true }),
-});
+}, (t) => [
+  check('chk_work_orders_estado', sql`${t.estado} IN ('PENDIENTE','EN_CAMINO','EN_PROGRESO','COMPLETADO')`),
+  check('chk_work_orders_prioridad', sql`${t.prioridad} IN ('BAJA','MEDIA','ALTA')`),
+  check('chk_work_orders_tipo', sql`${t.tipoTrabajo} IN ('REUBICACION_ANTENA','MEDICION_RSSI','REEMPLAZO_FAU','RETIRO_EQUIPO','INSPECCION_TORRE','MIGRACION_FIBRA')`),
+]);
 
 // Relationships
 export const celdasRelations = relations(celdasDect, ({ many }) => ({
