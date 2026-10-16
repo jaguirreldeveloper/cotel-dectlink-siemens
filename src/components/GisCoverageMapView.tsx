@@ -388,7 +388,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
   return (
     <div className="space-y-4">
       {/* GIS Header & Toolbar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-1">
@@ -487,7 +487,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
       {/* Map and Side Panel Container */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Leaflet Map Box */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-xs relative">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card overflow-hidden shadow-xs relative">
           <div
             ref={mapContainerRef}
             className="w-full h-[540px] z-10"
@@ -525,7 +525,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
         {/* Right Column: Geographic Telemetry & Inspector */}
         <div className="lg:col-span-4 space-y-3">
           {/* Radio Metric Cards */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 space-y-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-3.5 space-y-3">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
               Telemetría Espacial WLL
             </span>
@@ -553,7 +553,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
 
           {/* Selected Subscriber Details Box */}
           {selectedSubOnMap ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-3 text-xs">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-4 space-y-3 text-xs">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-mono">
@@ -642,7 +642,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
           )}
 
           {/* Quick list of subscribers displayed */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-xs space-y-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-3 text-xs space-y-2">
             <div className="flex justify-between items-center text-slate-500 font-semibold text-[11px]">
               <span>Puntos Visibles ({mapSubscribers.length})</span>
               <span>Distancia</span>

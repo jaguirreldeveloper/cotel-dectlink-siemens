@@ -195,7 +195,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
 
       {/* Subtab 1: Technical Failures */}
       {activeSubTab === 'fallas' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -274,7 +274,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
 
       {/* Subtab 2: Commercial Morosity Cuts */}
       {activeSubTab === 'mora' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -349,7 +349,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
 
       {/* Subtab 3: Lines in Depósito */}
       {activeSubTab === 'deposito' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -429,7 +429,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
 
       {/* Subtab 4: Base Stations & Cell Capacities */}
       {activeSubTab === 'celdas' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5 space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Radio className="w-4 h-4 text-indigo-500" />

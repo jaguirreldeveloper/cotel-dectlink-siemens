@@ -34,7 +34,7 @@ export const DataAuditView: React.FC<DataAuditViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider mb-1">
@@ -106,7 +106,7 @@ export const DataAuditView: React.FC<DataAuditViewProps> = ({
         {/* Right Column: Detailed Issue Breakdown */}
         <div className="lg:col-span-7">
           {activeIssue && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5 space-y-4">
               <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center justify-between">
                   {getSeverityBadge(activeIssue.severity)}

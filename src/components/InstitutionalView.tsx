@@ -82,7 +82,7 @@ export const InstitutionalView: React.FC<InstitutionalViewProps> = ({ records, o
   return (
     <div className="space-y-6">
       {/* Intro */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-5">
         <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-1">
           <Building2 className="w-4 h-4" />
           <span>Gestión de Cuentas Clave & Multilíneas</span>
@@ -106,7 +106,7 @@ export const InstitutionalView: React.FC<InstitutionalViewProps> = ({ records, o
           {corporateEntities.map((ent, idx) => (
             <div
               key={idx}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-4 flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
@@ -158,7 +158,7 @@ export const InstitutionalView: React.FC<InstitutionalViewProps> = ({ records, o
           {residentialMultiLines.map((group, idx) => (
             <div
               key={idx}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card p-4 flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
