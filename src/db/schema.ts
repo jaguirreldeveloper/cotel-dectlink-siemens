@@ -1,0 +1,75 @@
+import { pgTable, serial, text, integer, doublePrecision, timestamp } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+
+// Users table (Firebase Auth linkage)
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  uid: text('uid').notNull().unique(), // Firebase Auth UID
+  email: text('email').notNull(),
+  role: text('role').notNull().default('OPERADOR'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Siemens DECTlink Base Stations (RFP)
+export const celdasDect = pgTable('celdas_dect', {
+  id: text('id').primaryKey(), // '17', '15', '12', '14', '16', '11'
+  nombre: text('nombre').notNull(),
+  rfpModelo: text('rfp_modelo').notNull(),
+  bandaFrecuencia: text('banda_frecuencia').notNull().default('1880 - 1900 MHz (DECT GAP)'),
+  capacidadCanales: integer('capacidad_canales').notNull(),
+  radioCoberturaKm: doublePrecision('radio_cobertura_km').notNull(),
+  latitud: doublePrecision('latitud').notNull(),
+  longitud: doublePrecision('longitud').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Subscribers table
+export const abonadosDect = pgTable('abonados_dect', {
+  id: serial('id').primaryKey(),
+  nro: integer('nro').notNull().unique(),
+  numero: text('numero').notNull().unique(),
+  area: text('area').notNull().default('EAI'),
+  cto: text('cto').notNull(),
+  nombre: text('nombre').notNull(),
+  direccion: text('direccion').notNull(),
+  fechServ: text('fech_serv').notNull(),
+  estado: text('estado').notNull().default('C/SERV.'),
+  estadoOperativo: text('estado_operativo').notNull().default('C/SERV.'),
+  celdaId: text('celda_id').notNull().references(() => celdasDect.id),
+  zona: text('zona').notNull(),
+  zonaNormalizada: text('zona_normalizada').notNull(),
+  clientType: text('client_type').notNull().default('RESIDENCIAL'),
+  fauModel: text('fau_model').notNull().default('Siemens DECTlink FAU-200'),
+  signalDect: text('signal_dect').notNull().default('EXCELENTE'),
+  deudaMeses: integer('deuda_meses').notNull().default(0),
+  tiempoDepositoMeses: integer('tiempo_deposito_meses').notNull().default(0),
+  fallaDescripcion: text('falla_descripcion'),
+  lat: doublePrecision('lat').notNull(),
+  lng: doublePrecision('lng').notNull(),
+  distanciaKm: doublePrecision('distancia_km').notNull().default(0),
+  azimutGrados: integer('azimut_grados').notNull().default(0),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Field logs and technician operations log
+export const bitacoraDect = pgTable('bitacora_dect', {
+  id: serial('id').primaryKey(),
+  abonadoNro: integer('abonado_nro').notNull(),
+  estadoAnterior: text('estado_anterior'),
+  nuevoEstado: text('nuevo_estado').notNull(),
+  detalle: text('detalle'),
+  tecnico: text('tecnico').default('Operador Sistema'),
+  timestamp: timestamp('timestamp').defaultNow(),
+});
+
+// Relationships
+export const celdasRelations = relations(celdasDect, ({ many }) => ({
+  abonados: many(abonadosDect),
+}));
+
+export const abonadosRelations = relations(abonadosDect, ({ one }) => ({
+  celda: one(celdasDect, {
+    fields: [abonadosDect.celdaId],
+    references: [celdasDect.id],
+  }),
+}));

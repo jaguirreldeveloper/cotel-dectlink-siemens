@@ -1,0 +1,6 @@
+{
+  "name": "Auditor y Analizador de Líneas Telefónicas COTEL - El Alto",
+  "description": "Plataforma de análisis de abonados, zonificación, celdas y auditoría de servicios telefónicos en El Alto y Viacha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
