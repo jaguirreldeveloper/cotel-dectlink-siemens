@@ -127,7 +127,7 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
 
       {/* Selector Toolbar (Hidden in Print) */}
       {activeSubTab === 'individual' && (
-        <div className="print:hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="print:hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
             <input

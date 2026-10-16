@@ -526,7 +526,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
       {/* SUBTAB 1: LIVE SQL CONSOLE */}
       {subTab === 'console' && (
         <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-xs overflow-hidden">
             {/* Editor Toolbar */}
             <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 gap-2">
               <div className="flex items-center gap-2">
@@ -626,7 +626,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
 
           {/* Execution Results View */}
           {queryResult && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-xs overflow-hidden">
               {/* Result Header */}
               <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 gap-2">
                 <div className="flex items-center gap-3">
@@ -744,7 +744,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
             {schemaTables.map(tbl => (
               <div
                 key={tbl.name}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-5 shadow-xs flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -844,7 +844,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
       {subTab === 'browser' && (
         <div className="space-y-4">
           {/* Browser Controls */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               {/* Table Selector */}
               <div className="flex items-center gap-2">
@@ -914,7 +914,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
           </div>
 
           {/* Table Container */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-xs overflow-hidden">
             <div className="overflow-x-auto max-h-[550px]">
               <table className="w-full text-left border-collapse text-xs">
                 <thead className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
@@ -1029,7 +1029,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
           {PRESET_QUERIES.map(p => (
             <div
               key={p.id}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-5 shadow-xs flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
@@ -1078,7 +1078,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
       {/* SUBTAB 5: EXTERNAL ACCESS GUIDE */}
       {subTab === 'guide' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-6 shadow-xs space-y-4">
             <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Server className="w-5 h-5 text-emerald-500" />
               <span>Conexión Externa a Google Cloud SQL (PostgreSQL)</span>
@@ -1134,7 +1134,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
       {/* Row Detail Modal */}
       {expandedRow && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-2">
                 <TableIcon className="w-4 h-4 text-emerald-500" />

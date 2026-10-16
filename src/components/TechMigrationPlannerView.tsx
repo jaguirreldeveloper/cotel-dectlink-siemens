@@ -151,7 +151,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
       {/* Financial & Technological KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: FTTH GPON Target */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Candidatos FTTH GPON
@@ -168,7 +168,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
         </div>
 
         {/* Card 2: FWA LTE Target */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Candidatos FWA LTE 4G/4.5G
@@ -185,7 +185,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
         </div>
 
         {/* Card 3: CAPEX Estimado */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Inversión Total (CAPEX)
@@ -202,7 +202,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
         </div>
 
         {/* Card 4: Payback Period & OPEX Savings */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Retorno Inversión (Payback)
@@ -220,7 +220,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
       </div>
 
       {/* Phased Cutover Strategy Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
         <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
           <Layers className="w-3.5 h-3.5 text-indigo-500" />
           <span>Cronograma de Apagado Gradual Siemens DECT (Phased Cutover)</span>
@@ -270,7 +270,7 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
       </div>
 
       {/* Filterable Migration Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />

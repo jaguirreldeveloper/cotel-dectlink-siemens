@@ -487,7 +487,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
       {/* Map and Side Panel Container */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Leaflet Map Box */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card overflow-hidden shadow-xs relative">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card shadow-card overflow-hidden relative">
           <div
             ref={mapContainerRef}
             className="w-full h-[540px] z-10"

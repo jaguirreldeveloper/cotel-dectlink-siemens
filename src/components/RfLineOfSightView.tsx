@@ -204,7 +204,7 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
       {/* Control Panel: Cell, Subscriber & Antenna Sliders */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Cell & Subscriber Selector (4 cols) */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
               Estación Base Transmisora (Tx):
@@ -265,7 +265,7 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
         </div>
 
         {/* Mast Height & Power Sliders (8 cols) */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-4">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5 text-indigo-500" />
@@ -441,7 +441,7 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
 
       {/* Interactive Elevation Profile Cross-Section (SVG) */}
       {simResult && chartData && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">

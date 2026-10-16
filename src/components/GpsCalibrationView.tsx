@@ -367,7 +367,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
         {/* Left Column: Subscriber Selector & Precision Metrics (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           {/* Active Record Card */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-4">
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -529,7 +529,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
           </div>
 
           {/* Quick Filter & Subscriber Queue */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Filter className="w-3.5 h-3.5 text-indigo-500" />
@@ -603,7 +603,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
 
         {/* Right Column: Interactive Leaflet Map with Drag-and-Drop Pin (7 cols) */}
         <div className="lg:col-span-7 space-y-3">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-3 shadow-xs">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500" />
