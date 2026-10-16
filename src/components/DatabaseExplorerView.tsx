@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/apiFetch';
+import { downloadTextFile } from '../utils/downloadTextFile';
 import {
   Database,
   Terminal,
@@ -346,13 +347,10 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
           .join(',')
       ),
     ];
-    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `query_result_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '_')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(
+      `query_result_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '_')}.csv`,
+      csvRows.join('\n')
+    );
   };
 
   const handleCopyText = (text: string, id: string) => {

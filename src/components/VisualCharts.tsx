@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { EnrichedSubscriberRecord, ZoneStatistic, YearStatistic, CeldaStatistic } from '../types/subscriber';
 import { computeZoneStatistics, computeYearStatistics, computeCeldaStatistics } from '../utils/analysis';
 import { BarChart3, Calendar, Layers, PieChart } from 'lucide-react';
@@ -25,11 +25,19 @@ export const VisualCharts: React.FC<VisualChartsProps> = ({
   const maxZoneCount = Math.max(...topZones.map(z => z.count), 1);
   const maxYearCount = Math.max(...yearStats.map(y => y.count), 1);
 
-  // Client type counts
+  // Client type counts: una sola pasada, memorizada.
   const total = records.length || 1;
-  const resCount = records.filter(r => r.clientType === 'RESIDENCIAL').length;
-  const instCount = records.filter(r => r.clientType === 'INSTITUCIONAL').length;
-  const comCount = records.filter(r => r.clientType === 'COMERCIAL').length;
+  const { resCount, instCount, comCount } = useMemo(() => {
+    let res = 0;
+    let inst = 0;
+    let com = 0;
+    for (const r of records) {
+      if (r.clientType === 'RESIDENCIAL') res++;
+      else if (r.clientType === 'INSTITUCIONAL') inst++;
+      else if (r.clientType === 'COMERCIAL') com++;
+    }
+    return { resCount: res, instCount: inst, comCount: com };
+  }, [records]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

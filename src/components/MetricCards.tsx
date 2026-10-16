@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PhoneCall, Radio, Building2, Clock, DollarSign, Wrench, Wifi } from 'lucide-react';
 import { EnrichedSubscriberRecord, AuditIssue } from '../types/subscriber';
 
@@ -10,18 +10,47 @@ interface MetricCardsProps {
 
 export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, onSelectTab }) => {
   const total = records.length;
-  const activeCount = records.filter(r => r.estadoOperativo === 'C/SERV.').length;
-  const depositoCount = records.filter(r => r.estadoOperativo === 'EN DEPOSITO').length;
-  const moraCount = records.filter(r => r.estadoOperativo === 'CORTE X MORA').length;
-  const fallaCount = records.filter(r => r.estadoOperativo === 'FALLA TECNICA').length;
-  const uniqueCeldas = new Set(records.map(r => r.celda)).size;
+
+  // Contadores derivados: se recalculan solo cuando cambia el padrón.
+  const { activeCount, depositoCount, moraCount, fallaCount, uniqueCeldas } = useMemo(() => {
+    let active = 0;
+    let deposito = 0;
+    let mora = 0;
+    let falla = 0;
+    const celdas = new Set<string>();
+    for (const r of records) {
+      switch (r.estadoOperativo) {
+        case 'C/SERV.':
+          active++;
+          break;
+        case 'EN DEPOSITO':
+          deposito++;
+          break;
+        case 'CORTE X MORA':
+          mora++;
+          break;
+        case 'FALLA TECNICA':
+          falla++;
+          break;
+      }
+      celdas.add(r.celda);
+    }
+    return {
+      activeCount: active,
+      depositoCount: deposito,
+      moraCount: mora,
+      fallaCount: falla,
+      uniqueCeldas: celdas.size,
+    };
+  }, [records]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
       {/* 1. Total Lines */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelectTab('table')}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
+        className="text-left w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
       >
         <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
           <span>Total Abonados</span>
@@ -33,12 +62,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, 
           <span>·</span>
           <span>WLL</span>
         </div>
-      </div>
+      </button>
 
       {/* 2. Activos Con Servicio */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelectTab('dect')}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
+        className="text-left w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
       >
         <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
           <span>Con Servicio</span>
@@ -48,12 +78,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, 
         <div className="text-xs text-slate-500 mt-1">
           <span>{((activeCount / (total || 1)) * 100).toFixed(1)}% operativos</span>
         </div>
-      </div>
+      </button>
 
       {/* 3. En Depósito */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelectTab('dect')}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
+        className="text-left w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
       >
         <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
           <span>En Depósito</span>
@@ -63,12 +94,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, 
         <div className="text-xs text-slate-500 mt-1">
           <span>Líneas en custodia</span>
         </div>
-      </div>
+      </button>
 
       {/* 4. Corte por Falta de Pago */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelectTab('dect')}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
+        className="text-left w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
       >
         <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
           <span>Corte x Falta Pago</span>
@@ -78,12 +110,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, 
         <div className="text-xs text-slate-500 mt-1">
           <span>Suspensión morosa</span>
         </div>
-      </div>
+      </button>
 
       {/* 5. Fallas Técnicas DECT */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelectTab('dect')}
-        className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-lg p-3.5 hover:border-rose-300 transition cursor-pointer bg-rose-50/10"
+        className="text-left w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-lg p-3.5 hover:border-rose-300 transition cursor-pointer bg-rose-50/10"
       >
         <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 text-xs mb-1">
           <span className="font-medium">Falla Técnica RF</span>
@@ -93,12 +126,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, 
         <div className="text-xs text-slate-500 mt-1">
           <span>FAU / Desalineación</span>
         </div>
-      </div>
+      </button>
 
       {/* 6. Celdas Siemens Base */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelectTab('dect')}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
+        className="text-left w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer"
       >
         <div className="flex items-center justify-between text-slate-500 text-xs mb-1">
           <span>Celdas Siemens</span>
@@ -110,7 +144,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, 
         <div className="text-xs text-slate-500 mt-1">
           <span>Estaciones base WLL</span>
         </div>
-      </div>
+      </button>
     </div>
   );
 };

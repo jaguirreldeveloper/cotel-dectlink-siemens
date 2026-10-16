@@ -14,6 +14,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, ClientType } from '../types/subscriber';
+import { statusTextClass } from './ui/StatusBadge';
 
 interface DataTableProps {
   records: EnrichedSubscriberRecord[];
@@ -162,6 +163,10 @@ export const DataTable: React.FC<DataTableProps> = ({
       setSortAsc(true);
     }
   };
+
+  // Valor ARIA para el estado de orden de una columna (aria-sort).
+  const ariaSort = (field: keyof EnrichedSubscriberRecord): 'ascending' | 'descending' | 'none' =>
+    sortField === field ? (sortAsc ? 'ascending' : 'descending') : 'none';
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -371,88 +376,106 @@ export const DataTable: React.FC<DataTableProps> = ({
           <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-medium select-none">
             <tr>
               <th
+                scope="col"
+                aria-sort={ariaSort('nro')}
                 onClick={() => handleSort('nro')}
                 className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>NRO</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('numero')}
                 onClick={() => handleSort('numero')}
                 className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>NÚMERO</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('cto')}
                 onClick={() => handleSort('cto')}
                 className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>CONTRATO (CTO)</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('nombre')}
                 onClick={() => handleSort('nombre')}
                 className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>TITULAR DEL SERVICIO</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
-              <th className="py-3 px-3">DIRECCIÓN</th>
+              <th scope="col" className="py-3 px-3">DIRECCIÓN</th>
               <th
+                scope="col"
+                aria-sort={ariaSort('fechServ')}
                 onClick={() => handleSort('fechServ')}
                 className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>FECHA ALTA</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('celda')}
                 onClick={() => handleSort('celda')}
                 className="py-3 px-2 text-center cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center justify-center gap-1">
                   <span>CELDA</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('zona')}
                 onClick={() => handleSort('zona')}
                 className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>ZONA</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('distanciaKm')}
                 onClick={() => handleSort('distanciaKm')}
                 className="py-3 px-2 text-center cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center justify-center gap-1">
                   <span>DISTANCIA</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
               <th
+                scope="col"
+                aria-sort={ariaSort('estadoOperativo')}
                 onClick={() => handleSort('estadoOperativo')}
                 className="py-3 px-3 text-center cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
                 <div className="flex items-center justify-center gap-1">
                   <span>ESTADO DECT</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
-              <th className="py-3 px-3 text-right">ACCIÓN</th>
+              <th scope="col" className="py-3 px-3 text-right">ACCIÓN</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -571,17 +594,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     {/* ESTADO OPERATIVO DECT */}
                     <td className="py-2.5 px-3 text-center">
                       <span
-                        className={`text-[11px] font-semibold tracking-wide ${
-                          record.estadoOperativo === 'C/SERV.'
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : record.estadoOperativo === 'EN DEPOSITO'
-                            ? 'text-blue-600 dark:text-blue-400'
-                            : record.estadoOperativo === 'CORTE X MORA'
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : record.estadoOperativo === 'FALLA TECNICA'
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-slate-400'
-                        }`}
+                        className={`text-[11px] font-semibold tracking-wide ${statusTextClass(record.estadoOperativo)}`}
                       >
                         {record.estadoOperativo}
                       </span>

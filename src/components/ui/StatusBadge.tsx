@@ -42,6 +42,24 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+/**
+ * Clases de color de *texto* para cada estado (sin píldora/borde).
+ * Sustituye las cadenas ternarias idénticas que estaban duplicadas en
+ * DataTable y RecordDetailModal.
+ */
+export const STATUS_TEXT_CLASS: Record<OperationalStatus, string> = {
+  'C/SERV.': 'text-emerald-600 dark:text-emerald-400',
+  'EN DEPOSITO': 'text-blue-600 dark:text-blue-400',
+  'CORTE X MORA': 'text-amber-600 dark:text-amber-400',
+  'FALLA TECNICA': 'text-rose-600 dark:text-rose-400',
+  'S/SERV.': 'text-slate-400',
+};
+
+/** Devuelve las clases de color de texto para un estado (con fallback slate). */
+export function statusTextClass(status: OperationalStatus): string {
+  return STATUS_TEXT_CLASS[status] ?? STATUS_TEXT_CLASS['S/SERV.'];
+}
+
 /** Badge accesible (usa <span> semántico) del estado operativo. */
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,

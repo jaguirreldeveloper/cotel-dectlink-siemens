@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Radio,
   Wifi,
@@ -36,11 +36,27 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
   const celdaStats = computeCeldaStatistics(records);
 
   const total = records.length || 1;
-  const activos = records.filter(r => r.estadoOperativo === 'C/SERV.');
-  const enDeposito = records.filter(r => r.estadoOperativo === 'EN DEPOSITO');
-  const enMora = records.filter(r => r.estadoOperativo === 'CORTE X MORA');
-  const conFalla = records.filter(r => r.estadoOperativo === 'FALLA TECNICA');
-  const sinServ = records.filter(r => r.estadoOperativo === 'S/SERV.');
+
+  // Listas por estado: se recalculan solo cuando cambia el padrón.
+  const { activos, enDeposito, enMora, conFalla, sinServ } = useMemo(() => {
+    const byStatus = {
+      'C/SERV.': [] as EnrichedSubscriberRecord[],
+      'EN DEPOSITO': [] as EnrichedSubscriberRecord[],
+      'CORTE X MORA': [] as EnrichedSubscriberRecord[],
+      'FALLA TECNICA': [] as EnrichedSubscriberRecord[],
+      'S/SERV.': [] as EnrichedSubscriberRecord[],
+    };
+    for (const r of records) {
+      byStatus[r.estadoOperativo]?.push(r);
+    }
+    return {
+      activos: byStatus['C/SERV.'],
+      enDeposito: byStatus['EN DEPOSITO'],
+      enMora: byStatus['CORTE X MORA'],
+      conFalla: byStatus['FALLA TECNICA'],
+      sinServ: byStatus['S/SERV.'],
+    };
+  }, [records]);
 
   const totalDeudaMeses = enMora.reduce((acc, r) => acc + r.deudaMeses, 0);
 

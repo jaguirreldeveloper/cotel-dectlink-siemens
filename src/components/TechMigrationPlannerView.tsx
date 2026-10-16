@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, MigrationTechTarget, SubscriberMigrationPlan } from '../types/subscriber';
 import { evaluateSubscribersMigration } from '../data/fieldOperationsData';
+import { downloadTextFile } from '../utils/downloadTextFile';
 
 interface TechMigrationPlannerViewProps {
   records: EnrichedSubscriberRecord[];
@@ -112,14 +113,10 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
       `"${p.criterioSeleccion}"`,
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `plan_migracion_cotel_dect_a_gpon_lte_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadTextFile(
+      `plan_migracion_cotel_dect_a_gpon_lte_${new Date().toISOString().slice(0, 10)}.csv`,
+      csvContent
+    );
   };
 
   return (

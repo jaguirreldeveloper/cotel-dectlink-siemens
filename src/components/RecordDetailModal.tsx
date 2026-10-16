@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '../types/subscriber';
 import { SIEMENS_DECT_CELLS } from '../data/initialData';
+import { statusTextClass } from './ui/StatusBadge';
 
 interface RecordDetailModalProps {
   record: EnrichedSubscriberRecord | null;
@@ -93,19 +94,7 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs text-slate-500">Registro NRO {record.nro}</span>
               <span className="text-slate-300">·</span>
-              <span
-                className={`text-xs font-semibold ${
-                  record.estadoOperativo === 'C/SERV.'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : record.estadoOperativo === 'EN DEPOSITO'
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : record.estadoOperativo === 'CORTE X MORA'
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : record.estadoOperativo === 'FALLA TECNICA'
-                    ? 'text-rose-600 dark:text-rose-400'
-                    : 'text-slate-400'
-                }`}
-              >
+              <span className={`text-xs font-semibold ${statusTextClass(record.estadoOperativo)}`}>
                 {record.estadoOperativo}
               </span>
             </div>

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '../types/subscriber';
 import { SIEMENS_DECT_CELLS } from '../data/initialData';
+import { downloadTextFile } from '../utils/downloadTextFile';
 
 interface GisCoverageMapViewProps {
   records: EnrichedSubscriberRecord[];
@@ -330,13 +331,11 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
       ],
     };
 
-    const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `cotel_dectlink_gis_geolocalizacion_${new Date().toISOString().slice(0, 10)}.geojson`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(
+      `cotel_dectlink_gis_geolocalizacion_${new Date().toISOString().slice(0, 10)}.geojson`,
+      JSON.stringify(geojson, null, 2),
+      'application/json'
+    );
   };
 
   // Export to KML (Google Earth)
@@ -379,13 +378,11 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
   </Document>
 </kml>`;
 
-    const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `cotel_dectlink_google_earth_${new Date().toISOString().slice(0, 10)}.kml`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(
+      `cotel_dectlink_google_earth_${new Date().toISOString().slice(0, 10)}.kml`,
+      kmlContent,
+      'application/vnd.google-earth.kml+xml'
+    );
   };
 
   return (

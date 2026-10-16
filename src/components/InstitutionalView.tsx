@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Building2, Landmark, Users, Radio, ArrowRight, ShieldCheck, PhoneCall } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '../types/subscriber';
 
@@ -8,71 +8,76 @@ interface InstitutionalViewProps {
 }
 
 export const InstitutionalView: React.FC<InstitutionalViewProps> = ({ records, onSelectRecord }) => {
-  const corporateEntities = [
-    {
-      name: 'EPSAS (Empresa Pública Social de Agua y Saneamiento)',
-      category: 'Servicios Básicos & Saneamiento',
-      description: 'Líneas para la Planta de Tratamiento de Aguas Residuales Puchukollo y oficinas administrativas.',
-      lines: records.filter(r => /EMPRESA PUBLICA SOCIAL DE AGUA/i.test(r.nombre)),
-    },
-    {
-      name: 'Entidades Financieras (Banca Múltiple)',
-      category: 'Sector Bancario & Financiero',
-      description: 'Agencias y cajeros de Banco Solidario (BancoSol) y Banco FIE S.A. sobre corredores comerciales.',
-      lines: records.filter(r => /BANCO/i.test(r.nombre)),
-    },
-    {
-      name: 'COTEL R.L. (Infraestructura de Telecomunicaciones Propia)',
-      category: 'Cooperativa de Telecomunicaciones',
-      description: 'Edificio técnico central en Carretera a Viacha y nodo administrativo en Urbanización Tilata.',
-      lines: records.filter(r => /COTEL/i.test(r.nombre)),
-    },
-    {
-      name: 'Sector Industrial y Comercial Manufacturero',
-      category: 'Industria & Comercio',
-      description: 'Planta de producción de alimentos TECALIM S.A. e instalaciones de CARSA Industria y Comercio S.R.L.',
-      lines: records.filter(r => /TECALIM|CARSA/i.test(r.nombre)),
-    },
-  ];
+  // Ambas listas filtran el padrón con regex: se recalculan solo al cambiar records.
+  const { corporateEntities, residentialMultiLines } = useMemo(() => {
+    const corporateEntities = [
+      {
+        name: 'EPSAS (Empresa Pública Social de Agua y Saneamiento)',
+        category: 'Servicios Básicos & Saneamiento',
+        description: 'Líneas para la Planta de Tratamiento de Aguas Residuales Puchukollo y oficinas administrativas.',
+        lines: records.filter(r => /EMPRESA PUBLICA SOCIAL DE AGUA/i.test(r.nombre)),
+      },
+      {
+        name: 'Entidades Financieras (Banca Múltiple)',
+        category: 'Sector Bancario & Financiero',
+        description: 'Agencias y cajeros de Banco Solidario (BancoSol) y Banco FIE S.A. sobre corredores comerciales.',
+        lines: records.filter(r => /BANCO/i.test(r.nombre)),
+      },
+      {
+        name: 'COTEL R.L. (Infraestructura de Telecomunicaciones Propia)',
+        category: 'Cooperativa de Telecomunicaciones',
+        description: 'Edificio técnico central en Carretera a Viacha y nodo administrativo en Urbanización Tilata.',
+        lines: records.filter(r => /COTEL/i.test(r.nombre)),
+      },
+      {
+        name: 'Sector Industrial y Comercial Manufacturero',
+        category: 'Industria & Comercio',
+        description: 'Planta de producción de alimentos TECALIM S.A. e instalaciones de CARSA Industria y Comercio S.R.L.',
+        lines: records.filter(r => /TECALIM|CARSA/i.test(r.nombre)),
+      },
+    ];
 
-  // Group residential multi-line subscribers
-  const residentialMultiLines = [
-    {
-      holder: 'Luz Gonzales Mercado',
-      zone: 'Nueva Tilata',
-      address: 'Calle 2 Vivienda Particular Nro. 1230',
-      reason: '2 líneas contratadas en la misma fecha (2021-07-08), acometida gemela.',
-      lines: records.filter(r => r.nombre.includes('GONZALES MERCADO LUZ')),
-    },
-    {
-      holder: 'Familia Seleme / José Juan Pablo Seleme',
-      zone: 'Tilata',
-      address: 'Av. Los Álamos Nro. 100',
-      reason: '3 líneas activas en el mismo inmueble (contratadas en mayo y junio 2016).',
-      lines: records.filter(r => /SELEME/i.test(r.nombre)),
-    },
-    {
-      holder: 'Victoria Flores Flores',
-      zone: 'Mariscal Santa Cruz',
-      address: 'Calle Coroico Nro. 7530',
-      reason: '2 líneas con contratos de 2013 y 2016 para la misma propiedad.',
-      lines: records.filter(r => r.nombre.includes('FLORES FLORES VICTORIA')),
-    },
-    {
-      holder: 'Félix Plata Taquichiri',
-      zone: 'Tilata',
-      address: 'Avenida Francia Nro. 233',
-      reason: '2 líneas activadas el mismo día (2021-06-30).',
-      lines: records.filter(r => r.nombre.includes('PLATA TAQUICHIRI FELIX')),
-    },
-    {
-      holder: 'Juana Cruz de Quispe',
-      zone: 'Urkupiña II',
-      address: 'Av. Hacia el Mar / Calle 29',
-      reason: '2 contratos (61002570 y 82014311) para diferentes frentes del lote.',
-      lines: records.filter(r => r.nombre.includes('QUISPE JUANA CRUZ DE')),
-    },
-  ];
+    // Group residential multi-line subscribers
+    const residentialMultiLines = [
+      {
+        holder: 'Luz Gonzales Mercado',
+        zone: 'Nueva Tilata',
+        address: 'Calle 2 Vivienda Particular Nro. 1230',
+        reason: '2 líneas contratadas en la misma fecha (2021-07-08), acometida gemela.',
+        lines: records.filter(r => r.nombre.includes('GONZALES MERCADO LUZ')),
+      },
+      {
+        holder: 'Familia Seleme / José Juan Pablo Seleme',
+        zone: 'Tilata',
+        address: 'Av. Los Álamos Nro. 100',
+        reason: '3 líneas activas en el mismo inmueble (contratadas en mayo y junio 2016).',
+        lines: records.filter(r => /SELEME/i.test(r.nombre)),
+      },
+      {
+        holder: 'Victoria Flores Flores',
+        zone: 'Mariscal Santa Cruz',
+        address: 'Calle Coroico Nro. 7530',
+        reason: '2 líneas con contratos de 2013 y 2016 para la misma propiedad.',
+        lines: records.filter(r => r.nombre.includes('FLORES FLORES VICTORIA')),
+      },
+      {
+        holder: 'Félix Plata Taquichiri',
+        zone: 'Tilata',
+        address: 'Avenida Francia Nro. 233',
+        reason: '2 líneas activadas el mismo día (2021-06-30).',
+        lines: records.filter(r => r.nombre.includes('PLATA TAQUICHIRI FELIX')),
+      },
+      {
+        holder: 'Juana Cruz de Quispe',
+        zone: 'Urkupiña II',
+        address: 'Av. Hacia el Mar / Calle 29',
+        reason: '2 contratos (61002570 y 82014311) para diferentes frentes del lote.',
+        lines: records.filter(r => r.nombre.includes('QUISPE JUANA CRUZ DE')),
+      },
+    ];
+
+    return { corporateEntities, residentialMultiLines };
+  }, [records]);
 
   return (
     <div className="space-y-6">

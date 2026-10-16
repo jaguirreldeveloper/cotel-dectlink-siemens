@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FileText, CheckCircle2, AlertOctagon, TrendingUp, Cpu, Landmark, Sparkles } from 'lucide-react';
 import { EnrichedSubscriberRecord, AuditIssue } from '../types/subscriber';
 
@@ -10,12 +10,24 @@ interface ExecutiveReportProps {
 
 export const ExecutiveReport: React.FC<ExecutiveReportProps> = ({ records, auditIssues, onGoToTab }) => {
   const total = records.length;
-  const tilataCluster = records.filter(r => r.normalizedZona.includes('TILATA')).length;
+
+  // Contadores del informe: una sola pasada por el padrón, memorizada.
+  const { tilataCluster, celda17Count, corpCount, futureCount } = useMemo(() => {
+    let tilata = 0;
+    let celda17 = 0;
+    let corp = 0;
+    let future = 0;
+    for (const r of records) {
+      if (r.normalizedZona.includes('TILATA')) tilata++;
+      if (r.celda === '17') celda17++;
+      if (r.clientType !== 'RESIDENCIAL') corp++;
+      if (r.year >= 2025) future++;
+    }
+    return { tilataCluster: tilata, celda17Count: celda17, corpCount: corp, futureCount: future };
+  }, [records]);
+
   const tilataPct = ((tilataCluster / total) * 100).toFixed(1);
-  const celda17Count = records.filter(r => r.celda === '17').length;
   const celda17Pct = ((celda17Count / total) * 100).toFixed(1);
-  const corpCount = records.filter(r => r.clientType !== 'RESIDENCIAL').length;
-  const futureCount = records.filter(r => r.year >= 2025).length;
 
   return (
     <div className="space-y-6">
