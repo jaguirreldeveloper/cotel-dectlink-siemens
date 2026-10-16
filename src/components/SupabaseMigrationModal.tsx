@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/apiFetch';
 import {
   X,
   Database,
@@ -23,16 +24,19 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import {
-  generateFullSupabaseScript,
-  generateSupabaseDDL,
-  generateSupabaseSeed,
-} from '../utils/supabaseSqlGenerator';
+import { downloadTextFile } from '../utils/downloadTextFile';
 
 interface SupabaseMigrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConnected?: (provider: string) => void;
+}
+
+/** Scripts SQL generados por el backend (fuente única: supabase/migrations). */
+interface SqlScripts {
+  fullScript: string;
+  ddl: string;
+  seed: string;
 }
 
 export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
@@ -43,6 +47,7 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(3);
   const [copiedType, setCopiedType] = useState<'full' | 'ddl' | 'seed' | 'conn' | null>(null);
   const [sqlViewTab, setSqlViewTab] = useState<'full' | 'ddl' | 'seed'>('full');
+  const [sqlScripts, setSqlScripts] = useState<SqlScripts | null>(null);
 
   // Supabase Project Specific Inputs
   const [projectId, setProjectId] = useState('jeenkfugbqdmcxbwoefa');
@@ -97,21 +102,27 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
     database?: string;
   } | null>(null);
 
-  // Fetch current database status on mount
+  // Fetch current database status and SQL scripts on mount
   useEffect(() => {
     if (isOpen) {
       fetch('/api/database/connection-info')
         .then((res) => res.json())
         .then((data) => setCurrentDbInfo(data))
         .catch((err) => console.error('Failed to get connection info:', err));
+
+      // Los scripts SQL se generan en el backend (fuente única: supabase/migrations)
+      fetch('/api/database/export-sql')
+        .then((res) => res.json())
+        .then((data: SqlScripts) => setSqlScripts(data))
+        .catch((err) => console.error('Failed to load SQL scripts:', err));
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const fullSql = generateFullSupabaseScript();
-  const ddlSql = generateSupabaseDDL();
-  const seedSql = generateSupabaseSeed();
+  const fullSql = sqlScripts?.fullScript || '';
+  const ddlSql = sqlScripts?.ddl || '';
+  const seedSql = sqlScripts?.seed || '';
 
   const handleCopy = (text: string, type: 'full' | 'ddl' | 'seed' | 'conn') => {
     navigator.clipboard.writeText(text);
@@ -120,15 +131,8 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
   };
 
   const handleDownloadSql = () => {
-    const blob = new Blob([fullSql], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'cotel_supabase_schema_seed.sql';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!fullSql) return;
+    downloadTextFile('cotel_supabase_schema_seed.sql', fullSql, 'text/plain;charset=utf-8');
   };
 
   // Replace password helper in connection string
@@ -147,7 +151,7 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
     setTestResult(null);
 
     try {
-      const res = await fetch('/api/database/test-connection', {
+      const res = await apiFetch('/api/database/test-connection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ connectionString: connectionString.trim() }),
@@ -170,7 +174,7 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
     setApplyResult(null);
 
     try {
-      const res = await fetch('/api/database/apply-connection', {
+      const res = await apiFetch('/api/database/apply-connection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

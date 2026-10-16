@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/apiFetch';
 import {
   X,
   GitBranch,
@@ -76,7 +77,7 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
     setIsInitializing(true);
     setFeedbackMessage(null);
     try {
-      const res = await fetch('/api/git/init', { method: 'POST' });
+      const res = await apiFetch('/api/git/init', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setFeedbackMessage({ type: 'success', text: data.message });
@@ -96,7 +97,7 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
     setIsSavingRemote(true);
     setFeedbackMessage(null);
     try {
-      const res = await fetch('/api/git/remote', {
+      const res = await apiFetch('/api/git/remote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ remoteUrl: remoteUrlInput.trim() }),

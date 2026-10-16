@@ -2,11 +2,17 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as dotenv from 'dotenv';
+import {
+  requireAdmin,
+  isSafeRemoteUrl,
+  getSqlRejectionReason,
+  isAllowedDatabaseHost,
+} from './src/server/adminAuth.ts';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 import {
   getAllSubscribers,
   updateSubscriberStatusInDb,
@@ -14,6 +20,15 @@ import {
   getOperationLogs,
   seedSubscribersIfEmpty,
 } from './src/db/subscribersRepo.ts';
+import {
+  listWorkOrders,
+  createWorkOrder,
+  updateWorkOrder,
+  deleteWorkOrder,
+  subscriberExists,
+  WorkOrderInput,
+  WorkOrderPatch,
+} from './src/db/workOrdersRepo.ts';
 import {
   db,
   pool,
@@ -62,6 +77,22 @@ async function startServer() {
     });
   });
 
+  // Heartbeat: mantiene vivas las conexiones a través de proxies y detecta clientes caídos
+  setInterval(() => {
+    for (let i = sseClients.length - 1; i >= 0; i--) {
+      const client = sseClients[i];
+      if (client.writableEnded || client.destroyed) {
+        sseClients.splice(i, 1);
+        continue;
+      }
+      try {
+        client.write(': ping\n\n');
+      } catch {
+        sseClients.splice(i, 1);
+      }
+    }
+  }, 25000);
+
   const broadcastEvent = (eventType: string, data: any) => {
     const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
     sseClients.forEach(client => {
@@ -96,7 +127,7 @@ async function startServer() {
   });
 
   // 3. Update status in PostgreSQL and broadcast to all connected operators & crews in real-time
-  app.patch('/api/subscribers/:nro/status', async (req, res) => {
+  app.patch('/api/subscribers/:nro/status', requireAdmin, async (req, res) => {
     try {
       const nro = parseInt(req.params.nro, 10);
       const { status, details, tecnico } = req.body;
@@ -113,7 +144,7 @@ async function startServer() {
   });
 
   // 3b. Update GPS coordinates from calibration module or field crew
-  app.patch('/api/subscribers/:nro/coordinates', async (req, res) => {
+  app.patch('/api/subscribers/:nro/coordinates', requireAdmin, async (req, res) => {
     try {
       const nro = parseInt(req.params.nro, 10);
       const { lat, lng, precision, tecnico } = req.body;
@@ -126,6 +157,79 @@ async function startServer() {
     } catch (err: any) {
       console.error('Failed to update coordinates in PostgreSQL:', err);
       res.status(500).json({ error: 'Error al calibrar coordenadas en PostgreSQL' });
+    }
+  });
+
+  // 3c. Work orders (Kanban de cuadrillas): listado público, escritura protegida
+  app.get('/api/work-orders', async (_req, res) => {
+    try {
+      const orders = await listWorkOrders();
+      res.json(orders);
+    } catch (err: any) {
+      console.error('Failed to get work orders:', err);
+      res.status(500).json({ error: 'Error al consultar órdenes de trabajo' });
+    }
+  });
+
+  app.post('/api/work-orders', requireAdmin, async (req, res) => {
+    try {
+      const input: WorkOrderInput = req.body || {};
+      if (!input.titulo || typeof input.titulo !== 'string' || !input.titulo.trim()) {
+        return res.status(400).json({ error: 'El título de la orden de trabajo es obligatorio' });
+      }
+
+      if (input.abonadoNro != null && !(await subscriberExists(input.abonadoNro))) {
+        return res.status(400).json({ error: `No existe un abonado con NRO ${input.abonadoNro}` });
+      }
+
+      const created = await createWorkOrder(input);
+
+      broadcastEvent('work_order_updated', { action: 'created', workOrder: created });
+
+      res.json({ success: true, workOrder: created });
+    } catch (err: any) {
+      console.error('Failed to create work order:', err);
+      res.status(500).json({ error: 'Error al crear la orden de trabajo' });
+    }
+  });
+
+  app.patch('/api/work-orders/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const patch: WorkOrderPatch = req.body || {};
+
+      if (patch.abonadoNro != null && !(await subscriberExists(patch.abonadoNro))) {
+        return res.status(400).json({ error: `No existe un abonado con NRO ${patch.abonadoNro}` });
+      }
+
+      const updated = await updateWorkOrder(id, patch);
+      if (!updated) {
+        return res.status(404).json({ error: 'Orden de trabajo no encontrada' });
+      }
+
+      broadcastEvent('work_order_updated', { action: 'updated', workOrder: updated });
+
+      res.json({ success: true, workOrder: updated });
+    } catch (err: any) {
+      console.error('Failed to update work order:', err);
+      res.status(500).json({ error: 'Error al actualizar la orden de trabajo' });
+    }
+  });
+
+  app.delete('/api/work-orders/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await deleteWorkOrder(id);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Orden de trabajo no encontrada' });
+      }
+
+      broadcastEvent('work_order_updated', { action: 'deleted', workOrderId: id });
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Failed to delete work order:', err);
+      res.status(500).json({ error: 'Error al eliminar la orden de trabajo' });
     }
   });
 
@@ -305,15 +409,20 @@ async function startServer() {
     }
   });
 
-  // 8. Live interactive SQL query console runner
-  app.post('/api/database/query', async (req, res) => {
+  // 8. Live interactive SQL query console runner (read-only, admin token required)
+  app.post('/api/database/query', requireAdmin, async (req, res) => {
     try {
       const { sql } = req.body;
       if (!sql || typeof sql !== 'string' || !sql.trim()) {
         return res.status(400).json({ error: 'La consulta SQL no puede estar vacía' });
       }
 
-      const trimmed = sql.trim();
+      const rejection = getSqlRejectionReason(sql);
+      if (rejection) {
+        return res.status(403).json({ success: false, error: rejection });
+      }
+
+      const trimmed = sql.trim().replace(/;+\s*$/, '');
       const startTime = performance.now();
 
       const queryResult = await getPool().query(trimmed);
@@ -356,12 +465,19 @@ async function startServer() {
     }
   });
 
-  // 10. Test connection to Supabase or external PostgreSQL without saving
-  app.post('/api/database/test-connection', async (req, res) => {
+  // 10. Test connection to Supabase or external PostgreSQL without saving (admin token required)
+  app.post('/api/database/test-connection', requireAdmin, async (req, res) => {
     try {
       const { connectionString } = req.body;
       if (!connectionString || typeof connectionString !== 'string') {
         return res.status(400).json({ error: 'La cadena de conexión es requerida' });
+      }
+
+      if (!isAllowedDatabaseHost(connectionString.trim())) {
+        return res.status(403).json({
+          success: false,
+          error: 'Host de base de datos no permitido. Configure ALLOWED_DB_HOSTS en el servidor para ampliar la lista.',
+        });
       }
 
       const result = await testConnection(connectionString.trim());
@@ -371,12 +487,19 @@ async function startServer() {
     }
   });
 
-  // 11. Hot-switch active database to Supabase
-  app.post('/api/database/apply-connection', async (req, res) => {
+  // 11. Hot-switch active database to Supabase (admin token required)
+  app.post('/api/database/apply-connection', requireAdmin, async (req, res) => {
     try {
       const { connectionString, seedIfEmpty } = req.body;
       if (!connectionString || typeof connectionString !== 'string') {
         return res.status(400).json({ error: 'La cadena de conexión es requerida' });
+      }
+
+      if (!isAllowedDatabaseHost(connectionString.trim())) {
+        return res.status(403).json({
+          success: false,
+          error: 'Host de base de datos no permitido. Configure ALLOWED_DB_HOSTS en el servidor para ampliar la lista.',
+        });
       }
 
       const switchResult = await switchActiveDatabase(connectionString.trim());
@@ -429,7 +552,7 @@ async function startServer() {
   // 13. Git status endpoint
   app.get('/api/git/status', async (_req, res) => {
     try {
-      const isGit = await execAsync('git rev-parse --is-inside-work-tree')
+      const isGit = await execFileAsync('git', ['rev-parse', '--is-inside-work-tree'])
         .then(() => true)
         .catch(() => false);
 
@@ -443,19 +566,19 @@ async function startServer() {
         });
       }
 
-      const branch = await execAsync('git branch --show-current')
+      const branch = await execFileAsync('git', ['branch', '--show-current'])
         .then(r => r.stdout.trim())
         .catch(() => 'main');
 
-      const lastCommit = await execAsync('git log -1 --pretty=format:"%h - %s (%ci)"')
+      const lastCommit = await execFileAsync('git', ['log', '-1', '--pretty=format:%h - %s (%ci)'])
         .then(r => r.stdout.trim())
         .catch(() => 'Sin commits aún');
 
-      const remoteUrl = await execAsync('git remote get-url origin')
+      const remoteUrl = await execFileAsync('git', ['remote', 'get-url', 'origin'])
         .then(r => r.stdout.trim())
         .catch(() => null);
 
-      const statusOutput = await execAsync('git status --porcelain')
+      const statusOutput = await execFileAsync('git', ['status', '--porcelain'])
         .then(r => r.stdout.trim())
         .catch(() => '');
 
@@ -474,16 +597,16 @@ async function startServer() {
   });
 
   // 14. Git init and initial commit endpoint
-  app.post('/api/git/init', async (_req, res) => {
+  app.post('/api/git/init', requireAdmin, async (_req, res) => {
     try {
-      await execAsync('git config user.name "COTEL Telecom Operator"').catch(() => {});
-      await execAsync('git config user.email "operaciones@cotel.bo"').catch(() => {});
+      await execFileAsync('git', ['config', 'user.name', 'COTEL Telecom Operator']).catch(() => {});
+      await execFileAsync('git', ['config', 'user.email', 'operaciones@cotel.bo']).catch(() => {});
 
-      await execAsync('git init -b main');
-      await execAsync('git add .');
-      await execAsync('git commit -m "feat: COTEL Siemens DECTlink telecom platform & Supabase migrations"');
+      await execFileAsync('git', ['init', '-b', 'main']);
+      await execFileAsync('git', ['add', '.']);
+      await execFileAsync('git', ['commit', '-m', 'feat: COTEL Siemens DECTlink telecom platform & Supabase migrations']);
 
-      const lastCommit = await execAsync('git log -1 --pretty=format:"%h - %s (%ci)"')
+      const lastCommit = await execFileAsync('git', ['log', '-1', '--pretty=format:%h - %s (%ci)'])
         .then(r => r.stdout.trim())
         .catch(() => 'Commit inicial creado');
 
@@ -498,16 +621,22 @@ async function startServer() {
     }
   });
 
-  // 15. Git set remote URL endpoint
-  app.post('/api/git/remote', async (req, res) => {
+  // 15. Git set remote URL endpoint (solo GitHub HTTPS, sin shell interpolation)
+  app.post('/api/git/remote', requireAdmin, async (req, res) => {
     try {
       const { remoteUrl } = req.body;
       if (!remoteUrl || typeof remoteUrl !== 'string') {
         return res.status(400).json({ error: 'La URL remota es requerida' });
       }
 
-      await execAsync('git remote remove origin').catch(() => {});
-      await execAsync(`git remote add origin ${remoteUrl.trim()}`);
+      if (!isSafeRemoteUrl(remoteUrl)) {
+        return res
+          .status(400)
+          .json({ error: 'URL inválida: se admite únicamente HTTPS de GitHub (https://github.com/usuario/repositorio).' });
+      }
+
+      await execFileAsync('git', ['remote', 'remove', 'origin']).catch(() => {});
+      await execFileAsync('git', ['remote', 'add', 'origin', remoteUrl.trim()]);
 
       res.json({
         success: true,
