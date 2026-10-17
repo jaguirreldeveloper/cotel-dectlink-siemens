@@ -25,7 +25,7 @@ import { TechMigrationPlannerView } from './components/TechMigrationPlannerView'
 import { OfficialTechnicalSheetsView } from './components/OfficialTechnicalSheetsView';
 import { SupabaseMigrationModal } from './components/SupabaseMigrationModal';
 import { GitMigrationModal } from './components/GitMigrationModal';
-import { INITIAL_SUBSCRIBERS, EXPANDED_DECT_RECORDS, parseCSV } from './data/initialData';
+import { EXPANDED_DECT_RECORDS, parseCSV } from './data/initialData';
 import { enrichRecords, detectAuditIssues, ZONE_NORMALIZATION } from './utils/analysis';
 import { apiFetch } from './utils/apiFetch';
 import { downloadTextFile } from './utils/downloadTextFile';
@@ -51,11 +51,15 @@ import {
   ClipboardList,
   Network,
   FileText,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function App() {
-  const [dataMode, setDataMode] = useState<'initial' | 'expanded'>('expanded');
-  const [rawRecords, setRawRecords] = useState<RawSubscriberRecord[]>(EXPANDED_DECT_RECORDS);
+  // Estado inicial vacío: el padrón REAL se carga desde la BD; los datos demo
+  // solo aparecen (etiquetados) si el backend no responde.
+  const [rawRecords, setRawRecords] = useState<RawSubscriberRecord[]>([]);
+  const [dataSource, setDataSource] = useState<'loading' | 'db' | 'demo' | 'csv'>('loading');
   const [activeTab, setActiveTab] = useState<
     | 'gps-calibration'
     | 'field-crews'
@@ -86,10 +90,11 @@ export default function App() {
 
   // Function to reload subscribers from active database
   const loadSubscribersFromDb = () => {
+    setDataSource('loading');
     fetch('/api/subscribers')
       .then(res => (res.ok ? res.json() : Promise.reject(res)))
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped: RawSubscriberRecord[] = data.map((d: any) => ({
             nro: d.nro,
             numero: d.numero,
@@ -113,10 +118,13 @@ export default function App() {
             azimutGrados: d.azimutGrados ?? undefined,
           }));
           setRawRecords(mapped);
+          setDataSource('db');
         }
       })
       .catch(err => {
-        console.log('PostgreSQL initial load info (fallback ready):', err);
+        console.error('Carga del padrón real falló; se muestran los datos demo:', err);
+        setRawRecords(EXPANDED_DECT_RECORDS);
+        setDataSource('demo');
       });
   };
 
@@ -213,18 +221,7 @@ export default function App() {
     };
   }, []);
 
-  // Switch between initial 59 rows and expanded DECTlink universe
-  const handleToggleDataMode = (mode: 'initial' | 'expanded') => {
-    setDataMode(mode);
-    if (mode === 'initial') {
-      setRawRecords(INITIAL_SUBSCRIBERS);
-    } else {
-      setRawRecords(EXPANDED_DECT_RECORDS);
-    }
-    setExternalZoneFilter('');
-    setExternalYearFilter(undefined);
-    setExternalCeldaFilter('');
-  };
+  // Recarga explícita del padrón real (botón «Recargar» del encabezado)
 
   // Enriched records
   const enrichedRecords = useMemo(() => {
@@ -462,7 +459,7 @@ export default function App() {
     const parsed = parseCSV(csvText);
     if (parsed.length > 0) {
       setRawRecords(parsed);
-      setDataMode('initial');
+      setDataSource('csv');
       setIsNormalizedApplied(false);
       handleClearExternalFilters();
     }
@@ -588,30 +585,49 @@ export default function App() {
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Universo de Datos:</span>
+              <span>Origen de datos:</span>
             </span>
-            <div className="inline-flex p-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-xs font-medium border border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => handleToggleDataMode('expanded')}
-                className={`px-3 py-1 rounded transition ${
-                  dataMode === 'expanded'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
+            {dataSource === 'loading' && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Cargando padrón real…
+              </span>
+            )}
+            {dataSource === 'db' && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
+                title="Padrón real cargado desde la base de datos (PostgreSQL/Supabase)"
               >
-                Sistema Completo Siemens DECT ({EXPANDED_DECT_RECORDS.length} líneas)
-              </button>
-              <button
-                onClick={() => handleToggleDataMode('initial')}
-                className={`px-3 py-1 rounded transition ${
-                  dataMode === 'initial'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                <Database className="w-3 h-3" />
+                Conectado a BD · {rawRecords.length} líneas
+              </span>
+            )}
+            {dataSource === 'csv' && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900"
+                title="Archivo CSV cargado localmente (no persistido en la base de datos)"
               >
-                Muestra Inicial CSV ({INITIAL_SUBSCRIBERS.length} líneas)
-              </button>
-            </div>
+                <FileText className="w-3 h-3" />
+                CSV cargado localmente · {rawRecords.length} líneas
+              </span>
+            )}
+            {dataSource === 'demo' && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900"
+                title="El backend no respondió: se muestran los 79 registros de demostración, NO el padrón real"
+              >
+                <ShieldAlert className="w-3 h-3" />
+                Modo demo ({EXPANDED_DECT_RECORDS.length} líneas) — BD no disponible
+              </span>
+            )}
+            <button
+              onClick={loadSubscribersFromDb}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition"
+              title="Volver a consultar el padrón real en la base de datos"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Recargar
+            </button>
           </div>
 
           {/* Normalization state toggle */}
@@ -799,7 +815,16 @@ export default function App() {
             <span>Área EAI (El Alto, Tilata, Viacha, Senkata, Laja)</span>
           </div>
           <div>
-            <span>Modo activo: {dataMode === 'expanded' ? 'Red Completa DECTlink' : 'Lote CSV Original (59)'}</span>
+            <span>
+              Padrón:{' '}
+              {dataSource === 'db'
+                ? `BD en línea (${rawRecords.length} líneas)`
+                : dataSource === 'csv'
+                  ? `CSV local (${rawRecords.length} líneas)`
+                  : dataSource === 'demo'
+                    ? 'datos demo (sin conexión a BD)'
+                    : 'cargando…'}
+            </span>
             <span className="mx-1.5">·</span>
             <span>Banda 1880 - 1900 MHz</span>
           </div>
