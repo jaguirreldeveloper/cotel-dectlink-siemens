@@ -12,7 +12,7 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 - **Backend**: Node.js + Express (4) con **Server-Sent Events (SSE)** para sincronización en tiempo real entre operadores y cuadrillas. Sirve Vite en modo middleware (dev) o `dist/` estático (prod) desde el mismo proceso.
 - **Capa de datos**: **Drizzle ORM** sobre un pool de conexiones `pg`, con conmutación en caliente de base de datos.
 - **Bases de datos compatibles**: Google Cloud SQL (PostgreSQL 15+) y **Supabase Cloud** (SSL + Connection Pooler).
-- **Migraciones**: `supabase/migrations/` es la **única fuente de verdad del esquema**; el backend las consolida para el exportador SQL. `supabase/seed.sql` aporta datos semilla.
+- **Migraciones**: `supabase/migrations/` es la **única fuente de verdad del esquema** (5 migraciones aplicadas); el backend las consolida para el exportador SQL. El **padrón real** se carga con `npm run db:load` desde el CSV consolidado de campo (`supabase/seed.sql` es solo informativo).
 
 ---
 
@@ -22,22 +22,31 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 server.ts                     Servidor Express: rutas API, SSE, middleware admin, Vite/dev o estático/prod
 supabase/
   migrations/                 DDL versionado (fuente única del esquema)
-    20261015140000_cotel_dectlink_schema.sql          users, celdas_dect, abonados_dect, bitacora_dect + índices + RLS
+    20261015140000_cotel_dectlink_schema.sql          users, tablas DECTlink iniciales + índices + RLS
     20261016190000_work_orders_and_rls_hardening.sql  work_orders + endurecimiento de políticas RLS
-  seed.sql                    Estaciones base RFP y abonados DECTlink de muestra
+    20261016220000_integrity_constraints.sql          CHECK constraints, FK e índices de integridad
+    20261016230000_cuadrillas_materiales.sql          cuadrillas, materiales y puente M:N
+    20261017000000_modelo_normalizado_abonados.sql    modelo normalizado: celdas, zonas, clientes, abonados_lineas, bitacora
+  seed.sql                    Informativo (el padrón real se carga con npm run db:load)
   config.toml                 Configuración de Supabase CLI
+scripts/
+  load-consolidado.ts         ETL: carga el padrón real desde el CSV consolidado (npm run db:load)
+  db-check.ts                 Detector de deriva schema.ts ↔ BD viva (npm run db:check)
+  db-verify.ts                Smoke test de integridad sin tocar el padrón real (npm run db:verify)
 src/
   server/adminAuth.ts         Seguridad: middleware admin, validación de URL Git, SQL solo-lectura, allowlist de hosts
   db/
-    schema.ts                 Definiciones Drizzle (users, celdas_dect, abonados_dect, bitacora_dect, work_orders)
+    schema.ts                 Definiciones Drizzle del esquema normalizado (zonas, clientes, celdas, abonados_lineas, bitacora, work_orders, cuadrillas, materiales)
     index.ts                  Pool singleton, prueba/conexión, conmutación en caliente, info de conexión
-    subscribersRepo.ts        CRUD de abonados + bitácora + seed
+    subscribersRepo.ts        Consulta JOIN del padrón + cambios de estado/calibración GPS transaccionales con bitácora
     workOrdersRepo.ts         CRUD de órdenes de trabajo (código correlativo, cierre automático)
+    cuadrillasRepo.ts         CRUD de cuadrillas de planta externa
+    materialesRepo.ts         CRUD del catálogo de materiales
     drizzle.config.ts         Config de drizzle-kit (lee DATABASE_URL o SQL_*)
   utils/
     analysis.ts               Enriquecimiento ETL, auditoría, distancia/azimut, estadísticas
     rfCalculations.ts         Simulación de enlace RF (ITU-R P.525)
-    supabaseSqlGenerator.ts   Consolida migraciones (DDL) + genera seed (server-side)
+    supabaseSqlGenerator.ts   Consolida migraciones (DDL) + guía de carga del padrón (server-side)
     apiFetch.ts               fetch con header x-admin-token y reintento
     recordFilters.ts          Filtro de búsqueda estándar del padrón
     downloadTextFile.ts       Descarga de archivos (CSV/SQL/KML/GeoJSON)
@@ -45,8 +54,39 @@ src/
     ui/                       Modal accesible y StatusBadge compartidos
     (18 vistas y modales)     Ver «Módulos funcionales» más abajo
   types/subscriber.ts         Tipos compartidos (abonados, OT, RF, migración)
-  data/                       Datos semilla en cliente (padrón, celdas, cuadrillas)
+  data/                       Datos demo de respaldo (fallback offline) + parámetros de referencia del simulador RF
 ```
+
+---
+
+## 🧬 Modelo de datos (padrón normalizado)
+
+El padrón de planta externa vive normalizado en Supabase (PostgreSQL 17):
+
+```
+zonas ─< clientes ─< abonados_lineas >─ celdas
+                     │        └─< bitacora      (auditoría)
+                     └─< work_orders            (OTs, FK a nro)
+```
+
+| Tabla | Contenido | Registros reales |
+|-------|-----------|:----------------:|
+| `celdas` | Estaciones base RFP Siemens (`id` = nº de RFP: 5, 11, 15, 17). `latitud/longitud/capacidad` quedan **NULL** hasta calibrar en campo | 4 |
+| `zonas` | Barrios/urbanizaciones canónicos (normalizados desde 55 variantes crudas del CSV) | 41 |
+| `clientes` | Titulares deduplicados por `(nombre_completo, direccion)`; 1 cliente → N líneas | 212 |
+| `abonados_lineas` | Padrón maestro de líneas: `nro` serial global (identificador de negocio), teléfono y contrato únicos, estados con CHECK, señal/calidad/GPS nullable, y `zona_origen`/`nro_registro_origen` como **procedencia** del CSV | 216 |
+| `bitacora` | Auditoría transaccional de cambios de estado y calibraciones GPS | 0 |
+
+Se conservan además `users`, `work_orders` (FK → `abonados_lineas.nro`), `cuadrillas`, `materiales` y el puente `work_order_materiales` (M:N con cantidad).
+
+**Carga del padrón real:**
+
+```bash
+npm run db:load            # CSV por defecto: F:\CD-INAL-EA\CONSOLIDADO_CELDAS_INALAMBRICAS.csv
+npm run db:load -- <ruta>  # CSV alternativo
+```
+
+El ETL normaliza zonas (typos, abreviaturas y mojibake de «URKUPIÑA II»), valida estados contra el CHECK, deduplica clientes y asigna `nro` secuencial global ordenado por `(celda, nro de archivo)`. Es **idempotente**: limpia y recarga `abonados_lineas`, `clientes` y `zonas` en una transacción, sin tocar cuadrillas, materiales ni OTs.
 
 ---
 
@@ -141,7 +181,7 @@ git push -u origin main
 npx supabase login
 npx supabase link --project-ref <PROJECT_REF_DE_SUPABASE>
 npx supabase db push                              # aplica migraciones versionadas
-npx supabase db execute --file supabase/seed.sql  # datos iniciales (opcional)
+# El padrón real de líneas se carga luego con: npm run db:load (CSV consolidado)
 ```
 
 ---
@@ -156,6 +196,9 @@ NODE_ENV=production npm run start   # servir dist/ estático (requiere build pre
 npm run lint                 # validar tipos (tsc --noEmit, modo estricto)
 npm run db:generate          # generar migración desde src/db/schema.ts
 npm run db:push              # aplicar esquema a la BD
+npm run db:check             # detectar deriva schema.ts ↔ BD (tablas, columnas, tipos, CHECK/FK)
+npm run db:verify            # smoke test de integridad en vivo (recuentos, JOINs, OTs, bitácora, CHECKs)
+npm run db:load              # cargar/recargar el padrón real desde el CSV consolidado
 npm run clean                # eliminar dist/
 ```
 
@@ -182,6 +225,8 @@ Copia `.env.example` a `.env` y configura tus valores:
 
 - `npm run lint` — TypeScript estricto sin errores.
 - `npm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
+- `npm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
+- `npm run db:verify` — integridad en vivo: recuentos del padrón (216/212/41/4), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, endpoint público sin token → acceso permitido.
 
 ---
