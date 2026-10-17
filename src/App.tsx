@@ -25,6 +25,7 @@ import { TechMigrationPlannerView } from './components/TechMigrationPlannerView'
 import { OfficialTechnicalSheetsView } from './components/OfficialTechnicalSheetsView';
 import { SupabaseMigrationModal } from './components/SupabaseMigrationModal';
 import { GitMigrationModal } from './components/GitMigrationModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { EXPANDED_DECT_RECORDS, parseCSV } from './data/initialData';
 import { enrichRecords, detectAuditIssues, ZONE_NORMALIZATION } from './utils/analysis';
 import { apiFetch } from './utils/apiFetch';
@@ -91,8 +92,12 @@ export default function App() {
   // Function to reload subscribers from active database
   const loadSubscribersFromDb = () => {
     setDataSource('loading');
-    fetch('/api/subscribers')
-      .then(res => (res.ok ? res.json() : Promise.reject(res)))
+    // Timeout defensivo: si el backend no responde en 12s, se activa el
+    // fallback demo etiquetado en lugar de quedar cargando para siempre.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    fetch('/api/subscribers', { signal: controller.signal })
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
       .then(data => {
         if (Array.isArray(data)) {
           const mapped: RawSubscriberRecord[] = data.map((d: any) => ({
@@ -125,7 +130,8 @@ export default function App() {
         console.error('Carga del padrón real falló; se muestran los datos demo:', err);
         setRawRecords(EXPANDED_DECT_RECORDS);
         setDataSource('demo');
-      });
+      })
+      .finally(() => clearTimeout(timer));
   };
 
   // Hydrate from PostgreSQL and connect to real-time SSE stream
@@ -548,6 +554,7 @@ export default function App() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       {/* Top Navbar */}
       <Navbar
@@ -578,6 +585,20 @@ export default function App() {
             >
               ✕
             </button>
+          </div>
+        )}
+        {/* Aviso visible de modo demo (backend sin responder) */}
+        {dataSource === 'demo' && (
+          <div
+            role="alert"
+            className="flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200 text-center"
+          >
+            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <span>
+              <strong>Sin conexión con el backend</strong> — se muestran {EXPANDED_DECT_RECORDS.length}{' '}
+              registros de demostración, <strong>no el padrón real</strong>. Ejecuta{' '}
+              <code className="font-mono font-semibold">npm run dev</code> y pulsa «Recargar».
+            </span>
           </div>
         )}
         {/* Dataset Scope Toggle & Info Bar */}
@@ -864,5 +885,6 @@ export default function App() {
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
       />
     </div>
+    </ErrorBoundary>
   );
 }
