@@ -397,9 +397,9 @@ async function startServer() {
         connected: true,
         provider: connectionInfo.provider,
         isSupabase: connectionInfo.isSupabase,
-        host: process.env.SQL_HOST || 'localhost',
-        region: 'us-west1',
-        instance: 'ai-studio-76427571',
+        host: connectionInfo.host,
+        region: connectionInfo.region,
+        instance: connectionInfo.projectRef,
         database: dbInfoResult.rows[0]?.database_name || process.env.SQL_DB_NAME,
         user: dbInfoResult.rows[0]?.user_name || process.env.SQL_USER,
         version: versionResult.rows[0]?.version || 'PostgreSQL',
@@ -583,8 +583,8 @@ async function startServer() {
       const info = getCurrentConnectionInfo();
       res.json({
         ...info,
-        host: process.env.SQL_HOST || 'localhost',
-        database: process.env.SQL_DB_NAME || 'cotel_dectlink',
+        host: info.host,
+        database: info.database,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

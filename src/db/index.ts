@@ -214,10 +214,53 @@ export async function switchActiveDatabase(newConnectionString: string): Promise
  * Retorna metadatos de la conexión actual
  */
 export function getCurrentConnectionInfo() {
-  const provider = global._dbProvider || (process.env.DATABASE_URL?.includes('supabase') ? 'Supabase PostgreSQL' : 'Google Cloud SQL');
+  const activeUrl = global._activeDbUrl || process.env.DATABASE_URL;
+  const provider = global._dbProvider || (activeUrl?.includes('supabase') ? 'Supabase PostgreSQL' : 'Google Cloud SQL');
+  const isSupabase = provider === 'Supabase PostgreSQL';
+
+  // Metadatos REALES de la conexión activa. Antes estos campos reportaban
+  // fallbacks/valores hardcodeados del diseño original para Google Cloud SQL
+  // (host 'localhost', region 'us-west1', instance 'ai-studio-...'), que eran
+  // incorrectos al usar DATABASE_URL de Supabase.
+  let host = process.env.SQL_HOST || '127.0.0.1';
+  let database = process.env.SQL_DB_NAME || 'cotel_dectlink';
+  let region: string | null = null;
+  let projectRef: string | null = null;
+
+  if (activeUrl) {
+    try {
+      host = parseConnectionString(activeUrl).host;
+      const u = new URL(activeUrl.replace(/^postgres(ql)?:\/\//, 'http://'));
+      database = u.pathname.replace(/^\//, '') || 'postgres';
+    } catch {
+      // URL no parseable: conservar los valores por defecto de arriba.
+    }
+    if (isSupabase) {
+      // Host del pooler: aws-<indice>-<region>.pooler.supabase.com
+      const regionMatch = host.match(/^aws-\d+-([a-z0-9-]+)\.pooler\.supabase\.com$/);
+      if (regionMatch) region = regionMatch[1];
+      // Ref del proyecto: usuario del pooler (postgres.<ref>) o host directo (db.<ref>.supabase.co)
+      // El username del pooler es "postgres.<ref>[:password]@", por eso el lookahead (?=[:@/]|$).
+      const refFromUser = activeUrl.match(/:\/\/postgres\.([^:@/]+)(?=[:@/]|$)/);
+      const refFromHost = host.match(/^db\.([^.]+)\.supabase\.co$/);
+      projectRef = refFromUser?.[1] || refFromHost?.[1] || null;
+    }
+  } else if (process.env.INSTANCE_CONNECTION_NAME) {
+    // Google Cloud SQL: formato projecto:region:instancia
+    const parts = process.env.INSTANCE_CONNECTION_NAME.split(':');
+    if (parts.length >= 2) {
+      projectRef = parts[0];
+      region = parts[1];
+    }
+  }
+
   return {
     provider,
-    isSupabase: provider === 'Supabase PostgreSQL',
+    isSupabase,
     hasCustomUrl: Boolean(global._activeDbUrl),
+    host,
+    database,
+    region,
+    projectRef,
   };
 }
