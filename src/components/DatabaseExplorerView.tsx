@@ -87,108 +87,109 @@ interface QueryPreset {
 const PRESET_QUERIES: QueryPreset[] = [
   {
     id: 'celdas_summary',
-    title: 'Abonados y Potencia Promedio por Estación Base Siemens',
+    title: 'Abonados y Distancia Promedio por Estación Base Siemens',
     category: 'Infraestructura RF',
-    description: 'Agrupa abonados activos por celda DECT, calculando potencia media de señal (dBm) y distancia media.',
-    sql: `SELECT 
+    description: 'Agrupa las líneas por celda DECT con distancia media a la estación base.',
+    sql: `SELECT
   c.id as celda_id,
   c.nombre as estacion_base,
   c.rfp_modelo,
-  c.canales_activos,
   c.capacidad_canales,
-  COUNT(a.id) as total_abonados,
-  ROUND(AVG(a.signal_dect), 1) as senal_promedio_dbm,
+  COUNT(a.id) as total_lineas,
   ROUND(AVG(a.distancia_km::numeric), 2) as distancia_media_km
-FROM celdas_dect c
-LEFT JOIN abonados_dect a ON c.id = a.celda_id
-GROUP BY c.id, c.nombre, c.rfp_modelo, c.canales_activos, c.capacidad_canales
-ORDER BY total_abonados DESC;`,
+FROM celdas c
+LEFT JOIN abonados_lineas a ON c.id = a.id_celda
+GROUP BY c.id, c.nombre, c.rfp_modelo, c.capacidad_canales
+ORDER BY total_lineas DESC;`,
   },
   {
     id: 'fallas_tecnicas',
-    title: 'Abonados con Falla Técnica y Diagnóstico de Radio FAU',
+    title: 'Líneas con Falla Técnica y Diagnóstico de Radio FAU',
     category: 'Mantenimiento & Cuadrillas',
-    description: 'Filtra terminales Siemens FAU con avería reportada o desalineación de antena.',
-    sql: `SELECT 
-  numero,
-  nombre as titular,
-  celda_id,
-  zona,
-  fau_model,
-  signal_dect as senal_dbm,
-  distancia_km,
-  falla_descripcion,
-  updated_at
-FROM abonados_dect
-WHERE estado_operativo = 'falla_tecnica'
-ORDER BY signal_dect ASC;`,
+    description: 'Filtra terminales Siemens FAU con avería reportada (JOIN cliente + zona).',
+    sql: `SELECT
+  a.numero_telefono,
+  cl.nombre_completo as titular,
+  a.id_celda,
+  z.nombre as zona,
+  a.fau_model,
+  a.signal_dect,
+  a.distancia_km,
+  a.falla_descripcion,
+  a.updated_at
+FROM abonados_lineas a
+JOIN clientes cl ON cl.id = a.id_cliente
+LEFT JOIN zonas z ON z.id = cl.id_zona
+WHERE a.estado_operativo = 'FALLA TECNICA'
+ORDER BY a.updated_at DESC;`,
   },
   {
     id: 'distancia_critica',
     title: 'Acometidas en Radio Crítico (> 3.0 Km de Estación Base)',
     category: 'Propagación DECT',
-    description: 'Identifica abonados en el límite de cobertura de 1880-1900 MHz para evaluación de repetidores o cambio de celda.',
-    sql: `SELECT 
-  a.numero,
-  a.nombre,
-  a.celda_id,
-  c.nombre as celda_nombre,
+    description: 'Identifica líneas en el límite de cobertura de 1880-1900 MHz para evaluación de repetidores o cambio de celda.',
+    sql: `SELECT
+  a.numero_telefono,
+  cl.nombre_completo,
+  a.id_celda,
+  ce.nombre as celda_nombre,
   a.distancia_km,
   a.azimut_grados,
   a.signal_dect,
   a.lat,
   a.lng
-FROM abonados_dect a
-JOIN celdas_dect c ON a.celda_id = c.id
+FROM abonados_lineas a
+JOIN clientes cl ON cl.id = a.id_cliente
+JOIN celdas ce ON ce.id = a.id_celda
 WHERE a.distancia_km > 3.0
 ORDER BY a.distancia_km DESC;`,
   },
   {
     id: 'bitacora_reciente',
-    title: 'Historial de Intervenciones y Cambios de Cuadrillas en Vivo',
+    title: 'Historial de Intervenciones y Cambios de Estado en Vivo',
     category: 'Bitácora Transaccional',
     description: 'Muestra las últimas transacciones registradas por operadores y técnicos en la tabla de bitácora.',
-    sql: `SELECT 
+    sql: `SELECT
   id,
-  subscriber_nro,
-  numero,
-  old_status,
-  new_status,
+  abonado_nro,
+  estado_anterior,
+  nuevo_estado,
+  detalle,
   tecnico,
-  observaciones,
-  created_at
-FROM bitacora_dect
-ORDER BY created_at DESC
+  timestamp
+FROM bitacora
+ORDER BY timestamp DESC
 LIMIT 25;`,
   },
   {
     id: 'deposito_morosos',
     title: 'Líneas en Depósito con Morosidad Prolongada',
     category: 'Comercial & Cobranza',
-    description: 'Abonados suspendidos o en depósito con meses de deuda y tiempo de inactividad.',
-    sql: `SELECT 
-  numero,
-  nombre,
-  zona,
-  tiempo_deposito_meses,
-  deuda_meses,
-  estado_operativo,
-  fech_serv
-FROM abonados_dect
-WHERE estado_operativo = 'en_deposito' OR deuda_meses > 3
-ORDER BY tiempo_deposito_meses DESC, deuda_meses DESC;`,
+    description: 'Líneas suspendidas o en depósito con meses de deuda y tiempo de inactividad.',
+    sql: `SELECT
+  a.numero_telefono,
+  cl.nombre_completo as nombre,
+  z.nombre as zona,
+  a.tiempo_deposito_meses,
+  a.deuda_meses,
+  a.estado_operativo,
+  a.fecha_servicio
+FROM abonados_lineas a
+JOIN clientes cl ON cl.id = a.id_cliente
+LEFT JOIN zonas z ON z.id = cl.id_zona
+WHERE a.estado_operativo = 'EN DEPOSITO' OR a.deuda_meses > 3
+ORDER BY a.tiempo_deposito_meses DESC, a.deuda_meses DESC;`,
   },
   {
     id: 'fau_distribution',
     title: 'Censo por Modelo de Terminal de Abonado (FAU)',
     category: 'Parque de Equipos',
     description: 'Conteo y porcentaje de participación de modelos FAU Siemens instalados en planta externa.',
-    sql: `SELECT 
-  fau_model as modelo_fau,
+    sql: `SELECT
+  COALESCE(fau_model, 'SIN DATO') as modelo_fau,
   COUNT(*) as cantidad_instalada,
-  ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM abonados_dect), 1) as porcentaje_parque,
-  ROUND(AVG(signal_dect), 1) as senal_media_dbm
-FROM abonados_dect
+  ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM abonados_lineas), 1) as porcentaje_parque
+FROM abonados_lineas
 GROUP BY fau_model
 ORDER BY cantidad_instalada DESC;`,
   },
@@ -216,7 +217,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
   const [copiedCell, setCopiedCell] = useState<string | null>(null);
 
   // Data Browser
-  const [selectedTable, setSelectedTable] = useState<string>('abonados_dect');
+  const [selectedTable, setSelectedTable] = useState<string>('abonados_lineas');
   const [tableData, setTableData] = useState<any[]>([]);
   const [tableColumns, setTableColumns] = useState<string[]>([]);
   const [page, setPage] = useState<number>(1);
@@ -596,7 +597,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
                   }
                 }}
                 rows={7}
-                placeholder="Escribe tu consulta SQL aquí (ej. SELECT * FROM abonados_dect LIMIT 10;)..."
+                placeholder="Escribe tu consulta SQL aquí (ej. SELECT * FROM abonados_lineas LIMIT 10;)..."
                 className="w-full bg-transparent text-emerald-400 font-mono text-xs focus:outline-none resize-y selection:bg-emerald-900 selection:text-white"
                 spellCheck={false}
               />
@@ -758,9 +759,15 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
                           {tbl.name}
                         </h3>
                         <p className="text-[11px] text-slate-400">
-                          {tbl.name === 'abonados_dect' && 'Padrón maestro de líneas y terminales FAU'}
-                          {tbl.name === 'celdas_dect' && 'Estaciones base RFP Siemens (El Alto / Viacha)'}
-                          {tbl.name === 'bitacora_dect' && 'Historial de auditoría y operaciones de cuadrillas'}
+                          {tbl.name === 'abonados_lineas' && 'Padrón maestro de líneas y terminales FAU'}
+                          {tbl.name === 'clientes' && 'Titulares deduplicados (1 cliente → N líneas)'}
+                          {tbl.name === 'zonas' && 'Barrios y urbanizaciones normalizados'}
+                          {tbl.name === 'celdas' && 'Estaciones base RFP Siemens (El Alto)'}
+                          {tbl.name === 'bitacora' && 'Historial de auditoría y operaciones de cuadrillas'}
+                          {tbl.name === 'work_orders' && 'Órdenes de trabajo (Kanban de planta externa)'}
+                          {tbl.name === 'work_order_materiales' && 'Puente OT ↔ material (M:N con cantidad)'}
+                          {tbl.name === 'cuadrillas' && 'Cuadrillas de planta externa'}
+                          {tbl.name === 'materiales' && 'Catálogo de repuestos e insumos'}
                           {tbl.name === 'users' && 'Usuarios y roles con acceso al sistema'}
                         </p>
                       </div>
@@ -851,7 +858,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tabla:</span>
                 <div className="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-800 gap-1">
-                  {['abonados_dect', 'celdas_dect', 'bitacora_dect', 'users'].map(tbl => (
+                  {['abonados_lineas', 'clientes', 'zonas', 'celdas', 'bitacora', 'users'].map(tbl => (
                     <button
                       key={tbl}
                       onClick={() => {

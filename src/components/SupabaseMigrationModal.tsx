@@ -56,7 +56,6 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
   const [poolerRegion, setPoolerRegion] = useState('sa-east-1');
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [autoSeed, setAutoSeed] = useState(false); // Non-destructive verification as requested
 
   // Connection string inputs
   const [connectionString, setConnectionString] = useState(
@@ -180,7 +179,6 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           connectionString: connectionString.trim(),
-          seedIfEmpty: autoSeed,
         }),
       });
       const data = await res.json();
@@ -311,9 +309,11 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                   </p>
                   <p>
                     Supabase utiliza un motor PostgreSQL estándar dedicado. Las tablas del sistema DECTlink
-                    (<code className="text-emerald-300 font-mono">celdas_dect</code>,{' '}
-                    <code className="text-emerald-300 font-mono">abonados_dect</code>,{' '}
-                    <code className="text-emerald-300 font-mono">bitacora_dect</code>) y Drizzle ORM funcionan de
+                    (<code className="text-emerald-300 font-mono">abonados_lineas</code>,{' '}
+                    <code className="text-emerald-300 font-mono">clientes</code>,{' '}
+                    <code className="text-emerald-300 font-mono">zonas</code>,{' '}
+                    <code className="text-emerald-300 font-mono">celdas</code>,{' '}
+                    <code className="text-emerald-300 font-mono">bitacora</code>) y Drizzle ORM funcionan de
                     manera transparente a través de su cadena de conexión estándar o Session Pooler con SSL.
                   </p>
                 </div>
@@ -682,18 +682,11 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                   </div>
                 </div>
 
-                {/* Auto-seed optional toggle */}
-                <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={autoSeed}
-                    onChange={(e) => setAutoSeed(e.target.checked)}
-                    className="rounded border-slate-700 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span>
-                    (Opcional) Poblar celdas y abonados si las tablas remotas están vacías
-                  </span>
-                </label>
+                {/* Nota de carga del padrón real */}
+                <p className="text-[11px] text-slate-500 pt-1">
+                  El padrón real de líneas no se siembra desde aquí: se carga con{' '}
+                  <code className="font-mono text-emerald-400">npm run db:load</code> (CSV consolidado de campo).
+                </p>
 
                 {/* Action buttons */}
                 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800">

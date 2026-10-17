@@ -107,6 +107,9 @@ export function parseCSV(csvText: string): RawSubscriberRecord[] {
 export const INITIAL_SUBSCRIBERS: RawSubscriberRecord[] = parseCSV(RAW_CSV_DATA);
 
 // Station names, coordinates and coverage radius of Siemens DECTlink cells
+// ATENCIÓN: id/nombre son las celdas REALES del padrón (tabla `celdas` en la
+// BD). lat/lng y capacidad aquí son REFERENCIA DEL SIMULADOR RF: la BD guarda
+// latitud/longitud/capacidad en NULL hasta que COTEL calibre cada RFP.
 export const SIEMENS_DECT_CELLS: {
   [celda: string]: {
     name: string;
@@ -118,59 +121,41 @@ export const SIEMENS_DECT_CELLS: {
     radioCoberturaKm: number;
   };
 } = {
-  '17': {
-    name: 'Estación Base Tilata - Viacha',
-    rfpBase: 'Siemens RFP-32 (Central Tilata)',
+  '5': {
+    name: 'CELDA A-05 MERCEDARIO',
+    rfpBase: 'Siemens DECTlink RFP (A-05 Mercedario)',
     capacidad: 120,
     freqBand: '1880 - 1900 MHz (DECT GAP)',
-    lat: -16.575,
-    lng: -68.232,
-    radioCoberturaKm: 4.5,
+    lat: -16.521,
+    lng: -68.235,
+    radioCoberturaKm: 3.5,
+  },
+  '11': {
+    name: 'CELDA A-11 COSMOS 79',
+    rfpBase: 'Siemens DECTlink RFP (A-11 Cosmos 79)',
+    capacidad: 140,
+    freqBand: '1880 - 1900 MHz (DECT GAP)',
+    lat: -16.548,
+    lng: -68.218,
+    radioCoberturaKm: 3.2,
   },
   '15': {
-    name: 'Estación Base Senkata',
-    rfpBase: 'Siemens RFP-24 (Torre Senkata)',
+    name: 'CELDA A-15 SENKATA',
+    rfpBase: 'Siemens DECTlink RFP (A-15 Senkata)',
     capacidad: 80,
     freqBand: '1880 - 1900 MHz (DECT GAP)',
     lat: -16.568,
     lng: -68.172,
     radioCoberturaKm: 3.5,
   },
-  '12': {
-    name: 'Estación Base Viacha Centro',
-    rfpBase: 'Siemens RFP-32 (Plaza Principal Viacha)',
-    capacidad: 100,
+  '17': {
+    name: 'CELDA A-17 TILATA',
+    rfpBase: 'Siemens DECTlink RFP (A-17 Tilata)',
+    capacidad: 120,
     freqBand: '1880 - 1900 MHz (DECT GAP)',
-    lat: -16.6525,
-    lng: -68.3015,
-    radioCoberturaKm: 4.0,
-  },
-  '14': {
-    name: 'Estación Base Puchukollo / Laja',
-    rfpBase: 'Siemens RFP-24 (Camino Laja)',
-    capacidad: 60,
-    freqBand: '1880 - 1900 MHz (DECT GAP)',
-    lat: -16.515,
-    lng: -68.246,
-    radioCoberturaKm: 3.8,
-  },
-  '16': {
-    name: 'Estación Base Mariscal Santa Cruz / Río Seco',
-    rfpBase: 'Siemens RFP-32 (Distrito 5)',
-    capacidad: 90,
-    freqBand: '1880 - 1900 MHz (DECT GAP)',
-    lat: -16.492,
-    lng: -68.213,
-    radioCoberturaKm: 4.2,
-  },
-  '11': {
-    name: 'Estación Base 16 de Julio / Ballivián',
-    rfpBase: 'Siemens RFP-40 (Ceja / 16 de Julio)',
-    capacidad: 140,
-    freqBand: '1880 - 1900 MHz (DECT GAP)',
-    lat: -16.503,
-    lng: -68.165,
-    radioCoberturaKm: 3.2,
+    lat: -16.575,
+    lng: -68.232,
+    radioCoberturaKm: 4.5,
   },
 };
 
@@ -203,6 +188,31 @@ export const ZONE_COORDINATES: { [zona: string]: { lat: number; lng: number } } 
   '16 DE JULIO': { lat: -16.502, lng: -68.167 },
   'CHIJINI CHICO': { lat: -16.525, lng: -68.21 },
   'VIACHA CENTRO': { lat: -16.653, lng: -68.300 },
+  // Anclajes para las zonas canónicas del padrón real (mayúsculas exactas de
+  // la tabla zonas): permiten posiciones aproximadas en el mapa mientras las
+  // líneas no tengan GPS calibrado.
+  'MERCEDARIO': { lat: -16.521, lng: -68.235 },
+  'URB. MERCEDARIO': { lat: -16.52, lng: -68.233 },
+  'MERCEDARIO 2': { lat: -16.523, lng: -68.238 },
+  'MERCEDARIO 3': { lat: -16.519, lng: -68.24 },
+  'MERCEDARIO 4': { lat: -16.517, lng: -68.243 },
+  'MERCEDARIO 4A': { lat: -16.5165, lng: -68.2435 },
+  'MERCEDARIO SECTOR I': { lat: -16.522, lng: -68.236 },
+  'VILLA MERCEDARIO': { lat: -16.5205, lng: -68.2335 },
+  'COSMOS 79': { lat: -16.548, lng: -68.218 },
+  'SAN FELIPE DE SEQUE': { lat: -16.554, lng: -68.246 },
+  'JUANA AZURDUY DE PADILLA': { lat: -16.539, lng: -68.217 },
+  'KISWARAS': { lat: -16.551, lng: -68.224 },
+  'CRUZ DEL SUR': { lat: -16.544, lng: -68.224 },
+  'LIBERTAD': { lat: -16.536, lng: -68.222 },
+  'MERCURIO': { lat: -16.556, lng: -68.232 },
+  'SANTA BARBARA': { lat: -16.547, lng: -68.231 },
+  'VILLA INGAVI': { lat: -16.51, lng: -68.196 },
+  'VILLA SANTIAGO II': { lat: -16.533, lng: -68.209 },
+  'BARRIO LINDO': { lat: -16.542, lng: -68.247 },
+  'CHIJINI ALTO': { lat: -16.524, lng: -68.211 },
+  '6 DE AGOSTO': { lat: -16.53, lng: -68.215 },
+  'URB. JARDIN': { lat: -16.579, lng: -68.228 },
 };
 
 // Expanded Siemens DECTlink dataset covering real-world operational states:

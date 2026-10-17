@@ -18,7 +18,6 @@ import {
   updateSubscriberStatusInDb,
   updateSubscriberCoordinatesInDb,
   getOperationLogs,
-  seedSubscribersIfEmpty,
 } from './src/db/subscribersRepo.ts';
 import {
   listWorkOrders,
@@ -55,9 +54,7 @@ import {
   switchActiveDatabase,
   getCurrentConnectionInfo,
 } from './src/db/index.ts';
-import { celdasDect } from './src/db/schema.ts';
-import { EXPANDED_DECT_RECORDS } from './src/data/initialData.ts';
-import { enrichRecords } from './src/utils/analysis.ts';
+import { celdas } from './src/db/schema.ts';
 import {
   generateFullSupabaseScript,
   generateSupabaseDDL,
@@ -135,7 +132,7 @@ async function startServer() {
   // 2. Get base stations
   app.get('/api/cells', async (_req, res) => {
     try {
-      const cells = await getDb().select().from(celdasDect);
+      const cells = await getDb().select().from(celdas);
       res.json(cells);
     } catch (err: any) {
       console.error('Failed to get cells:', err);
@@ -386,9 +383,9 @@ async function startServer() {
 
       const countsResult = await getPool().query(`
         SELECT 
-          (SELECT COUNT(*) FROM celdas_dect) as celdas_count,
-          (SELECT COUNT(*) FROM abonados_dect) as abonados_count,
-          (SELECT COUNT(*) FROM bitacora_dect) as bitacora_count;
+          (SELECT COUNT(*) FROM celdas) as celdas_count,
+          (SELECT COUNT(*) FROM abonados_lineas) as abonados_count,
+          (SELECT COUNT(*) FROM bitacora) as bitacora_count;
       `);
 
       const connectionInfo = getCurrentConnectionInfo();
@@ -447,17 +444,20 @@ async function startServer() {
 
       const countsResult = await getPool().query(`
         SELECT 
-          (SELECT COUNT(*) FROM celdas_dect) as celdas_dect,
-          (SELECT COUNT(*) FROM abonados_dect) as abonados_dect,
-          (SELECT COUNT(*) FROM bitacora_dect) as bitacora_dect,
+          (SELECT COUNT(*) FROM celdas) as celdas,
+          (SELECT COUNT(*) FROM zonas) as zonas,
+          (SELECT COUNT(*) FROM clientes) as clientes,
+          (SELECT COUNT(*) FROM abonados_lineas) as abonados_lineas,
+          (SELECT COUNT(*) FROM bitacora) as bitacora,
+          (SELECT COUNT(*) FROM work_orders) as work_orders,
+          (SELECT COUNT(*) FROM cuadrillas) as cuadrillas,
+          (SELECT COUNT(*) FROM materiales) as materiales,
+          (SELECT COUNT(*) FROM work_order_materiales) as work_order_materiales,
           (SELECT COUNT(*) FROM users) as users;
       `);
-      const countsMap: Record<string, number> = {
-        celdas_dect: parseInt(countsResult.rows[0]?.celdas_dect || '0', 10),
-        abonados_dect: parseInt(countsResult.rows[0]?.abonados_dect || '0', 10),
-        bitacora_dect: parseInt(countsResult.rows[0]?.bitacora_dect || '0', 10),
-        users: parseInt(countsResult.rows[0]?.users || '0', 10),
-      };
+      const countsMap: Record<string, number> = Object.fromEntries(
+        Object.entries(countsResult.rows[0] || {}).map(([k, v]) => [k, parseInt(String(v ?? 0), 10)])
+      );
 
       const tables = tablesResult.rows.map((t: any) => {
         const cols = columnsResult.rows.filter((c: any) => c.table_name === t.table_name);
@@ -484,7 +484,10 @@ async function startServer() {
   // 7. Paginated table data viewer
   app.get('/api/database/tables/:table/data', async (req, res) => {
     try {
-      const allowedTables = ['celdas_dect', 'abonados_dect', 'bitacora_dect', 'users'];
+      const allowedTables = [
+        'celdas', 'zonas', 'clientes', 'abonados_lineas', 'bitacora',
+        'work_orders', 'work_order_materiales', 'cuadrillas', 'materiales', 'users',
+      ];
       const tableName = req.params.table;
 
       if (!allowedTables.includes(tableName)) {
@@ -616,7 +619,7 @@ async function startServer() {
   // 11. Hot-switch active database to Supabase (admin token required)
   app.post('/api/database/apply-connection', requireAdmin, async (req, res) => {
     try {
-      const { connectionString, seedIfEmpty } = req.body;
+      const { connectionString } = req.body;
       if (!connectionString || typeof connectionString !== 'string') {
         return res.status(400).json({ error: 'La cadena de conexión es requerida' });
       }
@@ -633,11 +636,9 @@ async function startServer() {
         return res.status(400).json(switchResult);
       }
 
-      // Automatically seed sample data if requested
-      if (seedIfEmpty) {
-        const enrichedInitial = enrichRecords(EXPANDED_DECT_RECORDS);
-        await seedSubscribersIfEmpty(enrichedInitial);
-      }
+      // Nota: la carga del padrón real se hace con `npm run db:load`
+      // (scripts/load-consolidado.ts). El flag seedIfEmpty ya no siembra
+      // datos de prueba: el esquema normalizado nace vacío de líneas.
 
       broadcastEvent('database_switched', {
         provider: switchResult.provider,
@@ -774,11 +775,8 @@ async function startServer() {
     }
   });
 
-  // Automatically seed initial data on first launch if empty
-  const enrichedInitial = enrichRecords(EXPANDED_DECT_RECORDS);
-  seedSubscribersIfEmpty(enrichedInitial).catch(err => {
-    console.error('Initial database seed check failed:', err);
-  });
+  // Nota: el padrón de abonados se carga fuera del ciclo de vida del servidor
+  // con `npm run db:load` (scripts/load-consolidado.ts) desde el CSV consolidado.
 
   // Mount Vite in dev or static files in production
   if (process.env.NODE_ENV === 'production') {

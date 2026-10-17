@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:check": "tsx scripts/db-check.ts",
-    "db:verify": "tsx scripts/db-verify.ts"
+    "db:verify": "tsx scripts/db-verify.ts",
+    "db:load": "tsx scripts/load-consolidado.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

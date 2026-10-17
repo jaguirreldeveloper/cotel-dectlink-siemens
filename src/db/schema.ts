@@ -4,6 +4,8 @@ import {
   uuid,
   text,
   integer,
+  bigint,
+  date,
   doublePrecision,
   timestamp,
   check,
@@ -20,56 +22,79 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Siemens DECTlink Base Stations (RFP)
-export const celdasDect = pgTable('celdas_dect', {
-  id: text('id').primaryKey(), // '17', '15', '12', '14', '16', '11'
-  nombre: text('nombre').notNull(),
-  rfpModelo: text('rfp_modelo').notNull(),
-  bandaFrecuencia: text('banda_frecuencia').notNull().default('1880 - 1900 MHz (DECT GAP)'),
-  capacidadCanales: integer('capacidad_canales').notNull(),
-  radioCoberturaKm: doublePrecision('radio_cobertura_km').notNull(),
-  latitud: doublePrecision('latitud').notNull(),
-  longitud: doublePrecision('longitud').notNull(),
+// Zonas: barrios / urbanizaciones normalizados (catálogo maestro).
+// La zona cruda de origen de cada línea se conserva en abonados_lineas.zona_origen.
+export const zonas = pgTable('zonas', {
+  id: serial('id').primaryKey(),
+  nombre: text('nombre').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Subscribers table
-export const abonadosDect = pgTable('abonados_dect', {
+// Clientes: titulares deduplicados por (nombre_completo, direccion).
+// Un cliente puede tener varias líneas telefónicas.
+export const clientes = pgTable('clientes', {
+  id: serial('id').primaryKey(),
+  nombreCompleto: text('nombre_completo').notNull(),
+  direccion: text('direccion'),
+  idZona: integer('id_zona').references(() => zonas.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Celdas: estaciones base Siemens DECTlink (RFP).
+// id numérico = número de RFP (5, 11, 15, 17). latitud/longitud/capacidad
+// quedan NULL hasta que COTEL cargue los valores reales de cada estación.
+export const celdas = pgTable('celdas', {
+  id: integer('id').primaryKey(),
+  nombre: text('nombre').notNull(),
+  tecnologia: text('tecnologia').notNull().default('DECT-Link'),
+  descripcion: text('descripcion'),
+  rfpModelo: text('rfp_modelo'),
+  bandaFrecuencia: text('banda_frecuencia').notNull().default('1880 - 1900 MHz (DECT GAP)'),
+  capacidadCanales: integer('capacidad_canales'),
+  radioCoberturaKm: doublePrecision('radio_cobertura_km'),
+  latitud: doublePrecision('latitud'),
+  longitud: doublePrecision('longitud'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Abonados (líneas telefónicas): padrón maestro normalizado.
+// nro = identificador global de negocio (bitácora / OTs lo referencian);
+// nro_registro_origen solo es procedencia del CSV (reinicia por celda).
+export const abonadosLineas = pgTable('abonados_lineas', {
   id: serial('id').primaryKey(),
   nro: integer('nro').notNull().unique(),
-  numero: text('numero').notNull().unique(),
-  area: text('area').notNull().default('EAI'),
-  cto: text('cto').notNull(),
-  nombre: text('nombre').notNull(),
-  direccion: text('direccion').notNull(),
-  fechServ: text('fech_serv').notNull(),
-  estado: text('estado').notNull().default('C/SERV.'),
+  numero: text('numero_telefono').notNull().unique(),
+  area: text('codigo_area').notNull().default('EAI'),
+  contrato: bigint('contrato', { mode: 'number' }),
+  idCliente: integer('id_cliente').notNull().references(() => clientes.id, { onUpdate: 'cascade' }),
+  idCelda: integer('id_celda').notNull().references(() => celdas.id, { onUpdate: 'cascade', onDelete: 'restrict' }),
+  estadoServicio: text('estado_servicio').notNull().default('C/SERV.'),
   estadoOperativo: text('estado_operativo').notNull().default('C/SERV.'),
-  celdaId: text('celda_id').notNull().references(() => celdasDect.id),
-  zona: text('zona').notNull(),
-  zonaNormalizada: text('zona_normalizada').notNull(),
-  clientType: text('client_type').notNull().default('RESIDENCIAL'),
-  fauModel: text('fau_model').notNull().default('Siemens DECTlink FAU-200'),
-  signalDect: text('signal_dect').notNull().default('EXCELENTE'),
-  deudaMeses: integer('deuda_meses').notNull().default(0),
-  tiempoDepositoMeses: integer('tiempo_deposito_meses').notNull().default(0),
+  fechaServicio: date('fecha_servicio'),
+  fauModel: text('fau_model'),
+  signalDect: text('signal_dect'),
+  deudaMeses: integer('deuda_meses'),
+  tiempoDepositoMeses: integer('tiempo_deposito_meses'),
   fallaDescripcion: text('falla_descripcion'),
-  lat: doublePrecision('lat').notNull(),
-  lng: doublePrecision('lng').notNull(),
-  distanciaKm: doublePrecision('distancia_km').notNull().default(0),
-  azimutGrados: integer('azimut_grados').notNull().default(0),
+  lat: doublePrecision('lat'),
+  lng: doublePrecision('lng'),
+  distanciaKm: doublePrecision('distancia_km'),
+  azimutGrados: integer('azimut_grados'),
+  nroRegistroOrigen: integer('nro_registro_origen'),
+  archivoOrigen: text('archivo_origen'),
+  zonaOrigen: text('zona_origen'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
-  check('chk_abonados_estado', sql`${t.estado} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
+  check('chk_abonados_estado_servicio', sql`${t.estadoServicio} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
   check('chk_abonados_estado_operativo', sql`${t.estadoOperativo} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
-  check('chk_abonados_signal', sql`${t.signalDect} IN ('EXCELENTE','BUENO','DEBIL','SIN_ENLACE')`),
-  check('chk_abonados_client_type', sql`${t.clientType} IN ('RESIDENCIAL','INSTITUCIONAL','COMERCIAL')`),
+  check('chk_abonados_signal', sql`${t.signalDect} IS NULL OR ${t.signalDect} IN ('EXCELENTE','BUENO','DEBIL','SIN_ENLACE')`),
 ]);
 
-// Field logs and technician operations log
-export const bitacoraDect = pgTable('bitacora_dect', {
+// Bitácora: auditoría transaccional de cambios de estado y calibraciones GPS
+export const bitacora = pgTable('bitacora', {
   id: serial('id').primaryKey(),
-  abonadoNro: integer('abonado_nro').notNull().references(() => abonadosDect.nro, { onDelete: 'cascade' }),
+  abonadoNro: integer('abonado_nro').notNull().references(() => abonadosLineas.nro, { onDelete: 'cascade' }),
   estadoAnterior: text('estado_anterior'),
   nuevoEstado: text('nuevo_estado').notNull(),
   detalle: text('detalle'),
@@ -112,7 +137,7 @@ export const workOrders = pgTable('work_orders', {
   estado: text('estado').notNull().default('PENDIENTE'), // PENDIENTE | EN_CAMINO | EN_PROGRESO | COMPLETADO
   cuadrillaId: text('cuadrilla_id').references(() => cuadrillas.id, { onDelete: 'set null' }),
   tecnicoLider: text('tecnico_lider'),
-  abonadoNro: integer('abonado_nro').references(() => abonadosDect.nro, { onDelete: 'set null' }),
+  abonadoNro: integer('abonado_nro').references(() => abonadosLineas.nro, { onDelete: 'set null' }),
   fechaProgramada: text('fecha_programada'),
   resultadoTecnico: text('resultado_tecnico'),
   fechaCreacion: timestamp('fecha_creacion', { withTimezone: true }).defaultNow().notNull(),
@@ -135,22 +160,45 @@ export const workOrderMateriales = pgTable('work_order_materiales', {
 ]);
 
 // Relationships
-export const celdasRelations = relations(celdasDect, ({ many }) => ({
-  abonados: many(abonadosDect),
+export const zonasRelations = relations(zonas, ({ many }) => ({
+  clientes: many(clientes),
 }));
 
-export const abonadosRelations = relations(abonadosDect, ({ one, many }) => ({
-  celda: one(celdasDect, {
-    fields: [abonadosDect.celdaId],
-    references: [celdasDect.id],
+export const clientesRelations = relations(clientes, ({ one, many }) => ({
+  zona: one(zonas, {
+    fields: [clientes.idZona],
+    references: [zonas.id],
+  }),
+  lineas: many(abonadosLineas),
+}));
+
+export const celdasRelations = relations(celdas, ({ many }) => ({
+  abonados: many(abonadosLineas),
+}));
+
+export const abonadosRelations = relations(abonadosLineas, ({ one, many }) => ({
+  cliente: one(clientes, {
+    fields: [abonadosLineas.idCliente],
+    references: [clientes.id],
+  }),
+  celda: one(celdas, {
+    fields: [abonadosLineas.idCelda],
+    references: [celdas.id],
   }),
   workOrders: many(workOrders),
 }));
 
+export const bitacoraRelations = relations(bitacora, ({ one }) => ({
+  abonado: one(abonadosLineas, {
+    fields: [bitacora.abonadoNro],
+    references: [abonadosLineas.nro],
+  }),
+}));
+
 export const workOrdersRelations = relations(workOrders, ({ one, many }) => ({
-  abonado: one(abonadosDect, {
+  abonado: one(abonadosLineas, {
     fields: [workOrders.abonadoNro],
-    references: [abonadosDect.nro],
+    references: [abonadosLineas.nro],
   }),
   cuadrilla: one(cuadrillas, {
     fields: [workOrders.cuadrillaId],

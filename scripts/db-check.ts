@@ -34,15 +34,18 @@ interface ExpectedTable {
 
 /** Restricciones de integridad que la BD debe tener (nombre -> tabla). */
 const EXPECTED_CONSTRAINTS: { table: string; name: string; kind: string }[] = [
-  { table: 'abonados_dect', name: 'chk_abonados_estado', kind: 'CHECK' },
-  { table: 'abonados_dect', name: 'chk_abonados_estado_operativo', kind: 'CHECK' },
-  { table: 'abonados_dect', name: 'chk_abonados_signal', kind: 'CHECK' },
-  { table: 'abonados_dect', name: 'chk_abonados_client_type', kind: 'CHECK' },
+  { table: 'abonados_lineas', name: 'chk_abonados_estado_servicio', kind: 'CHECK' },
+  { table: 'abonados_lineas', name: 'chk_abonados_estado_operativo', kind: 'CHECK' },
+  { table: 'abonados_lineas', name: 'chk_abonados_signal', kind: 'CHECK' },
+  { table: 'abonados_lineas', name: 'abonados_lineas_id_cliente_fkey', kind: 'FK' },
+  { table: 'abonados_lineas', name: 'abonados_lineas_id_celda_fkey', kind: 'FK' },
+  { table: 'clientes', name: 'clientes_id_zona_fkey', kind: 'FK' },
+  { table: 'bitacora', name: 'fk_bitacora_abonado', kind: 'FK' },
   { table: 'work_orders', name: 'chk_work_orders_estado', kind: 'CHECK' },
   { table: 'work_orders', name: 'chk_work_orders_prioridad', kind: 'CHECK' },
   { table: 'work_orders', name: 'chk_work_orders_tipo', kind: 'CHECK' },
   { table: 'work_orders', name: 'fk_work_orders_cuadrilla', kind: 'FK' },
-  { table: 'bitacora_dect', name: 'fk_bitacora_abonado', kind: 'FK' },
+  { table: 'work_orders', name: 'fk_work_orders_abonado', kind: 'FK' },
   { table: 'cuadrillas', name: 'chk_cuadrillas_estado', kind: 'CHECK' },
   { table: 'work_order_materiales', name: 'chk_wo_materiales_cantidad', kind: 'CHECK' },
 ];

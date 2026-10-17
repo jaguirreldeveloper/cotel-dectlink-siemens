@@ -1,12 +1,75 @@
 import { getDb } from './index.ts';
-import { abonadosDect, bitacoraDect, celdasDect } from './schema.ts';
-import { eq, desc } from 'drizzle-orm';
-import { EnrichedSubscriberRecord, OperationalStatus } from '../types/subscriber.ts';
-import { SIEMENS_DECT_CELLS } from '../data/initialData.ts';
+import { abonadosLineas, bitacora, celdas, clientes, zonas } from './schema.ts';
+import { eq, desc, sql } from 'drizzle-orm';
+import { OperationalStatus } from '../types/subscriber.ts';
 
-export async function getAllSubscribers() {
+/**
+ * Fila plana del padrón para la API/UI: el modelo físico está normalizado
+ * (abonados_lineas -> clientes -> zonas / celdas) pero la capa de
+ * presentación mantiene la forma plana que la app ya consume.
+ */
+export interface SubscriberListRow {
+  id: number;
+  nro: number;
+  numero: string;
+  area: string;
+  contrato: number | null;
+  nombre: string;
+  direccion: string | null;
+  fechaServicio: string | null;
+  estado: string; // estado_servicio del padrón comercial
+  estadoOperativo: string;
+  celdaId: string; // id numérico de celda como texto ('5','11','15','17')
+  celdaNombre: string | null;
+  zona: string; // '' cuando el titular no tiene zona asignada
+  fauModel: string | null;
+  signalDect: string | null;
+  deudaMeses: number | null;
+  tiempoDepositoMeses: number | null;
+  fallaDescripcion: string | null;
+  lat: number | null;
+  lng: number | null;
+  distanciaKm: number | null;
+  azimutGrados: number | null;
+  updatedAt: Date;
+}
+
+/** Proyecta una fila de abonados_lineas con los JOINs de cliente/zona/celda. */
+const subscriberSelect = {
+  id: abonadosLineas.id,
+  nro: abonadosLineas.nro,
+  numero: abonadosLineas.numero,
+  area: abonadosLineas.area,
+  contrato: abonadosLineas.contrato,
+  nombre: clientes.nombreCompleto,
+  direccion: clientes.direccion,
+  fechaServicio: abonadosLineas.fechaServicio,
+  estado: abonadosLineas.estadoServicio,
+  estadoOperativo: abonadosLineas.estadoOperativo,
+  celdaId: sql<string>`${celdas.id}::text`,
+  celdaNombre: celdas.nombre,
+  zona: sql<string>`coalesce(${zonas.nombre}, '')`,
+  fauModel: abonadosLineas.fauModel,
+  signalDect: abonadosLineas.signalDect,
+  deudaMeses: abonadosLineas.deudaMeses,
+  tiempoDepositoMeses: abonadosLineas.tiempoDepositoMeses,
+  fallaDescripcion: abonadosLineas.fallaDescripcion,
+  lat: abonadosLineas.lat,
+  lng: abonadosLineas.lng,
+  distanciaKm: abonadosLineas.distanciaKm,
+  azimutGrados: abonadosLineas.azimutGrados,
+  updatedAt: abonadosLineas.updatedAt,
+};
+
+export async function getAllSubscribers(): Promise<SubscriberListRow[]> {
   try {
-    return await getDb().select().from(abonadosDect).orderBy(abonadosDect.nro);
+    return await getDb()
+      .select(subscriberSelect)
+      .from(abonadosLineas)
+      .innerJoin(clientes, eq(abonadosLineas.idCliente, clientes.id))
+      .leftJoin(zonas, eq(clientes.idZona, zonas.id))
+      .innerJoin(celdas, eq(abonadosLineas.idCelda, celdas.id))
+      .orderBy(abonadosLineas.nro);
   } catch (error) {
     console.error('Error fetching subscribers from PostgreSQL:', error);
     throw new Error('Error al consultar abonados en PostgreSQL', { cause: error });
@@ -19,10 +82,14 @@ export async function updateSubscriberStatusInDb(
   details?: { fallaDescripcion?: string; deudaMeses?: number; tiempoDepositoMeses?: number; tecnico?: string }
 ) {
   try {
-    // UPDATE del abonado + INSERT en bitácora dentro de una transacción atómica:
+    // UPDATE de la línea + INSERT en bitácora dentro de una transacción atómica:
     // si falla el registro de auditoría, se revierte también el cambio de estado.
     const updated = await getDb().transaction(async tx => {
-      const existing = await tx.select().from(abonadosDect).where(eq(abonadosDect.nro, nro)).limit(1);
+      const existing = await tx
+        .select({ estadoOperativo: abonadosLineas.estadoOperativo, signalDect: abonadosLineas.signalDect })
+        .from(abonadosLineas)
+        .where(eq(abonadosLineas.nro, nro))
+        .limit(1);
 
       // Abonado inexistente: no hay nada que actualizar ni auditar.
       if (existing.length === 0) {
@@ -31,14 +98,17 @@ export async function updateSubscriberStatusInDb(
       const prevStatus = existing[0].estadoOperativo || 'C/SERV.';
 
       const upd = await tx
-        .update(abonadosDect)
+        .update(abonadosLineas)
         .set({
-          estado: newStatus,
+          estadoServicio: newStatus,
           estadoOperativo: newStatus,
           fallaDescripcion:
             details?.fallaDescripcion ?? (newStatus === 'FALLA TECNICA' ? 'Falla de enlace radio DECT con estación base' : null),
           deudaMeses: details?.deudaMeses ?? (newStatus === 'CORTE X MORA' ? 3 : 0),
           tiempoDepositoMeses: details?.tiempoDepositoMeses ?? (newStatus === 'EN DEPOSITO' ? 6 : 0),
+          // La señal debe permanecer dentro del CHECK chk_abonados_signal:
+          // se conserva la anterior (o BUENO si aún no hay dato), nunca un
+          // estado operativo ni otra cadena fuera del catálogo.
           signalDect:
             newStatus === 'C/SERV.'
               ? 'EXCELENTE'
@@ -47,10 +117,10 @@ export async function updateSubscriberStatusInDb(
                 : existing[0].signalDect || 'BUENO',
           updatedAt: new Date(),
         })
-        .where(eq(abonadosDect.nro, nro))
+        .where(eq(abonadosLineas.nro, nro))
         .returning();
 
-      await tx.insert(bitacoraDect).values({
+      await tx.insert(bitacora).values({
         abonadoNro: nro,
         estadoAnterior: prevStatus,
         nuevoEstado: newStatus,
@@ -75,21 +145,23 @@ export async function updateSubscriberCoordinatesInDb(
   options?: { precision?: string; tecnico?: string }
 ) {
   try {
-    // UPDATE de coordenadas + INSERT en bitácora, atómico (misma garantía que el cambio de estado).
+    // UPDATE de coordenadas + INSERT en bitácora, atómico (misma garantía que
+    // el cambio de estado). El mapa usa estas coordenadas calibradas; mientras
+    // sigan NULL, la UI trabija con posiciones aproximadas por zona.
     const updated = await getDb().transaction(async tx => {
       const upd = await tx
-        .update(abonadosDect)
+        .update(abonadosLineas)
         .set({
           lat,
           lng,
           updatedAt: new Date(),
         })
-        .where(eq(abonadosDect.nro, nro))
+        .where(eq(abonadosLineas.nro, nro))
         .returning();
 
       // Solo auditar si efectivamente se actualizó un abonado existente.
       if (upd.length > 0) {
-        await tx.insert(bitacoraDect).values({
+        await tx.insert(bitacora).values({
           abonadoNro: nro,
           estadoAnterior: upd[0].estadoOperativo || 'C/SERV.',
           nuevoEstado: upd[0].estadoOperativo || 'C/SERV.',
@@ -110,80 +182,9 @@ export async function updateSubscriberCoordinatesInDb(
 
 export async function getOperationLogs() {
   try {
-    return await getDb().select().from(bitacoraDect).orderBy(desc(bitacoraDect.timestamp)).limit(50);
+    return await getDb().select().from(bitacora).orderBy(desc(bitacora.timestamp)).limit(50);
   } catch (error) {
     console.error('Error fetching logs from PostgreSQL:', error);
     throw new Error('Error al consultar bitácora operativa', { cause: error });
-  }
-}
-
-/**
- * Pobla las tablas de celdas y abonados solo si los abonados están vacíos.
- * Las celdas se insertan primero (dentro de la misma transacción) porque son
- * referencia obligatoria para la FK `abonados_dect.celda_id -> celdas_dect.id`.
- * Usa INSERT multi-fila en chunks (en lugar de un INSERT por fila), lo que
- * reduce drásticamente el número de idas y vueltas.
- */
-export async function seedSubscribersIfEmpty(sampleData: EnrichedSubscriberRecord[]) {
-  try {
-    const existing = await getDb().select({ id: abonadosDect.id }).from(abonadosDect).limit(1);
-    if (existing.length > 0) return;
-
-    console.log(`Poblando base de datos PostgreSQL con ${sampleData.length} abonados DECT...`);
-
-    // Postgres limita ~65535 parámetros por sentencia; con ~20 columnas por fila,
-    // un chunk de 500 filas (~10k parámetros) es holgadamente seguro.
-    const CHUNK_SIZE = 500;
-
-    await getDb().transaction(async tx => {
-      // 1. Celdas (FK obligatoria de abonados_dect.celda_id). Idempotente por PK.
-      const cells = Object.entries(SIEMENS_DECT_CELLS).map(([id, cell]) => ({
-        id,
-        nombre: cell.name,
-        rfpModelo: cell.rfpBase,
-        bandaFrecuencia: cell.freqBand,
-        capacidadCanales: cell.capacidad,
-        radioCoberturaKm: cell.radioCoberturaKm,
-        latitud: cell.lat,
-        longitud: cell.lng,
-      }));
-      if (cells.length > 0) {
-        await tx.insert(celdasDect).values(cells).onConflictDoNothing();
-      }
-
-      // 2. Abonados en chunks multi-fila.
-      for (let i = 0; i < sampleData.length; i += CHUNK_SIZE) {
-        const chunk = sampleData.slice(i, i + CHUNK_SIZE).map(item => ({
-          nro: item.nro,
-          numero: item.numero,
-          area: item.area,
-          cto: item.cto,
-          nombre: item.nombre,
-          direccion: item.direccion,
-          fechServ: item.fechServ,
-          estado: item.estado,
-          estadoOperativo: item.estadoOperativo,
-          celdaId: item.celda,
-          zona: item.zona,
-          zonaNormalizada: item.normalizedZona,
-          clientType: item.clientType,
-          fauModel: item.fauModel,
-          signalDect: item.signalDect,
-          deudaMeses: item.deudaMeses,
-          tiempoDepositoMeses: item.tiempoDepositoMeses,
-          fallaDescripcion: item.fallaDescripcion || null,
-          lat: item.lat,
-          lng: item.lng,
-          distanciaKm: item.distanciaKm,
-          azimutGrados: item.azimutGrados,
-        }));
-
-        await tx.insert(abonadosDect).values(chunk).onConflictDoNothing();
-      }
-    });
-
-    console.log('Siemens DECTlink subscribers seeded successfully in PostgreSQL!');
-  } catch (error) {
-    console.error('Error during database seed:', error);
   }
 }

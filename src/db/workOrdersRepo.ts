@@ -1,5 +1,5 @@
 import { getDb } from './index.ts';
-import { workOrders, abonadosDect, cuadrillas, workOrderMateriales, materiales } from './schema.ts';
+import { workOrders, abonadosLineas, cuadrillas, workOrderMateriales, materiales } from './schema.ts';
 import { eq, desc, sql, inArray } from 'drizzle-orm';
 
 export type WorkOrderStatus = 'PENDIENTE' | 'EN_CAMINO' | 'EN_PROGRESO' | 'COMPLETADO';
@@ -281,9 +281,9 @@ export async function deleteWorkOrder(id: string) {
 /** Valida que el número de abonado exista (para la FK). */
 export async function subscriberExists(nro: number): Promise<boolean> {
   const rows = await getDb()
-    .select({ nro: abonadosDect.nro })
-    .from(abonadosDect)
-    .where(eq(abonadosDect.nro, nro))
+    .select({ nro: abonadosLineas.nro })
+    .from(abonadosLineas)
+    .where(eq(abonadosLineas.nro, nro))
     .limit(1);
   return rows.length > 0;
 }
