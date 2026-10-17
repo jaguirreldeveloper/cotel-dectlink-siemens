@@ -52,6 +52,7 @@ src/
     downloadTextFile.ts       Descarga de archivos (CSV/SQL/KML/GeoJSON)
   components/
     ui/                       Modal accesible y StatusBadge compartidos
+    ErrorBoundary.tsx         Límite de errores: panel legible con detalle técnico en vez de pantalla en blanco
     (18 vistas y modales)     Ver «Módulos funcionales» más abajo
   types/subscriber.ts         Tipos compartidos (abonados, OT, RF, migración)
   data/                       Datos demo de respaldo (fallback offline) + parámetros de referencia del simulador RF
@@ -87,6 +88,19 @@ npm run db:load -- <ruta>  # CSV alternativo
 ```
 
 El ETL normaliza zonas (typos, abreviaturas y mojibake de «URKUPIÑA II»), valida estados contra el CHECK, deduplica clientes y asigna `nro` secuencial global ordenado por `(celda, nro de archivo)`. Es **idempotente**: limpia y recarga `abonados_lineas`, `clientes` y `zonas` en una transacción, sin tocar cuadrillas, materiales ni OTs.
+
+### 🧭 Origen de datos en la interfaz
+
+La app arranca vacía y se hidrata desde la base de datos; el encabezado **siempre indica la fuente activa** (los datos de demostración jamás se mezclan en silencio con el padrón real):
+
+| Indicador | Significado |
+|-----------|-------------|
+| ⏳ `Cargando padrón real…` | Consulta en curso a `/api/subscribers` (timeout defensivo de 12 s) |
+| 🟢 `Conectado a BD · N líneas` | Padrón real desde PostgreSQL/Supabase |
+| 🔵 `CSV cargado localmente · N líneas` | Archivo cargado por el operador con el modal CSV (no persistido) |
+| 🟠 `Modo demo (79 líneas) — BD no disponible` | Backend sin respuesta: datos de demostración **etiquetados** + banner ámbar con instrucciones |
+
+El botón **↻ Recargar** relanza la consulta. Protecciones de la interfaz: `ErrorBoundary` global, placeholders «Cargando padrón real…» en las vistas que requieren un abonado seleccionado, y pie de página que refleja la fuente activa.
 
 ---
 
@@ -227,6 +241,7 @@ Copia `.env.example` a `.env` y configura tus valores:
 - `npm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `npm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `npm run db:verify` — integridad en vivo: recuentos del padrón (216/212/41/4), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
+- La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga y fallback a datos de demostración siempre etiquetado (banner ámbar) si el backend no responde.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, endpoint público sin token → acceso permitido.
 
 ---
