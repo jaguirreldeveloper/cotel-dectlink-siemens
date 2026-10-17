@@ -1,3 +1,9 @@
+// Cargar .env ANTES de crear el pool singleton de abajo: en ESM las importaciones
+// se evalúan antes que el código de nivel superior de cualquier módulo que nos
+// importe (server.ts, scripts), por lo que sin esto el pool se crearía sin haber
+// leído DATABASE_URL del .env y fallaría la autenticación (SCRAM).
+import 'dotenv/config';
+
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool, PoolConfig } from 'pg';
 import * as schema from './schema.ts';
