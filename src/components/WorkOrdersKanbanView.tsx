@@ -251,6 +251,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
     e.preventDefault();
     const subscriber = records.find(r => r.nro === newSubNro) || records[0];
     const assignedCrew = crews.find(c => c.id === newCrewId) || crews[0];
+    // Sin padrón cargado no hay abonado al cual ligar la orden
+    if (!subscriber) return;
 
     setIsSaving(true);
     try {

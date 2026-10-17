@@ -62,6 +62,17 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
     window.print();
   };
 
+  // Sin registros (carga inicial o padrón vacío): no hay ficha que generar.
+  if (!selectedSub) {
+    return (
+      <div className="bg-slate-50 dark:bg-slate-950 p-10 text-center text-sm text-slate-500">
+        {records.length === 0
+          ? 'Cargando padrón real… si persiste, pulsa «Recargar» en el encabezado.'
+          : 'No hay abonados disponibles para generar fichas técnicas.'}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Banner (Hidden in Print) */}

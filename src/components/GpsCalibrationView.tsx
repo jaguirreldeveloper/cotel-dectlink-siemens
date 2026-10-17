@@ -325,6 +325,18 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
     }
   };
 
+  // Sin registros (ventana de carga inicial o padrón vacío): no hay abonado
+  // que calibrar. Todos los hooks ya corrieron arriba; volver es seguro.
+  if (!selectedRecord) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-10 text-center text-sm text-slate-500">
+        {records.length === 0
+          ? 'Cargando padrón real… si persiste, pulsa «Recargar» en el encabezado.'
+          : 'No hay abonados disponibles para calibrar.'}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header with technical explanation trigger */}

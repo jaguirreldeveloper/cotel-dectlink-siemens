@@ -164,6 +164,17 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
     };
   }, [simResult]);
 
+  // Sin registros (carga inicial o padrón vacío): no hay abonado que simular.
+  if (!selectedSub) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-10 text-center text-sm text-slate-500">
+        {records.length === 0
+          ? 'Cargando padrón real… si persiste, pulsa «Recargar» en el encabezado.'
+          : 'No hay abonados disponibles para simular el enlace RF.'}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
