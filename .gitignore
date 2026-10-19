@@ -38,3 +38,10 @@ tmp/
 
 # Supabase local environment runtime
 .supabase/
+
+# Backups locales de la BD (nunca se versionan)
+backups/
+
+# Caché/temporales de Composer usados durante la instalación
+.composer-home/
+.composer-tmp/
