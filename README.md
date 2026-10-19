@@ -12,7 +12,7 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 - **Backend**: Node.js + Express (4) con **Server-Sent Events (SSE)** para sincronización en tiempo real entre operadores y cuadrillas. Sirve Vite en modo middleware (dev) o `dist/` estático (prod) desde el mismo proceso.
 - **Capa de datos**: **Drizzle ORM** sobre un pool de conexiones `pg`, con conmutación en caliente de base de datos.
 - **Bases de datos compatibles**: Google Cloud SQL (PostgreSQL 15+) y **Supabase Cloud** (SSL + Connection Pooler).
-- **Migraciones**: `supabase/migrations/` es la **única fuente de verdad del esquema** (5 migraciones aplicadas); el backend las consolida para el exportador SQL. El **padrón real** se carga con `npm run db:load` desde el CSV consolidado de campo (`supabase/seed.sql` es solo informativo).
+- **Migraciones**: `supabase/migrations/` es la **única fuente de verdad del esquema** (6 migraciones); el backend las consolida para el exportador SQL. El **padrón real** se carga con `npm run db:load` desde el CSV consolidado de campo (`supabase/seed.sql` es solo informativo).
 
 ---
 
@@ -27,12 +27,15 @@ supabase/
     20261016220000_integrity_constraints.sql          CHECK constraints, FK e índices de integridad
     20261016230000_cuadrillas_materiales.sql          cuadrillas, materiales y puente M:N
     20261017000000_modelo_normalizado_abonados.sql    modelo normalizado: celdas, zonas, clientes, abonados_lineas, bitacora
+    20261019130000_eliminar_material_de_prueba.sql    elimina el material de prueba del catálogo
   seed.sql                    Informativo (el padrón real se carga con npm run db:load)
   config.toml                 Configuración de Supabase CLI
 scripts/
-  load-consolidado.ts         ETL: carga el padrón real desde el CSV consolidado (npm run db:load)
+  load-consolidado.ts         ETL: carga el padrón real desde el CSV consolidado (npm run db:load); conserva estados/GPS/auditoría
   db-check.ts                 Detector de deriva schema.ts ↔ BD viva (npm run db:check)
   db-verify.ts                Smoke test de integridad sin tocar el padrón real (npm run db:verify)
+  cleanup-pruebas.ts          Elimina restos de prueba conocidos y audita sospechosos (npm run db:clean)
+  smoke.ts                    Verificación de despliegue: el backend sirve el padrón real (npm run smoke)
 src/
   server/adminAuth.ts         Seguridad: middleware admin, validación de URL Git, SQL solo-lectura, allowlist de hosts
   db/
@@ -85,9 +88,12 @@ Se conservan además `users`, `work_orders` (FK → `abonados_lineas.nro`), `cua
 ```bash
 npm run db:load            # CSV por defecto: F:\CD-INAL-EA\CONSOLIDADO_CELDAS_INALAMBRICAS.csv
 npm run db:load -- <ruta>  # CSV alternativo
+npm run db:load -- --limpio  # carga total: descarta estados/GPS/auditoría previos
 ```
 
 El ETL normaliza zonas (typos, abreviaturas y mojibake de «URKUPIÑA II»), valida estados contra el CHECK, deduplica clientes y asigna `nro` secuencial global ordenado por `(celda, nro de archivo)`. Es **idempotente**: limpia y recarga `abonados_lineas`, `clientes` y `zonas` en una transacción, sin tocar cuadrillas, materiales ni OTs.
+
+**Conservación operativa (por defecto):** antes de limpiar, el ETL resguarda por `numero_telefono` —identidad estable, ya que el `nro` se recalcula en cada carga— lo que **no está en el CSV**: `estado_servicio`/`estado_operativo`, `signal_dect`, `fau_model`, GPS (`lat`/`lng`/`distancia_km`/`azimut_grados`), `falla_descripcion`, `deuda_meses`, `tiempo_deposito_meses`, el histórico de `bitacora` y el enlace `work_orders.abonado_nro`. Lo restaura tras la recarga e informa los conflictos (si el CSV trae un estado distinto, **se prioriza la BD**; para que mande el CSV usa `--limpio`).
 
 ### 🧭 Origen de datos en la interfaz
 
@@ -95,12 +101,13 @@ La app arranca vacía y se hidrata desde la base de datos; el encabezado **siemp
 
 | Indicador | Significado |
 |-----------|-------------|
-| ⏳ `Cargando padrón real…` | Consulta en curso a `/api/subscribers` (timeout defensivo de 12 s) |
+| ⏳ `Cargando padrón real…` | Consulta en curso a `/api/subscribers` (18 s por intento, **5 intentos automáticos** con backoff 1/3/6/12 s; el badge muestra `intento N/5`) |
 | 🟢 `Conectado a BD · N líneas` | Padrón real desde PostgreSQL/Supabase |
 | 🔵 `CSV cargado localmente · N líneas` | Archivo cargado por el operador con el modal CSV (no persistido) |
-| 🟠 `Modo demo (79 líneas) — BD no disponible` | Backend sin respuesta: datos de demostración **etiquetados** + banner ámbar con instrucciones |
+| 🟠 `BD vacía · falta npm run db:load` | La BD responde pero no contiene líneas (padrón sin cargar) |
+| 🟠 `Modo demo (79 líneas) — BD no disponible` | Tras agotar los reintentos: datos de demostración **etiquetados** + banner ámbar con la causa (404 / 500 / timeout / red) |
 
-El botón **↻ Recargar** relanza la consulta. Protecciones de la interfaz: `ErrorBoundary` global, placeholders «Cargando padrón real…» en las vistas que requieren un abonado seleccionado, y pie de página que refleja la fuente activa.
+El botón **↻ Recargar** relanza la consulta y cancela cualquier reintento pendiente; además la app **se reconecta sola** si vuelve la red (`online`) o la pestaña recupera el foco. Protecciones de la interfaz: `ErrorBoundary` global, placeholders «Cargando padrón real…» en las vistas que requieren un abonado seleccionado, y pie de página que refleja la fuente activa.
 
 ---
 
@@ -212,7 +219,10 @@ npm run db:generate          # generar migración desde src/db/schema.ts
 npm run db:push              # aplicar esquema a la BD
 npm run db:check             # detectar deriva schema.ts ↔ BD (tablas, columnas, tipos, CHECK/FK)
 npm run db:verify            # smoke test de integridad en vivo (recuentos, JOINs, OTs, bitácora, CHECKs)
-npm run db:load              # cargar/recargar el padrón real desde el CSV consolidado
+npm run db:load              # cargar/recargar el padrón real (conserva estados/GPS/auditoría)
+npm run db:load -- --limpio  # recarga total descartando lo operativo previo
+npm run db:clean             # eliminar restos de datos de prueba conocidos
+npm run smoke                # verificar que el backend en marcha sirve el padrón real
 npm run clean                # eliminar dist/
 ```
 
@@ -241,7 +251,9 @@ Copia `.env.example` a `.env` y configura tus valores:
 - `npm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `npm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `npm run db:verify` — integridad en vivo: recuentos del padrón (216/212/41/4), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
-- La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga y fallback a datos de demostración siempre etiquetado (banner ámbar) si el backend no responde.
+- `npm run smoke` — contra el backend en marcha (`SMOKE_URL`, `EXPECTED_LINES` opcionales): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
+- `npm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
+- La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, endpoint público sin token → acceso permitido.
 
 ---

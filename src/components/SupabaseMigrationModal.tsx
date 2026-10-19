@@ -439,7 +439,8 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                   <p className="text-xs text-slate-400">
                     Copia y pega este script en el <strong className="text-white">SQL Editor</strong> de Supabase y
                     pulsa <strong className="text-emerald-400">RUN</strong> para crear automáticamente las tablas,
-                    claves foráneas, índices WGS84, políticas RLS y los 79 abonados con sus 6 celdas Siemens.
+                    claves foráneas, índices WGS84, políticas RLS, las 4 celdas Siemens reales y las 41 zonas.
+                    El padrón de líneas se carga después con <code className="text-slate-300">npm run db:load</code>.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -504,7 +505,7 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    Solo Datos Semilla (79 Abonados + 6 Celdas)
+                    Solo Guía de Carga (4 Celdas + 41 Zonas)
                   </button>
                 </div>
 

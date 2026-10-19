@@ -289,7 +289,7 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
                 <div>
                   <strong className="text-white font-mono block">supabase/seed.sql</strong>
                   <span className="text-slate-400 text-[11px]">
-                    Datos iniciales de las 6 celdas RFP Siemens y los 79 abonados
+                    Guía informativa: 4 celdas reales, 41 zonas y recuentos esperados del padrón
                   </span>
                 </div>
               </div>

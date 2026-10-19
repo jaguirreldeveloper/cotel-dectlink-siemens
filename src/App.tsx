@@ -56,6 +56,33 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+// --- Carga del padrón real: reintentos con backoff y diagnóstico visible ---
+// El front aguanta MÁS que el pool de pg (connectionTimeoutMillis: 15s en
+// src/db/index.ts) para nunca rendirse antes que el backend. Si la primera
+// consulta falla (servidor aún arrancando, BD fría, red intermitente) se
+// reintenta solo; el fallback demo solo se activa al agotar los intentos.
+const LOAD_TIMEOUT_MS = 18000;
+const LOAD_RETRY_DELAYS_MS = [1000, 3000, 6000, 12000];
+const MAX_LOAD_ATTEMPTS = LOAD_RETRY_DELAYS_MS.length + 1;
+
+/** Traduce el fallo de /api/subscribers en una causa accionable para el banner. */
+function describeLoadError(err: unknown): string {
+  if (err instanceof DOMException && err.name === 'AbortError') {
+    return `El backend no respondió en ${LOAD_TIMEOUT_MS / 1000} s (¿servidor arrancando o base de datos lenta?)`;
+  }
+  if (err instanceof TypeError) {
+    return 'No hay respuesta de la API en este puerto (¿se ejecutó `npm run dev` en :3000?)';
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/\bHTTP 404\b/.test(msg)) {
+    return 'La API no existe en esta URL (HTTP 404): el frontend está servido sin backend';
+  }
+  if (/\bHTTP 5\d\d\b/.test(msg)) {
+    return `El backend responde pero la base de datos falló (${msg})`;
+  }
+  return msg;
+}
+
 export default function App() {
   // Estado inicial vacío: el padrón REAL se carga desde la BD; los datos demo
   // solo aparecen (etiquetados) si el backend no responde.
@@ -83,55 +110,115 @@ export default function App() {
   const [dbProvider, setDbProvider] = useState<string>('PostgreSQL');
   const [isNormalizedApplied, setIsNormalizedApplied] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
+  // Intento de carga en curso (0 = sin reintento activo): se muestra en el
+  // badge de carga para que la espera sea visible y no parezca un cuelgue.
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  // Token de cadena de cargas: invalida intentos/retardos de una carga anterior
+  // cuando el usuario pulsa «Recargar», carga un CSV o llega un evento SSE.
+  const loadTokenRef = React.useRef(0);
+  const loadTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // External filters for cross-chart navigation to table
   const [externalZoneFilter, setExternalZoneFilter] = useState<string>('');
   const [externalYearFilter, setExternalYearFilter] = useState<number | undefined>(undefined);
   const [externalCeldaFilter, setExternalCeldaFilter] = useState<string>('');
 
-  // Function to reload subscribers from active database
+  // Carga del padrón real desde PostgreSQL, con reintentos automáticos.
+  // - Cada intento tiene hasta 18 s (más que los 15 s del pool: el front nunca
+  //   se rinde antes que el backend).
+  // - Si falla, reintenta con backoff (1s/3s/6s/12s); el modo demo solo se
+  //   activa al agotar los intentos, y siempre con la causa visible en el banner.
+  const stopLoadRetries = () => {
+    loadTokenRef.current += 1;
+    if (loadTimerRef.current) {
+      clearTimeout(loadTimerRef.current);
+      loadTimerRef.current = null;
+    }
+    setLoadAttempt(0);
+  };
+
   const loadSubscribersFromDb = () => {
+    const token = ++loadTokenRef.current;
+    if (loadTimerRef.current) {
+      clearTimeout(loadTimerRef.current);
+      loadTimerRef.current = null;
+    }
+    setLoadAttempt(0);
     setDataSource('loading');
-    // Timeout defensivo: si el backend no responde en 12s, se activa el
-    // fallback demo etiquetado en lugar de quedar cargando para siempre.
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
-    fetch('/api/subscribers', { signal: controller.signal })
-      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then(data => {
-        if (Array.isArray(data)) {
-          const mapped: RawSubscriberRecord[] = data.map((d: any) => ({
-            nro: d.nro,
-            numero: d.numero,
-            area: d.area,
-            cto: d.contrato != null ? String(d.contrato) : '',
-            nombre: d.nombre,
-            direccion: d.direccion ?? '',
-            fechServ: d.fechaServicio ?? '',
-            estado: d.estado,
-            estadoOperativo: d.estadoOperativo as OperationalStatus,
-            celda: d.celdaId,
-            zona: d.zona,
-            fauModel: d.fauModel ?? undefined,
-            signalDect: d.signalDect ?? undefined,
-            deudaMeses: d.deudaMeses ?? undefined,
-            tiempoDepositoMeses: d.tiempoDepositoMeses ?? undefined,
-            fallaDescripcion: d.fallaDescripcion,
-            lat: d.lat ?? undefined,
-            lng: d.lng ?? undefined,
-            distanciaKm: d.distanciaKm ?? undefined,
-            azimutGrados: d.azimutGrados ?? undefined,
-          }));
-          setRawRecords(mapped);
-          setDataSource('db');
+    // Nota: NO se limpia backendError aquí: si un guardado falló, su aviso debe
+    // sobrevivir a la recarga de rollback. Se limpia solo al cargar con éxito.
+
+    const attempt = async (n: number) => {
+      if (token !== loadTokenRef.current) return; // una carga posterior lo invalidó
+      if (n > 1) setLoadAttempt(n);
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+      try {
+        const res = await fetch('/api/subscribers', { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (token !== loadTokenRef.current) return;
+        if (!Array.isArray(data)) {
+          throw new Error('respuesta inesperada del servidor (no es una lista de abonados)');
         }
-      })
-      .catch(err => {
-        console.error('Carga del padrón real falló; se muestran los datos demo:', err);
-        setRawRecords(EXPANDED_DECT_RECORDS);
-        setDataSource('demo');
-      })
-      .finally(() => clearTimeout(timer));
+
+        const mapped: RawSubscriberRecord[] = data.map((d: any) => ({
+          nro: d.nro,
+          numero: d.numero,
+          area: d.area,
+          cto: d.contrato != null ? String(d.contrato) : '',
+          nombre: d.nombre,
+          direccion: d.direccion ?? '',
+          fechServ: d.fechaServicio ?? '',
+          estado: d.estado,
+          estadoOperativo: d.estadoOperativo as OperationalStatus,
+          celda: d.celdaId,
+          zona: d.zona,
+          fauModel: d.fauModel ?? undefined,
+          signalDect: d.signalDect ?? undefined,
+          deudaMeses: d.deudaMeses ?? undefined,
+          tiempoDepositoMeses: d.tiempoDepositoMeses ?? undefined,
+          fallaDescripcion: d.fallaDescripcion,
+          lat: d.lat ?? undefined,
+          lng: d.lng ?? undefined,
+          distanciaKm: d.distanciaKm ?? undefined,
+          azimutGrados: d.azimutGrados ?? undefined,
+        }));
+        setRawRecords(mapped);
+        setDataSource('db');
+        setLoadAttempt(0);
+        // BD viva pero vacía ≠ «sin conexión»: se avisa con la acción concreta.
+        setBackendError(
+          mapped.length === 0
+            ? 'La base de datos responde pero está vacía (0 líneas). Ejecuta `npm run db:load` para cargar el padrón real.'
+            : null
+        );
+      } catch (err) {
+        if (token !== loadTokenRef.current) return;
+        const reason = describeLoadError(err);
+        if (n < MAX_LOAD_ATTEMPTS) {
+          const delay = LOAD_RETRY_DELAYS_MS[n - 1];
+          console.warn(`Carga del padrón: intento ${n}/${MAX_LOAD_ATTEMPTS} falló (${reason}). Reintento en ${delay} ms`);
+          loadTimerRef.current = setTimeout(() => {
+            loadTimerRef.current = null;
+            void attempt(n + 1);
+          }, delay);
+        } else {
+          console.error('Carga del padrón real falló tras reintentos; se muestran los datos demo:', err);
+          setRawRecords(EXPANDED_DECT_RECORDS);
+          setDataSource('demo');
+          setLoadAttempt(0);
+          setBackendError(
+            `${reason}. Se agotaron los ${MAX_LOAD_ATTEMPTS} intentos automáticos: se muestran los datos de demostración.`
+          );
+        }
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    void attempt(1);
   };
 
   // Hydrate from PostgreSQL and connect to real-time SSE stream
@@ -224,6 +311,33 @@ export default function App() {
       isMounted = false;
       if (retryTimer) clearTimeout(retryTimer);
       eventSource?.close();
+    };
+  }, []);
+
+  // Auto-recuperación de la carga del padrón: si la app quedó en modo demo (o
+  // con error de backend pendiente) y vuelve la red o la pestaña recupera el
+  // foco, se reintenta solo — sin esperar a que el operador pulsa «Recargar».
+  const statusRef = React.useRef({ dataSource, backendError });
+  React.useEffect(() => {
+    statusRef.current = { dataSource, backendError };
+  }, [dataSource, backendError]);
+
+  React.useEffect(() => {
+    const reload = () => {
+      const { dataSource: ds, backendError: err } = statusRef.current;
+      if (ds === 'demo' || (err !== null && ds === 'loading')) {
+        console.info('Reconexión detectada: se reintenta la carga del padrón real.');
+        loadSubscribersFromDb();
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    window.addEventListener('online', reload);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('online', reload);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 
@@ -464,6 +578,8 @@ export default function App() {
   const handleLoadCsvData = (csvText: string) => {
     const parsed = parseCSV(csvText);
     if (parsed.length > 0) {
+      // Un CSV local manda sobre cualquier reintento de BD pendiente.
+      stopLoadRetries();
       setRawRecords(parsed);
       setDataSource('csv');
       setIsNormalizedApplied(false);
@@ -597,7 +713,8 @@ export default function App() {
             <span>
               <strong>Sin conexión con el backend</strong> — se muestran {EXPANDED_DECT_RECORDS.length}{' '}
               registros de demostración, <strong>no el padrón real</strong>. Ejecuta{' '}
-              <code className="font-mono font-semibold">npm run dev</code> y pulsa «Recargar».
+              <code className="font-mono font-semibold">npm run dev</code>: la app se
+              reconecta sola al volver el backend, o pulsa «Recargar».
             </span>
           </div>
         )}
@@ -612,15 +729,25 @@ export default function App() {
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Cargando padrón real…
+                {loadAttempt > 1 && ` (intento ${loadAttempt}/${MAX_LOAD_ATTEMPTS})`}
               </span>
             )}
-            {dataSource === 'db' && (
+            {dataSource === 'db' && rawRecords.length > 0 && (
               <span
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
                 title="Padrón real cargado desde la base de datos (PostgreSQL/Supabase)"
               >
                 <Database className="w-3 h-3" />
                 Conectado a BD · {rawRecords.length} líneas
+              </span>
+            )}
+            {dataSource === 'db' && rawRecords.length === 0 && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900"
+                title="La BD responde pero no contiene líneas: el padrón se carga con npm run db:load"
+              >
+                <ShieldAlert className="w-3 h-3" />
+                BD vacía · falta npm run db:load
               </span>
             )}
             {dataSource === 'csv' && (
@@ -839,12 +966,16 @@ export default function App() {
             <span>
               Padrón:{' '}
               {dataSource === 'db'
-                ? `BD en línea (${rawRecords.length} líneas)`
+                ? rawRecords.length > 0
+                  ? `BD en línea (${rawRecords.length} líneas)`
+                  : 'BD en línea · sin padrón (falta db:load)'
                 : dataSource === 'csv'
                   ? `CSV local (${rawRecords.length} líneas)`
                   : dataSource === 'demo'
                     ? 'datos demo (sin conexión a BD)'
-                    : 'cargando…'}
+                    : loadAttempt > 1
+                      ? `conectando… (intento ${loadAttempt}/${MAX_LOAD_ATTEMPTS})`
+                      : 'cargando…'}
             </span>
             <span className="mx-1.5">·</span>
             <span>Banda 1880 - 1900 MHz</span>

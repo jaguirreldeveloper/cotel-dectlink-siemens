@@ -395,13 +395,13 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
               <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5">
                 <span className="text-slate-400 block text-[10px] uppercase font-mono">Abonados</span>
                 <span className="text-white font-mono font-bold text-sm">
-                  {dbStatus?.counts.abonados ?? 79}
+                  {dbStatus?.counts.abonados ?? '—'}
                 </span>
               </div>
               <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5">
                 <span className="text-slate-400 block text-[10px] uppercase font-mono">Celdas RFP</span>
                 <span className="text-white font-mono font-bold text-sm">
-                  {dbStatus?.counts.celdas ?? 6}
+                  {dbStatus?.counts.celdas ?? '—'}
                 </span>
               </div>
               <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5">
@@ -413,7 +413,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
               <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5">
                 <span className="text-slate-400 block text-[10px] uppercase font-mono">Latencia</span>
                 <span className="text-emerald-400 font-mono font-bold text-sm">
-                  {dbStatus?.latencyMs ?? 12} ms
+                  {dbStatus ? `${dbStatus.latencyMs} ms` : '—'}
                 </span>
               </div>
             </div>

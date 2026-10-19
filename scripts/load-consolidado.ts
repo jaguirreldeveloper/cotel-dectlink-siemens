@@ -6,27 +6,37 @@
  *   1. Lee y parsea el CSV (nro_registro,numero_telefono,...,archivo_origen).
  *   2. Normaliza zonas: mapping de typos/variantes + fix de ñ dañada (mojibake).
  *      La zona cruda se conserva en abonados_lineas.zona_origen (auditoría).
- *   3. Limpia y recarga zonas / clientes / abonados_lineas de forma atómica
- *      (DELETE + RESTART IDENTITY; preserva cuadrillas/materiales/work_orders,
- *      aunque las OTs existentes quedan sin enlace de abonado).
- *   4. Deduplica clientes por (nombre_completo, direccion): un titular con
+ *   3. RESGUARDA lo operativo que NO está en el CSV (estados, señal, GPS,
+ *      FAU, bitácora y enlace de OTs) y lo restaura tras la recarga, identidad
+ *      estable = numero_telefono. Sin este paso, cada recarga borraría el
+ *      trabajo de campo y de operación. Con --limpio se omite (carga total).
+ *   4. Limpia y recarga zonas / clientes / abonados_lineas de forma atómica
+ *      (DELETE + RESTART IDENTITY; preserva cuadrillas/materiales/work_orders).
+ *   5. Deduplica clientes por (nombre_completo, direccion): un titular con
  *      varias líneas genera un solo registro de cliente.
- *   5. Inserta las líneas con nro secuencial global (1..N) ordenadas por
+ *   6. Inserta las líneas con nro secuencial global (1..N) ordenadas por
  *      (id_celda, nro_registro); el nro_registro del CSV es procedencia.
+ *   7. Restaura estados/GPS, bitácora y re-enlaza OTs; reporta conflictos
+ *      entre el estado del CSV y el conservado en la BD.
  *
  * Uso:
  *   npm run db:load                       (ruta por defecto del consolidado)
  *   npm run db:load -- <ruta\al\archivo.csv>
+ *   npm run db:load -- --limpio           (descarta estados/GPS/auditoría previos)
  */
 import fs from 'fs';
 import path from 'path';
 import { getPool } from '../src/db/index.ts';
 
 // ---------------------------------------------------------------------------
-// Ruta del consolidado (override por argumento de línea de comandos)
+// Ruta del consolidado y flags (argumentos de línea de comandos)
 // ---------------------------------------------------------------------------
 const DEFAULT_CSV = 'F:\\CD-INAL-EA\\CONSOLIDADO_CELDAS_INALAMBRICAS.csv';
-const csvPath = process.argv[2] || DEFAULT_CSV;
+const cliArgs = process.argv.slice(2);
+// --limpio: carga total que NO conserva estados/GPS/bitácora previos de la BD.
+const cargaLimpia = cliArgs.includes('--limpio');
+// La ruta es el primer argumento que no es un flag (--limpio, etc.).
+const csvPath = cliArgs.find(a => !a.startsWith('--')) || DEFAULT_CSV;
 
 // ---------------------------------------------------------------------------
 // Mapping de zonas crudas -> zona canónica.
@@ -118,6 +128,49 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
+/** Fila operativa resguardada de abonados_lineas antes de la recarga. */
+interface RespaldoLinea {
+  numero: string;
+  estadoServicio: string;
+  estadoOperativo: string;
+  signalDect: string | null;
+  fauModel: string | null;
+  lat: number | null;
+  lng: number | null;
+  distanciaKm: number | null;
+  azimutGrados: number | null;
+  fallaDescripcion: string | null;
+  deudaMeses: number | null;
+  tiempoDepositoMeses: number | null;
+  // Acceso genérico por nombre de campo al restaurar (CONSERVAR[].field).
+  [key: string]: unknown;
+}
+
+/** Entrada de bitácora resguardada con su número telefónico (clave estable). */
+interface RespaldoBitacora {
+  numero: string;
+  estadoAnterior: string | null;
+  nuevoEstado: string;
+  detalle: string | null;
+  tecnico: string | null;
+  timestamp: Date;
+}
+
+/** Columnas operativas restauradas tras la recarga (el CSV no las alimenta). */
+const CONSERVAR = [
+  { col: 'estado_servicio', field: 'estadoServicio', pgType: 'text' },
+  { col: 'estado_operativo', field: 'estadoOperativo', pgType: 'text' },
+  { col: 'signal_dect', field: 'signalDect', pgType: 'text' },
+  { col: 'fau_model', field: 'fauModel', pgType: 'text' },
+  { col: 'lat', field: 'lat', pgType: 'double precision' },
+  { col: 'lng', field: 'lng', pgType: 'double precision' },
+  { col: 'distancia_km', field: 'distanciaKm', pgType: 'double precision' },
+  { col: 'azimut_grados', field: 'azimutGrados', pgType: 'integer' },
+  { col: 'falla_descripcion', field: 'fallaDescripcion', pgType: 'text' },
+  { col: 'deuda_meses', field: 'deudaMeses', pgType: 'integer' },
+  { col: 'tiempo_deposito_meses', field: 'tiempoDepositoMeses', pgType: 'integer' },
+] as const;
+
 async function main() {
   if (!fs.existsSync(csvPath)) fail(`no existe el archivo: ${csvPath}`);
 
@@ -198,10 +251,57 @@ async function main() {
     fail(`${errores.length} fila(s) inválidas; no se cargó nada.`);
   }
 
-  // 2. Limpieza atómica del padrón (preserva cuadrillas/materiales/OTs;
-  //    DELETE sobre abonados_lineas aplica ON DELETE SET NULL en work_orders)
+  // 2. Resguardo operativo previo + limpieza atómica del padrón
+  //    (preserva cuadrillas/materiales/OTs; el DELETE de líneas aplica
+  //     ON DELETE SET NULL en work_orders y CASCADE en bitácora)
+  const respaldoLineas: RespaldoLinea[] = [];
+  const respaldoBitacora: RespaldoBitacora[] = [];
+  const respaldoOts: { id: string; numero: string }[] = [];
+  let lineasConservadas = 0;
+  let lineasDescartadas = 0;
+  let bitacoraConservada = 0;
+  let otsReenlazadas = 0;
+  const conflictosEstado: string[] = [];
+
   await pool.query('BEGIN');
   try {
+    if (!cargaLimpia) {
+      // Lo operativo vive solo en la BD: se resguarda ANTES de borrar y se
+      // restaura después, usando numero_telefono como identidad estable
+      // (el nro se recalcula en cada carga).
+      const lineasRes = await pool.query(`
+        SELECT numero_telefono::text   AS "numero",
+               estado_servicio         AS "estadoServicio",
+               estado_operativo        AS "estadoOperativo",
+               signal_dect             AS "signalDect",
+               fau_model               AS "fauModel",
+               lat, lng,
+               distancia_km            AS "distanciaKm",
+               azimut_grados           AS "azimutGrados",
+               falla_descripcion       AS "fallaDescripcion",
+               deuda_meses             AS "deudaMeses",
+               tiempo_deposito_meses   AS "tiempoDepositoMeses"
+          FROM public.abonados_lineas`);
+      respaldoLineas.push(...(lineasRes.rows as RespaldoLinea[]));
+
+      const bitacoraRes = await pool.query(`
+        SELECT a.numero_telefono::text AS "numero",
+               b.estado_anterior       AS "estadoAnterior",
+               b.nuevo_estado          AS "nuevoEstado",
+               b.detalle,
+               b.tecnico,
+               b."timestamp"
+          FROM public.bitacora b
+          JOIN public.abonados_lineas a ON a.nro = b.abonado_nro`);
+      respaldoBitacora.push(...(bitacoraRes.rows as RespaldoBitacora[]));
+
+      const otsRes = await pool.query(`
+        SELECT wo.id, a.numero_telefono::text AS numero
+          FROM public.work_orders wo
+          JOIN public.abonados_lineas a ON a.nro = wo.abonado_nro`);
+      respaldoOts.push(...(otsRes.rows as { id: string; numero: string }[]));
+    }
+
     await pool.query('DELETE FROM public.bitacora');
     await pool.query('DELETE FROM public.abonados_lineas');
     await pool.query('DELETE FROM public.clientes');
@@ -268,6 +368,75 @@ async function main() {
       );
     }
 
+    // 5b. Restauración operativa por numero_telefono (estados, señal, GPS y
+    //     FAU). Solo aplica a líneas que siguen en el CSV; las nuevas quedan
+    //     con los valores por defecto.
+    if (!cargaLimpia && respaldoLineas.length > 0) {
+      const nroPorNumero = new Map<string, number>(
+        (
+          await pool.query('SELECT nro, numero_telefono::text AS numero FROM public.abonados_lineas')
+        ).rows.map((r: { nro: number; numero: string }) => [r.numero, Number(r.nro)])
+      );
+
+      lineasDescartadas = respaldoLineas.filter(r => !nroPorNumero.has(r.numero)).length;
+
+      const setSql = CONSERVAR.map((c, i) => `${c.col} = v.c${i + 2}`).join(', ');
+      const aliases = ['numero', ...CONSERVAR.map((_, i) => `c${i + 2}`)];
+
+      const CHUNK = 100;
+      for (let i = 0; i < respaldoLineas.length; i += CHUNK) {
+        const chunk = respaldoLineas.slice(i, i + CHUNK);
+        const values: unknown[] = [];
+        const tuples = chunk.map((r, j) => {
+          const base = j * (CONSERVAR.length + 1);
+          values.push(r.numero, ...CONSERVAR.map(c => r[c.field] ?? null));
+          const placeholders = [`$${base + 1}::text`];
+          for (let k = 0; k < CONSERVAR.length; k++) {
+            placeholders.push(`$${base + k + 2}::${CONSERVAR[k].pgType}`);
+          }
+          return `(${placeholders.join(',')})`;
+        });
+        const res = await pool.query(
+          `UPDATE public.abonados_lineas a SET ${setSql}
+            FROM (VALUES ${tuples.join(',')}) AS v(${aliases.join(',')})
+           WHERE a.numero_telefono = v.numero`,
+          values
+        );
+        lineasConservadas += res.rowCount ?? 0;
+      }
+
+      // Conflictos: el CSV trae un estado distinto y se prioriza el de la BD
+      // (trabajo de operación). Se reporta para que el operador decida.
+      const csvEstadoPorNumero = new Map(lineas.map(l => [l.numero, l.estadoServicio]));
+      for (const r of respaldoLineas) {
+        const csvEstado = csvEstadoPorNumero.get(r.numero);
+        if (csvEstado && csvEstado !== r.estadoServicio) {
+          conflictosEstado.push(`${r.numero}: CSV "${csvEstado}" → conservado BD "${r.estadoServicio}"`);
+        }
+      }
+
+      // 5c. Bitácora histórica (misma clave; el DELETE la borró por CASCADE).
+      for (const e of respaldoBitacora) {
+        const nroNuevo = nroPorNumero.get(e.numero);
+        if (nroNuevo == null) continue;
+        await pool.query(
+          `INSERT INTO public.bitacora
+             (abonado_nro, estado_anterior, nuevo_estado, detalle, tecnico, "timestamp")
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [nroNuevo, e.estadoAnterior, e.nuevoEstado, e.detalle, e.tecnico, e.timestamp]
+        );
+        bitacoraConservada++;
+      }
+
+      // 5d. Re-enlace de OTs: el DELETE de líneas les puso abonado_nro = NULL.
+      for (const ot of respaldoOts) {
+        const nroNuevo = nroPorNumero.get(ot.numero);
+        if (nroNuevo == null) continue;
+        await pool.query('UPDATE public.work_orders SET abonado_nro = $1 WHERE id = $2', [nroNuevo, ot.id]);
+        otsReenlazadas++;
+      }
+    }
+
     await pool.query('COMMIT');
   } catch (err) {
     await pool.query('ROLLBACK').catch(() => {});
@@ -287,6 +456,24 @@ async function main() {
   console.log(`  clientes:        ${cli.rows[0].n}`);
   console.log(`  zonas:           ${zon.rows[0].n}`);
   console.log(`  celdas:          ${cel.rows[0].n}`);
+
+  if (cargaLimpia) {
+    console.log('\nCarga limpia (--limpio): NO se conservaron estados, GPS ni auditoría previos.');
+  } else {
+    console.log('\nConservación operativa (para descartarla usa --limpio):');
+    console.log(
+      `  estados/GPS/FAU: ${lineasConservadas} línea(s) restaurada(s)` +
+        (lineasDescartadas ? ` · ${lineasDescartadas} previa(s) ya no figuran en el CSV` : '')
+    );
+    console.log(`  bitácora:        ${bitacoraConservada} entrada(s) histórica(s) conservada(s)`);
+    console.log(`  OTs:             ${otsReenlazadas} re-enlazada(s) a su abonado`);
+    if (conflictosEstado.length) {
+      console.warn(`  ! ${conflictosEstado.length} línea(s) con estado distinto en el CSV; se priorizó la BD:`);
+      for (const c of conflictosEstado.slice(0, 10)) console.warn(`    - ${c}`);
+      if (conflictosEstado.length > 10) console.warn(`    … y ${conflictosEstado.length - 10} más`);
+      console.warn('    (si el CSV manda, recarga con: npm run db:load -- --limpio)');
+    }
+  }
 
   if (lin.rows[0].n !== records.length) {
     fail(`se esperaban ${records.length} líneas y hay ${lin.rows[0].n}.`);
