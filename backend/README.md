@@ -1,58 +1,47 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# COTEL DECTlink — Backend (Laravel 13)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend de la plataforma de gestión de planta externa Siemens DECTlink de
+**COTEL R.L.** (Área EAI — El Alto). Migración con **paridad total** de la API
+Express original (`server.ts` en la raíz del repo): mismos paths y payloads
+camelCase, por lo que el frontend React no requirió cambios.
 
-## About Laravel
+> Documentación completa del proyecto: [`../README.md`](../README.md)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Arquitectura
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Capa | Implementación |
+|------|----------------|
+| API | 29 rutas en `routes/api.php` (subscribers, cells, work-orders, cuadrillas, materiales, logs, database/*, git/*, events) |
+| Auth | Middleware `AdminToken` — header `x-admin-token` vs `ADMIN_TOKEN` (401 inválido, 503 sin configurar) |
+| Realtime | SSE `/api/events` (StreamedResponse) con pub/sub en Valkey/Redis, canal `cotel-events` (`Support/SseHub`); sin Redis degrada a heartbeat |
+| Datos | SQL directo (PDO `pgsql`) contra Supabase (PostgreSQL 17, pooler `:5432`); sin Eloquent ni modelos |
+| Frontend | Build de Vite servido desde `public/` (SPA con catch-all vía `SpaController`) |
+| Stubs nube | `git/*`, `database/test-connection`, `database/apply-connection` → **501** (la BD se fija por env en Laravel Cloud) |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Comandos
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install               # dependencias
+php artisan serve --port=8010  # desarrollo local (puerto libre; :8000 puede estar ocupado)
+php artisan optimize           # cache de config/routes/views (build de Laravel Cloud)
+php artisan migrate:status     # las 6 migraciones aparecen como "Ran" (stampeadas)
+vendor/bin/pint                # formato de código (obligatorio antes de commitear)
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Frontend en desarrollo: desde la raíz del repo, `npx vite` (proxy `/api` →
+Laravel). Actualizar el build servido: `npm run build:backend` (raíz).
 
-## Contributing
+## Entorno
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Plantilla documentada en [`.env.example`](.env.example). Regla crítica: los
+drivers de sesión/cache/cola deben ser `file`/`sync` — **nunca `database`**,
+porque el esquema COTEL (`public.users`, `abonados_lineas`, `celdas`, …) no
+tiene (ni debe tener) las tablas `sessions`/`cache`/`jobs` de Laravel. Las 6
+migraciones históricas viven en `database/sql/` y se ejecutan envueltas por
+`database/migrations/`.
 
-## Code of Conduct
+## Despliegue
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+[Laravel Cloud](https://cloud.laravel.com) desde `main` (root directory
+`backend/`). Guía paso a paso en el README raíz (sección «Despliegue en
+Laravel Cloud»).
