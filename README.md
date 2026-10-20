@@ -8,20 +8,28 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 
 ## 🚀 Arquitectura
 
-- **Frontend**: React 19, TypeScript (modo **estricto**), Tailwind CSS 4, Leaflet, Lucide Icons. Aplicación de una sola página con navegación por pestañas (sin router).
-- **Backend**: Node.js + Express (4) con **Server-Sent Events (SSE)** para sincronización en tiempo real entre operadores y cuadrillas. Sirve Vite en modo middleware (dev) o `dist/` estático (prod) desde el mismo proceso.
-- **Capa de datos**: **Drizzle ORM** sobre un pool de conexiones `pg`, con conmutación en caliente de base de datos.
-- **Bases de datos compatibles**: Google Cloud SQL (PostgreSQL 15+) y **Supabase Cloud** (SSL + Connection Pooler).
-- **Migraciones**: `supabase/migrations/` es la **única fuente de verdad del esquema** (6 migraciones); el backend las consolida para el exportador SQL. El **padrón real** se carga con `npm run db:load` desde el CSV consolidado de campo (`supabase/seed.sql` es solo informativo).
+- **Frontend**: React 19, TypeScript (modo **estricto**), Tailwind CSS 4, Leaflet, Lucide Icons. Aplicación de una sola página (sin router). Rutas relativas a `/api/*`; el `EventSource` de realtime apunta a `/api/events`.
+- **Backend**: **Laravel 13** (PHP 8.4) en `backend/` — migración con **paridad total** de la API Express original (mismos paths y payloads camelCase, para no tocar el frontend). Sirve el build de Vite desde `public/` (SPA con catch-all) y expone **Server-Sent Events (SSE)** para sincronización en tiempo real entre operadores y cuadrillas (pub/sub en Valkey/Redis, canal `cotel-events`).
+- **Capa de datos**: SQL directo (PDO `pgsql`) contra **Supabase Cloud** (PostgreSQL 17, pooler transactional IPv4). El **padrón real** se carga con `npm run db:load` (ETL Drizzle/TS sobre el CSV consolidado; `supabase/seed.sql` es solo informativo).
+- **Legacy Express** (`server.ts` + `src/db/`): el servidor original queda como referencia histórica y hogar de las herramientas ETL/verificación (`db:load`, `db:check`, `db:verify`, `db:clean`); el runtime en producción es Laravel.
+- **Migraciones**: las 6 migraciones históricas viven en `backend/database/sql/` y se ejecutan envueltas por `backend/database/migrations/` (stampeadas como aplicadas en la BD viva).
 
 ---
 
 ## 🗂️ Estructura del proyecto
 
 ```
-server.ts                     Servidor Express: rutas API, SSE, middleware admin, Vite/dev o estático/prod
+backend/                      Backend Laravel 13 (runtime de producción; ver «Backend Laravel»)
+  routes/api.php              29 rutas API con paridad total del Express original
+  app/Http/Controllers/Api/   Subscribers, Cells, WorkOrders, Cuadrillas, Materiales, Logs, Database, Git (stub), Events (SSE)
+  app/Http/Middleware/        AdminToken (x-admin-token → 401/503)
+  app/Support/                SqlGuard, ConnectionInfo, PgArray, SseHub (pub/sub Valkey)
+  database/migrations/        6 migraciones que ejecutan el SQL histórico (ya aplicadas en la BD viva)
+  database/sql/               SQL copiado de supabase/migrations/ (fuente de las migraciones)
+  public/                     Build del frontend (index.html + assets con hash)
+server.ts                     ⚠️ Legacy: servidor Express original (referencia de paridad; no se usa en producción)
 supabase/
-  migrations/                 DDL versionado (fuente única del esquema)
+  migrations/                 DDL versionado (fuente única del esquema, ya aplicado)
     20261015140000_cotel_dectlink_schema.sql          users, tablas DECTlink iniciales + índices + RLS
     20261016190000_work_orders_and_rls_hardening.sql  work_orders + endurecimiento de políticas RLS
     20261016220000_integrity_constraints.sql          CHECK constraints, FK e índices de integridad
@@ -36,20 +44,21 @@ scripts/
   db-verify.ts                Smoke test de integridad sin tocar el padrón real (npm run db:verify)
   cleanup-pruebas.ts          Elimina restos de prueba conocidos y audita sospechosos (npm run db:clean)
   smoke.ts                    Verificación de despliegue: el backend sirve el padrón real (npm run smoke)
+  copy-dist-to-backend.mjs    Copia dist/ a backend/public/ (npm run build:backend)
 src/
-  server/adminAuth.ts         Seguridad: middleware admin, validación de URL Git, SQL solo-lectura, allowlist de hosts
+  server/adminAuth.ts         Legacy Express: seguridad original (referencia de paridad)
   db/
-    schema.ts                 Definiciones Drizzle del esquema normalizado (zonas, clientes, celdas, abonados_lineas, bitacora, work_orders, cuadrillas, materiales)
-    index.ts                  Pool singleton, prueba/conexión, conmutación en caliente, info de conexión
-    subscribersRepo.ts        Consulta JOIN del padrón + cambios de estado/calibración GPS transaccionales con bitácora
-    workOrdersRepo.ts         CRUD de órdenes de trabajo (código correlativo, cierre automático)
-    cuadrillasRepo.ts         CRUD de cuadrillas de planta externa
-    materialesRepo.ts         CRUD del catálogo de materiales
+    schema.ts                 Definiciones Drizzle del esquema (ETL/herramientas)
+    index.ts                  Pool singleton, prueba/conexión, conmutación en caliente (ETL/herramientas)
+    subscribersRepo.ts        Consulta JOIN del padrón + cambios de estado/calibración GPS (referencia de paridad)
+    workOrdersRepo.ts         CRUD de órdenes de trabajo (referencia de paridad)
+    cuadrillasRepo.ts         CRUD de cuadrillas (referencia de paridad)
+    materialesRepo.ts         CRUD del catálogo de materiales (referencia de paridad)
     drizzle.config.ts         Config de drizzle-kit (lee DATABASE_URL o SQL_*)
   utils/
     analysis.ts               Enriquecimiento ETL, auditoría, distancia/azimut, estadísticas
     rfCalculations.ts         Simulación de enlace RF (ITU-R P.525)
-    supabaseSqlGenerator.ts   Consolida migraciones (DDL) + guía de carga del padrón (server-side)
+    supabaseSqlGenerator.ts   Consolida migraciones (DDL) + guía de carga del padrón
     apiFetch.ts               fetch con header x-admin-token y reintento
     recordFilters.ts          Filtro de búsqueda estándar del padrón
     downloadTextFile.ts       Descarga de archivos (CSV/SQL/KML/GeoJSON)
@@ -113,6 +122,8 @@ El botón **↻ Recargar** relanza la consulta y cancela cualquier reintento pen
 
 ## 📡 Endpoints de la API
 
+Implementados en Laravel (`backend/routes/api.php`) con **paths y payloads idénticos** al backend Express original (el frontend no requirió cambios). En la nube, `git/*` y `test/connection`/`apply-connection` quedan como **stub 501**: en Laravel Cloud la BD se fija por variables de entorno.
+
 ### Públicos (sin token)
 | Método | Ruta | Descripción |
 |--------|------|-------------|
@@ -126,7 +137,7 @@ El botón **↻ Recargar** relanza la consulta y cancela cualquier reintento pen
 | `GET` | `/api/database/tables/:table/data` | Datos paginados con búsqueda (whitelist de tablas) |
 | `GET` | `/api/database/connection-info` | Proveedor y modo de conexión activo |
 | `GET` | `/api/database/export-sql` | DDL consolidado + seed (generados en backend) |
-| `GET` | `/api/git/status` | Estado del repositorio Git |
+| `GET` | `/api/git/status` | Estado del repositorio Git — **stub 501 en la nube** (`initialized: false`) |
 
 ### Administrativos (requieren header `x-admin-token`)
 | Método | Ruta | Descripción |
@@ -137,20 +148,20 @@ El botón **↻ Recargar** relanza la consulta y cancela cualquier reintento pen
 | `PATCH` | `/api/work-orders/:id` | Actualiza orden (cierre automático al COMPLETADO) |
 | `DELETE` | `/api/work-orders/:id` | Elimina orden |
 | `POST` | `/api/database/query` | Consola SQL — **solo lectura** (SELECT/WITH/EXPLAIN/SHOW) |
-| `POST` | `/api/database/test-connection` | Prueba una conexión (allowlist de hosts) |
-| `POST` | `/api/database/apply-connection` | Conmuta la BD activa (allowlist de hosts) |
-| `POST` | `/api/git/init` | Inicializa repo Git + commit inicial |
-| `POST` | `/api/git/remote` | Configura remoto `origin` (solo HTTPS de GitHub) |
+| `POST` | `/api/database/test-connection` | Prueba una conexión — **stub 501 en la nube** |
+| `POST` | `/api/database/apply-connection` | Conmuta la BD activa — **stub 501 en la nube** |
+| `POST` | `/api/git/init` | Inicializa repo Git + commit inicial — **stub 501 en la nube** |
+| `POST` | `/api/git/remote` | Configura remoto `origin` (solo HTTPS de GitHub) — **stub 501 en la nube** |
 
 ---
 
 ## 🔐 Seguridad
 
-Los endpoints administrativos exigen el header `x-admin-token`, validado contra `ADMIN_TOKEN` con comparación en tiempo constante (`src/server/adminAuth.ts`).
+Los endpoints administrativos exigen el header `x-admin-token`, validado contra `ADMIN_TOKEN` con comparación en tiempo constante (middleware `AdminToken` de Laravel; misma regla que el Express original en `src/server/adminAuth.ts`).
 
-- **Consola SQL**: restringida a una única instrucción de **solo lectura**; bloquea `pg_read_file`, `COPY … PROGRAM`, `dblink`, `lo_import`, `GRANT`, etc.
-- **Conexión a BD**: `test-connection`/`apply-connection` aplican una **allowlist de hosts** (`ALLOWED_DB_HOSTS`, por defecto solo `*.supabase.com`), evitando que el servidor se conecte a destinos arbitrarios.
-- **Git**: ejecución con `execFile` (sin shell) y remoto limitado a URLs `https://github.com/…`.
+- **Consola SQL** (`SqlGuard`): restringida a una única instrucción de **solo lectura**; bloquea `pg_read_file`, `COPY … PROGRAM`, `dblink`, `lo_import`, `GRANT`, etc.
+- **Conexión a BD**: `test-connection`/`apply-connection` quedan como **stub 501** en la nube (la plataforma fija la BD por variables de entorno); la allowlist de hosts se conserva en la referencia Express.
+- **Git**: los endpoints `git/*` quedan como **stub 501** en la nube (no hay repo Git dentro del contenedor).
 - **RLS en Supabase**: lectura para `authenticated`, escritura exclusiva de `service_role` (el backend usa connection string, por lo que no se ve afectado).
 
 > Si `ADMIN_TOKEN` no está definido, los endpoints administrativos responden **`503`** (bloqueados, nunca abiertos por omisión).
@@ -177,23 +188,25 @@ Los endpoints administrativos exigen el header `x-admin-token`, validado contra 
 
 ---
 
-## 📦 Migración a Git (GitHub)
+## ☁️ Despliegue en Laravel Cloud
 
-```bash
-# 1. Inicializar el repositorio local (si aún no existe)
-git init -b main
-git add .
-git commit -m "feat: COTEL Siemens DECTlink telecom platform & Supabase migrations"
+El repo ya vive en GitHub (`jaguirreldeveloper/cotel-dectlink-siemens`) con `main` actualizado. Pasos para desplegar:
 
-# 2. Vincular y subir (reemplaza <TU-USUARIO>)
-git remote add origin https://github.com/<TU-USUARIO>/cotel-dectlink.git
-git branch -M main
-git push -u origin main
-```
+1. **Crear la app**: [cloud.laravel.com](https://cloud.laravel.com/) → *New Application* → conectar el repo de GitHub → rama `main`, raíz del proyecto (monorepo detectado vía `backend/composer.json`).
+2. **Variables de entorno** (ver `backend/.env.example`):
+   - `ADMIN_TOKEN` → mismo valor que en local.
+   - `DB_HOST/DB_PORT=5432/DB_DATABASE/DB_USERNAME/DB_PASSWORD` → Supabase pooler (no usar `mode=transaction` extra: el pooler ya lo es).
+   - `REDIS_URL` → addon **Valkey** de Cloud (transporte del pub/sub SSE; sin él, `/api/events` degrada a heartbeat).
+   - `APP_KEY` → generar con `php artisan key:generate` o dejar que Cloud la inyecte.
+3. **Build**: la plataforma ejecuta `composer install` + `php artisan optimize` (validado en local). El frontend ya está **commiteado** en `backend/public/` — para actualizarlo: `npm run build:backend` y commit.
+4. **Verificación**: `SMOKE_URL=https://<app>.laravel.cloud npm run smoke`.
+5. **Corte**: una vez validado, retirar el Worker de Cloudflare (`cotel-dectlink-siemens.jaguirrel-developer.workers.dev`) y actualizar el dominio/URLs.
 
 ---
 
 ## ⚡ Conexión y despliegue en Supabase
+
+> **Estado actual**: el esquema de las 6 migraciones ya está **aplicado y registrado** en la BD viva (las migraciones Laravel de `backend/database/migrations/` están stampeadas como aplicadas; una política RLS no es idempotente y no debe re-ejecutarse). El respaldo previo a la migración está en `backups/`.
 
 **Método A — Integración nativa Supabase + GitHub (recomendado):** en el panel de Supabase, *Project Settings → Integrations*, conecta GitHub y selecciona el repositorio. Supabase aplicará `supabase/migrations/` en cada push a `main`.
 
@@ -210,37 +223,57 @@ npx supabase db push                              # aplica migraciones versionad
 ## 🛠️ Comandos de desarrollo
 
 ```bash
-npm install                  # instalar dependencias
-npm run dev                  # servidor dev en :3000 (Vite middleware + HMR)
-npm run build                # compilar frontend para producción
-NODE_ENV=production npm run start   # servir dist/ estático (requiere build previo)
-npm run lint                 # validar tipos (tsc --noEmit, modo estricto)
-npm run db:generate          # generar migración desde src/db/schema.ts
-npm run db:push              # aplicar esquema a la BD
-npm run db:check             # detectar deriva schema.ts ↔ BD (tablas, columnas, tipos, CHECK/FK)
-npm run db:verify            # smoke test de integridad en vivo (recuentos, JOINs, OTs, bitácora, CHECKs)
-npm run db:load              # cargar/recargar el padrón real (conserva estados/GPS/auditoría)
-npm run db:load -- --limpio  # recarga total descartando lo operativo previo
-npm run db:clean             # eliminar restos de datos de prueba conocidos
-npm run smoke                # verificar que el backend en marcha sirve el padrón real
-npm run clean                # eliminar dist/
+# ── Stack Laravel (flujo recomendado) ─────────────────────────────
+npm install                     # dependencias JS
+composer install                # dependencias PHP (dentro de backend/)
+cd backend && php artisan serve --port=8010   # backend Laravel en :8010
+npx vite                        # frontend con proxy /api → Laravel (HMR incluido)
+npm run build:backend           # build de producción: vite build + copia a backend/public/
+cd backend && php artisan optimize          # config/route/view cache (valida el build de Cloud)
+
+# ── Herramientas de datos (ETL/verificación sobre Supabase) ───────
+npm run lint                    # validar tipos (tsc --noEmit, modo estricto)
+npm run db:generate             # generar migración desde src/db/schema.ts
+npm run db:push                 # aplicar esquema a la BD
+npm run db:check                # detectar deriva schema.ts ↔ BD (tablas, columnas, tipos, CHECK/FK)
+npm run db:verify               # smoke test de integridad en vivo (recuentos, JOINs, OTs, bitácora, CHECKs)
+npm run db:load                 # cargar/recargar el padrón real (conserva estados/GPS/auditoría)
+npm run db:load -- --limpio     # recarga total descartando lo operativo previo
+npm run db:clean                # eliminar restos de datos de prueba conocidos
+npm run smoke                   # verificar que el backend en marcha sirve el padrón real
+npm run clean                   # eliminar dist/
+
+# ── Legacy ────────────────────────────────────────────────────────
+npm run dev                     # Express original en :3000 (referencia; no usar en prod)
 ```
+
+> Nota de puertos: una app ajena (`scspcs_app`) puede estar usando `:8000` en algunas máquinas; si `php artisan serve` choca, usa otro puerto (`--port=8010`) y ajusta el proxy con `VITE_API_TARGET=http://127.0.0.1:8010 npx vite`.
 
 ---
 
-## 📄 Variables de entorno (`.env`)
+## 📄 Variables de entorno
 
-Copia `.env.example` a `.env` y configura tus valores:
+Hay dos entornos con sus propios `.env`:
+
+**1. `backend/.env` — Laravel** (plantilla documentada en `backend/.env.example`):
 
 | Variable | Descripción |
 |----------|-------------|
-| `PORT` | Puerto del servidor (por defecto 3000). |
+| `DB_HOST/PORT/DATABASE/USERNAME/PASSWORD` | Conexión a Supabase (pooler `*.pooler.supabase.com:5432`). |
+| `ADMIN_TOKEN` | **Obligatorio**: habilita los endpoints administrativos (sin él responden 503). |
+| `REDIS_URL` | Pub/sub de SSE (`/api/events`); sin redis el stream degrada a heartbeat. |
+| `SESSION_DRIVER` / `CACHE_STORE` / `QUEUE_CONNECTION` | Deben ser `file`/`sync` (o redis): **nunca `database`** (el esquema COTEL no tiene tablas de Laravel). |
+
+**2. `.env` raíz — herramientas TS** (ETL, drizzle-kit, smoke):
+
+| Variable | Descripción |
+|----------|-------------|
 | `DATABASE_URL` | Cadena de conexión completa (Supabase pooler o PostgreSQL). |
 | `SQL_HOST/PORT/USER/PASSWORD/DB_NAME` | Alternativa a `DATABASE_URL` (Cloud SQL o local). |
 | `SQL_ADMIN_USER` / `SQL_ADMIN_PASSWORD` | Credenciales exclusivas para `drizzle-kit`. |
-| `ADMIN_TOKEN` | **Obligatorio** para habilitar los endpoints administrativos. |
+| `ADMIN_TOKEN` | Token del backend original (herramientas legacy). |
 | `VITE_ADMIN_TOKEN` | Token que el frontend envía en `x-admin-token` (build time). |
-| `ALLOWED_DB_HOSTS` | Allowlist de hosts de BD (coma-separada, admite `*`). |
+| `ALLOWED_DB_HOSTS` | Allowlist de hosts de BD del Express legacy (coma-separada, admite `*`). |
 | `DISABLE_HMR` | `true` desactiva HMR y el file-watching (entornos AI Studio). |
 
 ---
@@ -251,7 +284,7 @@ Copia `.env.example` a `.env` y configura tus valores:
 - `npm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `npm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `npm run db:verify` — integridad en vivo: recuentos del padrón (216/212/41/4), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
-- `npm run smoke` — contra el backend en marcha (`SMOKE_URL`, `EXPECTED_LINES` opcionales): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
+- `npm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 npm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build:backend`, `db:load` o despliegue.
 - `npm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
 - La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, endpoint público sin token → acceso permitido.

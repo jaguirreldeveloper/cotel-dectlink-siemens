@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SpaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -8,24 +9,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Laravel solo sirve el shell de React (index.html); el enrutado real lo
 | maneja React Router en el cliente. Cualquier ruta no-API que no sea un
-| asset estático cae aquí (catch-all).
+| asset estático cae en el fallback. Sin closures para que `route:cache`
+| (php artisan optimize) funcione en el build de Laravel Cloud.
 */
 
-Route::get('/', function () {
-    return response()->file(public_path('index.html'));
-});
+Route::get('/', SpaController::class);
 
 // Catch-all SPA: cualquier GET no-API/asset sirve index.html.
-Route::fallback(function () {
-    if (request()->is('api/*') || request()->expectsJson()) {
-        abort(404);
-    }
-
-    $path = public_path(request()->path());
-
-    if (request()->path() !== '' && is_file($path)) {
-        return response()->file($path);
-    }
-
-    return response()->file(public_path('index.html'));
-});
+Route::fallback(SpaController::class);
