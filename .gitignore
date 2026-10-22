@@ -45,3 +45,7 @@ backups/
 # Caché/temporales de Composer usados durante la instalación
 .composer-home/
 .composer-tmp/
+
+# Playwright
+playwright-report/
+test-results/
