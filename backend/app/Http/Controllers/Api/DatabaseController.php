@@ -144,8 +144,8 @@ class DatabaseController extends Controller
                 return response()->json(['error' => "Tabla no permitida o inexistente: {$table}"], 400);
             }
 
-            $page = max(1, (int) $request->query('page', 1));
-            $limit = min(100, max(1, (int) $request->query('limit', 25)));
+            $page = max(1, (int) $request->query('page', '1'));
+            $limit = min(100, max(1, (int) $request->query('limit', '25')));
             $offset = ($page - 1) * $limit;
             $search = trim((string) $request->query('search', ''));
 
@@ -334,11 +334,6 @@ class DatabaseController extends Controller
             .'-- ====================================================================';
 
         return $header."\n\n".implode("\n\n", $sections);
-    }
-
-    private function generarseedPlaceholder(): string
-    {
-        return '';
     }
 
     private function generarSeed(): string

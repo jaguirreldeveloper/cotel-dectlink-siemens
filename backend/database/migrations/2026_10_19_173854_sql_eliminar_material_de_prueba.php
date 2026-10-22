@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return; // DDL PostgreSQL: ya aplicado en la BD viva; sqlite (tests) usa su propio esquema.
+        }
+
         DB::unprepared(file_get_contents(database_path('sql/20261019130000_eliminar_material_de_prueba.sql')));
     }
 

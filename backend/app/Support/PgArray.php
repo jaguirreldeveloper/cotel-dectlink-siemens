@@ -59,7 +59,7 @@ class PgArray
 
         $items[] = $current;
 
-        return array_values(array_map('trim', $items));
+        return array_map('trim', $items);
     }
 
     /**
