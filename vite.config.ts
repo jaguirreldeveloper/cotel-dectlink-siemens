@@ -8,7 +8,7 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         // import.meta.dirname es ESM y evita la deprecación de __dirname en Vite.
-        '@': import.meta.dirname,
+        '@': `${import.meta.dirname}/src`,
       },
     },
     server: {

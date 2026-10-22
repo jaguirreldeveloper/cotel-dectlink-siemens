@@ -1,7 +1,7 @@
 import { getDb } from './index.ts';
 import { abonadosLineas, bitacora, celdas, clientes, zonas } from './schema.ts';
 import { eq, desc, sql } from 'drizzle-orm';
-import { OperationalStatus } from '../types/subscriber.ts';
+import { OperationalStatus } from '../entities/subscriber/types.ts';
 
 /**
  * Fila plana del padrón para la API/UI: el modelo físico está normalizado
