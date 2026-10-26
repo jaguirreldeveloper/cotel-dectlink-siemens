@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@cotel/types": ["../packages/types/src"]
+    },
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "allowImportingTsExtensions": true
+  },
+  "references": [
+    { "path": "../packages/types" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "playwright", ".tsbuildinfo", "tests", "*.config.ts"]
+}

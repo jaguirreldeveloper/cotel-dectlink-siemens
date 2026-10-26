@@ -1,0 +1,39 @@
+{
+  "name": "@cotel/types",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript types for COTEL DECTlink - generated from OpenAPI",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "import": "./dist/api/index.js"
+    },
+    "./enums": {
+      "types": "./dist/enums/index.d.ts",
+      "import": "./dist/enums/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "generate": "tsx scripts/generate-api-types.ts",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
