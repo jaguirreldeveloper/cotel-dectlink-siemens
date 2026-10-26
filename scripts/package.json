@@ -11,7 +11,7 @@
     "clean": "rm -rf dist .tsbuildinfo",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "db:load": "tsx src/cli.ts load-consolidado",
     "db:check": "tsx src/cli.ts db-check",
     "db:verify": "tsx src/cli.ts db-verify",

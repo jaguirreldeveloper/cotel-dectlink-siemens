@@ -173,11 +173,50 @@ jobs:
       - name: Run scripts tests
         run: pnpm --filter scripts test
 
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_sqlite, sqlite3, mbstring, dom, curl
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run backend tests (Pest)
+        working-directory: backend
+        run: php artisan test --compact
+
   db-check:
     name: DB Schema Check
     runs-on: ubuntu-latest
     needs: build-scripts
-    if: env.DATABASE_URL != ''
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SQL_HOST: ${{ secrets.SQL_HOST }}
+      SQL_DB_NAME: ${{ secrets.SQL_DB_NAME }}
+      SQL_ADMIN_USER: ${{ secrets.SQL_ADMIN_USER }}
+      SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -202,14 +241,19 @@ jobs:
           name: scripts-dist
           path: scripts/dist/
 
+      # En main, un secret ausente debe FALLAR de forma visible (no saltarse en silencio).
+      - name: Requerir DATABASE_URL (falla en main si el secret falta)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "ERROR: el secret DATABASE_URL no está configurado."
+            exit 1
+          fi
+
+      # En PRs (p. ej. de forks sin secrets) se salta sin romper el build.
       - name: Run db:check
+        if: env.DATABASE_URL != ''
         run: pnpm --filter scripts db:check
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SQL_HOST: ${{ secrets.SQL_HOST }}
-          SQL_DB_NAME: ${{ secrets.SQL_DB_NAME }}
-          SQL_ADMIN_USER: ${{ secrets.SQL_ADMIN_USER }}
-          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
 
   e2e:
     name: E2E Tests
