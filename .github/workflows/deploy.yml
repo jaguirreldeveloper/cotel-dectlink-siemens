@@ -1,0 +1,68 @@
+name: Deploy to Laravel Cloud
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'scripts/**'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - 'tsconfig.base.json'
+
+env:
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '9.x'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API types
+        run: pnpm --filter types generate
+
+      - name: Build frontend
+        run: pnpm --filter frontend build
+        env:
+          VITE_API_TARGET: ${{ secrets.VITE_API_TARGET }}
+          VITE_ADMIN_TOKEN: ${{ secrets.VITE_ADMIN_TOKEN }}
+
+      - name: Build scripts
+        run: pnpm --filter scripts build
+
+      - name: Copy frontend to backend
+        run: pnpm --filter scripts run copy:dist
+
+      - name: Verify build
+        run: |
+          if [ ! -f backend/public/index.html ]; then
+            echo "ERROR: backend/public/index.html not found"
+            exit 1
+          fi
+          echo "✓ Build verified"
+
+      # Laravel Cloud deploy happens automatically on push to main
+      # when the repo is connected. The workflow above just validates
+      # the build works before the platform builds it.
+      - name: Build validation complete
+        run: echo "Ready for Laravel Cloud deployment"

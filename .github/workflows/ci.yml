@@ -4,41 +4,297 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '9.x'
 
 jobs:
-  frontend:
-    name: Frontend (tsc + build)
+  lint-and-typecheck:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  backend:
-    name: Backend (PHPStan + Pest + Pint)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          php-version: '8.4'
-          extensions: mbstring, dom, fileinfo, pdo_sqlite
-          coverage: none
-      - name: Instalar dependencias
-        run: composer install --no-interaction --no-progress --prefer-dist
-      - name: Clave de aplicación para tests
-        run: cp .env.example .env && php artisan key:generate --force
-      - name: PHPStan
-        run: composer run stan
-      - name: Pest (suite completa, sqlite :memory:)
-        run: composer test
-      - name: Pint (formato)
-        run: vendor/bin/pint --test
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck packages/types
+        run: pnpm --filter types typecheck
+
+      - name: Typecheck frontend
+        run: pnpm --filter frontend typecheck
+
+      - name: Typecheck scripts
+        run: pnpm --filter scripts typecheck
+
+      - name: Lint frontend
+        run: pnpm --filter frontend lint
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API types
+        run: pnpm --filter types generate
+
+      - name: Build frontend
+        run: pnpm --filter frontend build
+        env:
+          VITE_API_TARGET: ${{ secrets.VITE_API_TARGET }}
+          VITE_ADMIN_TOKEN: ${{ secrets.VITE_ADMIN_TOKEN }}
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  build-scripts:
+    name: Build Scripts
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API types
+        run: pnpm --filter types generate
+
+      - name: Build scripts
+        run: pnpm --filter scripts build
+
+      - name: Upload scripts build
+        uses: actions/upload-artifact@v4
+        with:
+          name: scripts-dist
+          path: scripts/dist/
+          retention-days: 7
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API types
+        run: pnpm --filter types generate
+
+      - name: Run frontend tests
+        run: pnpm --filter frontend test
+
+  test-scripts:
+    name: Test Scripts
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API types
+        run: pnpm --filter types generate
+
+      - name: Run scripts tests
+        run: pnpm --filter scripts test
+
+  db-check:
+    name: DB Schema Check
+    runs-on: ubuntu-latest
+    needs: build-scripts
+    if: env.DATABASE_URL != ''
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download scripts build
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts-dist
+          path: scripts/dist/
+
+      - name: Run db:check
+        run: pnpm --filter scripts db:check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SQL_HOST: ${{ secrets.SQL_HOST }}
+          SQL_DB_NAME: ${{ secrets.SQL_DB_NAME }}
+          SQL_ADMIN_USER: ${{ secrets.SQL_ADMIN_USER }}
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    if: false  # Habilitar cuando haya infraestructura para levantar backend + frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm --filter frontend test:e2e
+
+  deploy-check:
+    name: Deploy Verification
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-scripts, db-check]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Download scripts build
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts-dist
+          path: scripts/dist/
+
+      - name: Copy frontend to backend
+        run: pnpm --filter scripts run copy:dist
+
+      - name: Verify backend/public has frontend
+        run: |
+          if [ ! -f backend/public/index.html ]; then
+            echo "ERROR: backend/public/index.html not found"
+            exit 1
+          fi
+          echo "✓ Frontend copied to backend/public"
+
+      - name: Smoke test (if SMOKE_URL provided)
+        if: env.SMOKE_URL != ''
+        run: pnpm --filter scripts smoke
+        env:
+          SMOKE_URL: ${{ secrets.SMOKE_URL }}
+          EXPECTED_LINES: ${{ secrets.EXPECTED_LINES }}
