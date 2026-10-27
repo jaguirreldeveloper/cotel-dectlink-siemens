@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Shelter;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
 /**
  * CRUD de shelters (casetas con rack, clima y baterías).
@@ -80,5 +83,56 @@ class SheltersController extends InfraestructuraBaseController
             'observacion' => ['nullable', 'string'],
             'activo' => ['nullable', 'boolean'],
         ], ['codigo', 'nombre', 'id_subcentral'], $soloOpcionales);
+    }
+
+    #[\Override]
+    #[OA\Get(path: '/api/shelters', tags: ['Infraestructura'], summary: 'Directorio de shelters')]
+    #[OA\Response(response: 200, description: 'Listado', content: new OA\JsonContent(type: 'array', items: new OA\Items(type: 'object')))]
+    public function index(): JsonResponse
+    {
+        return parent::index();
+    }
+
+    #[\Override]
+    #[OA\Post(path: '/api/shelters', tags: ['Infraestructura'], summary: 'Crear shelter (SUPERADMIN/ADMIN)')]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(required: ['codigo', 'nombre', 'id_subcentral'], properties: [
+        new OA\Property(property: 'id_subcentral', type: 'integer'),
+        new OA\Property(property: 'kva_rectificador', type: 'number', nullable: true),
+        new OA\Property(property: 'autonomia_baterias_horas', type: 'integer', nullable: true),
+        new OA\Property(property: 'estado_clima', type: 'string'),
+    ]))]
+    #[OA\Response(response: 201, description: 'Shelter creado')]
+    #[OA\Response(response: 422, description: 'Validación fallida')]
+    public function store(Request $request): JsonResponse
+    {
+        return parent::store($request);
+    }
+
+    #[\Override]
+    #[OA\Patch(path: '/api/shelters/{shelter}', tags: ['Infraestructura'], summary: 'Editar shelter (SUPERADMIN/ADMIN)')]
+    #[OA\Parameter(name: 'shelter', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Shelter actualizado')]
+    public function update(Request $request, int $id): JsonResponse
+    {
+        return parent::update($request, $id);
+    }
+
+    #[\Override]
+    #[OA\Post(path: '/api/shelters/{shelter}/deactivate', tags: ['Infraestructura'], summary: 'Desactivar shelter (SUPERADMIN/ADMIN)')]
+    #[OA\Parameter(name: 'shelter', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Shelter desactivado')]
+    public function deactivate(Request $request, int $id): JsonResponse
+    {
+        return parent::deactivate($request, $id);
+    }
+
+    #[\Override]
+    #[OA\Delete(path: '/api/shelters/{shelter}', tags: ['Infraestructura'], summary: 'Eliminar shelter (solo SUPERADMIN)')]
+    #[OA\Parameter(name: 'shelter', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Shelter eliminado')]
+    #[OA\Response(response: 403, description: 'Rol sin permiso')]
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        return parent::destroy($request, $id);
     }
 }

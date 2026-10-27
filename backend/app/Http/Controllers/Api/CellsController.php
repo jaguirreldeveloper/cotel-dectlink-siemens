@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
 /**
  * Estaciones base Siemens DECTlink (paridad con select().from(celdas) de Drizzle):
@@ -23,6 +24,12 @@ class CellsController extends Controller
      * PATCH /api/cells/{id}/subcentral — asigna la subcentral de servicio de la RFP.
      * `id_subcentral: null` desasigna (p. ej. en un traslado de red).
      */
+    #[OA\Patch(path: '/api/cells/{id}/subcentral', tags: ['Infraestructura'], summary: 'Asignar subcentral a celda RFP (SUPERADMIN/ADMIN)')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'id_subcentral', type: 'integer', nullable: true),
+    ]))]
+    #[OA\Response(response: 200, description: 'Subcentral asignada')]
     public function asignarSubcentral(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
