@@ -26,6 +26,7 @@ import { SupabaseMigrationModal } from '@/features/supabase-migration/SupabaseMi
 import { GitMigrationModal } from '@/features/git-migration/GitMigrationModal';
 import { QaView } from '@/features/qa/QaView';
 import { UserManagementView } from '@/features/users';
+import { InfraestructuraView } from '@/features/infraestructura';
 import { ExecutiveReport } from '@/widgets/ExecutiveReport';
 import { VisualCharts } from '@/widgets/VisualCharts';
 import { buildSubscribersCsv, subscribersCsvFilename } from '@/entities/subscriber/exportCsv';
@@ -176,6 +177,8 @@ export default function App() {
         );
       case 'users':
         return <UserManagementView currentOperador={auth.operador} />;
+      case 'infraestructura':
+        return <InfraestructuraView operador={auth.operador} />;
       case 'qa':
         return <QaView />;
       default:

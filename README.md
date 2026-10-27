@@ -133,16 +133,22 @@ Implementados en Laravel (`backend/routes/api.php`) con **paths y payloads idén
 | `GET` | `/api/auth/me` | Perfil del operador autenticado |
 | `POST` | `/api/auth/logout` | Cierra sesión **y revoca en el servidor** todos los tokens de la cuenta |
 | `GET` | `/api/operadores` | Directorio de operadores (roles canónicos) |
-| `GET` | `/api/operadores/permissions` | Matriz RBAC: permiso × 5 roles |
+| `GET` | `/api/operadores/permissions` | Matriz RBAC: permiso × 6 roles |
 
 ### Por rol (`role:...`: Bearer token de operador)
 | Método | Ruta | Roles |
 |--------|------|-------|
-| `PATCH` | `/api/subscribers/:nro/status` · `/api/subscribers/:nro/coordinates` | SUPERADMIN, SUPERVISOR |
-| `POST`/`PATCH`/`DELETE` | `/api/work-orders` | SUPERADMIN, SUPERVISOR, DESPACHADOR |
-| `POST`/`PATCH`/`DELETE` | `/api/cuadrillas` · `/api/materiales` | SUPERADMIN, SUPERVISOR, DESPACHADOR |
+| `PATCH` | `/api/subscribers/:nro/status` · `/api/subscribers/:nro/coordinates` | SUPERADMIN, ADMIN, SUPERVISOR |
+| `POST`/`PATCH`/`DELETE` | `/api/work-orders` | SUPERADMIN, ADMIN, SUPERVISOR, DESPACHADOR |
+| `POST`/`PATCH`/`DELETE` | `/api/cuadrillas` · `/api/materiales` | SUPERADMIN, ADMIN, SUPERVISOR, DESPACHADOR |
 | `POST`/`PATCH`/`DELETE` | `/api/operadores` | Solo SUPERADMIN |
 | `POST` | `/api/database/query` · `test-connection` · `apply-connection`, `git/init` · `git/remote` | Solo SUPERADMIN |
+
+### Infraestructura jerárquica (centrales → subcentrales → shelters → armarios)
+Lectura pública (`GET /api/centrales`, `/subcentrales`, `/shelters`, `/armarios`). Escritura con `role:superadmin,admin`:
+`POST /api/{centrales,subcentrales,shelters,armarios}`, `PATCH .../{id}`, `POST .../{id}/deactivate` (baja lógica).
+`PATCH /api/cells/{id}/subcentral` asigna la subcentral de servicio de una RFP. Borrado físico
+(`DELETE .../{id}`) es **exclusivo de SUPERADMIN**; toda escritura queda en `infraestructura_bitacora`.
 
 ---
 

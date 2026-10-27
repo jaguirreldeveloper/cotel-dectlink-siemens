@@ -8,6 +8,8 @@ import {
   bigint,
   date,
   doublePrecision,
+  jsonb,
+  numeric,
   timestamp,
   check,
   primaryKey,
@@ -59,6 +61,90 @@ export const clientes = pgTable('clientes', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ===========================================================================
+// Infraestructura jerárquica: Central → Subcentral → Shelter → Armario.
+// Las celdas (RFP) dependen de una SUBCENTRAL. Baja normal = activo=false;
+// borrado físico RESTRICT en cadena y exclusivo de SUPERADMIN vía API.
+// ===========================================================================
+export const centrales = pgTable('centrales', {
+  id: serial('id').primaryKey(),
+  codigo: text('codigo').notNull().unique(),
+  nombre: text('nombre').notNull(),
+  direccion: text('direccion'),
+  lat: doublePrecision('lat'),
+  lng: doublePrecision('lng'),
+  observacion: text('observacion'),
+  activo: boolean('activo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const subcentrales = pgTable('subcentrales', {
+  id: serial('id').primaryKey(),
+  codigo: text('codigo').notNull().unique(),
+  nombre: text('nombre').notNull(),
+  idCentral: integer('id_central').notNull().references(() => centrales.id, { onUpdate: 'cascade', onDelete: 'restrict' }),
+  modoEnlace: text('modo_enlace').notNull().default('FIBRA'),
+  distanciaKm: doublePrecision('distancia_km'),
+  direccion: text('direccion'),
+  lat: doublePrecision('lat'),
+  lng: doublePrecision('lng'),
+  observacion: text('observacion'),
+  activo: boolean('activo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  check('chk_subcentrales_modo_enlace', sql`${t.modoEnlace} IN ('FIBRA','PAR_CU','RADIO','ENLACE_MICROONDAS')`),
+]);
+
+export const shelters = pgTable('shelters', {
+  id: serial('id').primaryKey(),
+  codigo: text('codigo').notNull().unique(),
+  nombre: text('nombre').notNull(),
+  idSubcentral: integer('id_subcentral').notNull().references(() => subcentrales.id, { onUpdate: 'cascade', onDelete: 'restrict' }),
+  direccion: text('direccion'),
+  kvaRectificador: numeric('kva_rectificador'),
+  autonomiaBateriasHoras: integer('autonomia_baterias_horas'),
+  estadoClima: text('estado_clima').notNull().default('AIRE'),
+  lat: doublePrecision('lat'),
+  lng: doublePrecision('lng'),
+  observacion: text('observacion'),
+  activo: boolean('activo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  check('chk_shelters_estado_clima', sql`${t.estadoClima} IN ('AIRE','VENTILACION','FUERA_SERVICIO')`),
+]);
+
+export const armarios = pgTable('armarios', {
+  id: serial('id').primaryKey(),
+  codigo: text('codigo').notNull().unique(),
+  nombre: text('nombre').notNull(),
+  idShelter: integer('id_shelter').notNull().references(() => shelters.id, { onUpdate: 'cascade', onDelete: 'restrict' }),
+  tipo: text('tipo').notNull().default('RFP'),
+  ubicacion: text('ubicacion'),
+  lat: doublePrecision('lat'),
+  lng: doublePrecision('lng'),
+  observacion: text('observacion'),
+  activo: boolean('activo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  check('chk_armarios_tipo', sql`${t.tipo} IN ('RFP','DISTRIBUCION','PROTECCION','EMPALMES','OTRO')`),
+]);
+
+export const infraestructuraBitacora = pgTable('infraestructura_bitacora', {
+  id: bigint('id', { mode: 'number' }).primaryKey(),
+  tabla: text('tabla').notNull(),
+  registroId: integer('registro_id').notNull(),
+  accion: text('accion').notNull(),
+  operadorId: integer('operador_id').references(() => operadores.id, { onDelete: 'set null' }),
+  payload: jsonb('payload'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  check('chk_infra_bitacora_accion', sql`${t.accion} IN ('CREAR','MODIFICAR','DESACTIVAR','ELIMINAR')`),
+]);
+
 // Celdas: estaciones base Siemens DECTlink (RFP).
 // id numérico = número de RFP (5, 11, 15, 17). latitud/longitud/capacidad
 // quedan NULL hasta que COTEL cargue los valores reales de cada estación.
@@ -73,6 +159,7 @@ export const celdas = pgTable('celdas', {
   radioCoberturaKm: doublePrecision('radio_cobertura_km'),
   latitud: doublePrecision('latitud'),
   longitud: doublePrecision('longitud'),
+  idSubcentral: integer('id_subcentral').references(() => subcentrales.id, { onUpdate: 'cascade', onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -191,8 +278,40 @@ export const clientesRelations = relations(clientes, ({ one, many }) => ({
   lineas: many(abonadosLineas),
 }));
 
-export const celdasRelations = relations(celdas, ({ many }) => ({
+export const celdasRelations = relations(celdas, ({ one, many }) => ({
   abonados: many(abonadosLineas),
+  subcentral: one(subcentrales, {
+    fields: [celdas.idSubcentral],
+    references: [subcentrales.id],
+  }),
+}));
+
+export const centralesRelations = relations(centrales, ({ many }) => ({
+  subcentrales: many(subcentrales),
+}));
+
+export const subcentralesRelations = relations(subcentrales, ({ one, many }) => ({
+  central: one(centrales, {
+    fields: [subcentrales.idCentral],
+    references: [centrales.id],
+  }),
+  shelters: many(shelters),
+  celdas: many(celdas),
+}));
+
+export const sheltersRelations = relations(shelters, ({ one, many }) => ({
+  subcentral: one(subcentrales, {
+    fields: [shelters.idSubcentral],
+    references: [subcentrales.id],
+  }),
+  armarios: many(armarios),
+}));
+
+export const armariosRelations = relations(armarios, ({ one }) => ({
+  shelter: one(shelters, {
+    fields: [armarios.idShelter],
+    references: [shelters.id],
+  }),
 }));
 
 export const abonadosRelations = relations(abonadosLineas, ({ one, many }) => ({

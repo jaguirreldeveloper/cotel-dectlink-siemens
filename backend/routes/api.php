@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\ArmariosController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CellsController;
+use App\Http\Controllers\Api\CentralesController;
 use App\Http\Controllers\Api\CuadrillasController;
 use App\Http\Controllers\Api\DatabaseController;
 use App\Http\Controllers\Api\EventsController;
@@ -9,6 +11,8 @@ use App\Http\Controllers\Api\GitController;
 use App\Http\Controllers\Api\LogsController;
 use App\Http\Controllers\Api\MaterialesController;
 use App\Http\Controllers\Api\OperadoresController;
+use App\Http\Controllers\Api\SheltersController;
+use App\Http\Controllers\Api\SubcentralesController;
 use App\Http\Controllers\Api\SubscribersController;
 use App\Http\Controllers\Api\WorkOrdersController;
 use Illuminate\Support\Facades\Route;
@@ -92,3 +96,43 @@ Route::middleware('role:superadmin')->group(function (): void {
     Route::post('git/init', [GitController::class, 'init']);
     Route::post('git/remote', [GitController::class, 'remote']);
 });
+
+// ===========================================================================
+// INFRAESTRUCTURA JERÁRQUICA (centrales → subcentrales → shelters → armarios)
+// Lectura pública; escritura SUPERADMIN/ADMIN (crear/editar/desactivar) y
+// borrado físico exclusivo de SUPERADMIN. Celdas ← asignar subcentral: ADMIN+.
+// ===========================================================================
+Route::middleware('role:superadmin,admin')->group(function (): void {
+    Route::post('centrales', [CentralesController::class, 'store']);
+    Route::patch('centrales/{central}', [CentralesController::class, 'update']);
+    Route::post('centrales/{central}/deactivate', [CentralesController::class, 'deactivate']);
+
+    Route::post('subcentrales', [SubcentralesController::class, 'store']);
+    Route::patch('subcentrales/{subcentral}', [SubcentralesController::class, 'update']);
+    Route::post('subcentrales/{subcentral}/deactivate', [SubcentralesController::class, 'deactivate']);
+
+    Route::post('shelters', [SheltersController::class, 'store']);
+    Route::patch('shelters/{shelter}', [SheltersController::class, 'update']);
+    Route::post('shelters/{shelter}/deactivate', [SheltersController::class, 'deactivate']);
+
+    Route::post('armarios', [ArmariosController::class, 'store']);
+    Route::patch('armarios/{armario}', [ArmariosController::class, 'update']);
+    Route::post('armarios/{armario}/deactivate', [ArmariosController::class, 'deactivate']);
+
+    // Asignación de la subcentral de servicio de una celda (RFP)
+    Route::patch('cells/{id}/subcentral', [CellsController::class, 'asignarSubcentral']);
+});
+
+// Borrado físico de infraestructura: exclusivo de SUPERADMIN (jamás ADMIN).
+Route::middleware('role:superadmin')->group(function (): void {
+    Route::delete('centrales/{central}', [CentralesController::class, 'destroy']);
+    Route::delete('subcentrales/{subcentral}', [SubcentralesController::class, 'destroy']);
+    Route::delete('shelters/{shelter}', [SheltersController::class, 'destroy']);
+    Route::delete('armarios/{armario}', [ArmariosController::class, 'destroy']);
+});
+
+// Catálogos de infraestructura (lectura pública)
+Route::get('centrales', [CentralesController::class, 'index']);
+Route::get('subcentrales', [SubcentralesController::class, 'index']);
+Route::get('shelters', [SheltersController::class, 'index']);
+Route::get('armarios', [ArmariosController::class, 'index']);

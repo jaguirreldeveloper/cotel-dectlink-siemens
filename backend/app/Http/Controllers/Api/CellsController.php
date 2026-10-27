@@ -3,9 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cell;
+use App\Models\InfraestructuraBitacora;
+use App\Models\Operador;
+use App\Support\OperatorToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
  * Estaciones base Siemens DECTlink (paridad con select().from(celdas) de Drizzle):
@@ -13,6 +19,44 @@ use Illuminate\Support\Facades\DB;
  */
 class CellsController extends Controller
 {
+    /**
+     * PATCH /api/cells/{id}/subcentral — asigna la subcentral de servicio de la RFP.
+     * `id_subcentral: null` desasigna (p. ej. en un traslado de red).
+     */
+    public function asignarSubcentral(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'id_subcentral' => ['nullable', 'integer', Rule::exists('subcentrales', 'id')],
+        ]);
+
+        $cell = Cell::query()->findOrFail($id);
+        $antes = $cell->id_subcentral;
+
+        $cell->id_subcentral = $validated['id_subcentral'] ?? null;
+        assert($cell instanceof Cell);
+        $cell->save();
+
+        $operador = OperatorToken::resolve($request);
+        assert($operador instanceof Operador || $operador === null);
+
+        InfraestructuraBitacora::create([
+            'tabla' => 'celdas',
+            'registro_id' => $id,
+            'accion' => InfraestructuraBitacora::ACCION_MODIFICAR,
+            'operador_id' => $operador?->id,
+            'payload' => ['antes' => ['id_subcentral' => $antes], 'despues' => ['id_subcentral' => $cell->id_subcentral]],
+        ]);
+
+        return response()->json([
+            'message' => 'Subcentral asignada a la celda exitosamente.',
+            'celda' => [
+                'id' => $cell->id,
+                'nombre' => $cell->nombre,
+                'idSubcentral' => $cell->id_subcentral,
+            ],
+        ]);
+    }
+
     /**
      * GET /api/cells
      */

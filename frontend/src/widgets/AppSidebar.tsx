@@ -100,6 +100,7 @@ const NAV_GROUPS: NavGroup[] = [
     tabs: [
       { id: 'database', label: 'Base de Datos', icon: Database, badgeColor: 'bg-brand-500' },
       { id: 'official-sheets', label: 'Fichas Oficiales', icon: FileText, badgeColor: 'bg-brand-500' },
+      { id: 'infraestructura', label: 'Infraestructura', icon: Building2, badgeColor: 'bg-rose-500' },
       { id: 'users', label: 'Usuarios & Roles', icon: Users, badgeColor: 'bg-indigo-500' },
       { id: 'qa', label: 'Consultas', icon: HelpCircle, badgeColor: 'bg-slate-500' },
     ],

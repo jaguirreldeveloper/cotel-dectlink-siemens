@@ -6,6 +6,7 @@ use Database\Factories\CellFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'id', 'nombre', 'tecnologia', 'descripcion', 'rfp_modelo', 'banda_frecuencia',
-    'capacidad_canales', 'radio_cobertura_km', 'latitud', 'longitud',
+    'capacidad_canales', 'radio_cobertura_km', 'latitud', 'longitud', 'id_subcentral',
 ])]
 class Cell extends Model
 {
@@ -54,5 +55,13 @@ class Cell extends Model
     public function lineas(): HasMany
     {
         return $this->hasMany(Subscriber::class, 'id_celda');
+    }
+
+    /**
+     * Subcentral de servicio de la RFP (opcional hasta asignación por UI).
+     */
+    public function subcentral(): BelongsTo
+    {
+        return $this->belongsTo(Subcentral::class, 'id_subcentral');
     }
 }

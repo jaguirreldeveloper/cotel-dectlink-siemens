@@ -30,6 +30,7 @@ export type AppTabId =
   | 'audit'
   | 'institutional'
   | 'users'
+  | 'infraestructura'
   | 'qa';
 
 interface TabSpec {
