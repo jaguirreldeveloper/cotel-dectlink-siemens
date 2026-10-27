@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleDot,
+  Globe,
   Radio,
   Plus,
   RefreshCw,
@@ -30,6 +31,7 @@ import {
   ShelterDTO,
   SubcentralDTO,
 } from './types';
+import { InfraMapaLeaflet, PuntoMapa } from './InfraMapaLeaflet';
 import { InfraModal } from './InfraModal';
 
 const PUEDE_ESCRIBIR: OperadorRole[] = ['SUPERADMIN', 'ADMIN'];
@@ -178,6 +180,21 @@ export function InfraestructuraView({ operador }: InfraestructuraViewProps) {
     activo
       ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
       : 'bg-slate-500/15 text-slate-500 border border-slate-500/30';
+
+  const puntosMapa: PuntoMapa[] = useMemo(() => [
+    ...centrales.filter(c => c.lat != null && c.lng != null).map<PuntoMapa>(c => ({ id: `c${c.id}`, tipo: 'central', codigo: c.codigo, nombre: c.nombre, lat: c.lat as number, lng: c.lng as number, activo: c.activo })),
+    ...subcentrales.filter(s => s.lat != null && s.lng != null).map<PuntoMapa>(s => ({ id: `s${s.id}`, tipo: 'subcentral', codigo: s.codigo, nombre: s.nombre, lat: s.lat as number, lng: s.lng as number, activo: s.activo })),
+    ...shelters.filter(s => s.lat != null && s.lng != null).map<PuntoMapa>(s => ({ id: `h${s.id}`, tipo: 'shelter', codigo: s.codigo, nombre: s.nombre, lat: s.lat as number, lng: s.lng as number, activo: s.activo })),
+    ...armarios.filter(a => a.lat != null && a.lng != null).map<PuntoMapa>(a => ({ id: `a${a.id}`, tipo: 'armario', codigo: a.codigo, nombre: a.nombre, lat: a.lat as number, lng: a.lng as number, activo: a.activo })),
+    ...celdas
+      .filter(c => c.idSubcentral !== null)
+      .flatMap<PuntoMapa>(c => {
+        const sub = subcentrales.find(s => s.id === c.idSubcentral);
+        return sub?.lat != null && sub?.lng != null
+          ? [{ id: `cel${c.id}`, tipo: 'celda' as const, codigo: `RFP ${c.id}`, nombre: c.nombre, lat: sub.lat, lng: sub.lng, activo: c.activo }]
+          : [];
+      }),
+  ], [centrales, subcentrales, shelters, armarios, celdas]);
 
   return (
     <div className='space-y-5'>
@@ -419,6 +436,18 @@ export function InfraestructuraView({ operador }: InfraestructuraViewProps) {
           })}
         </div>
       )}
+
+      {/* Mini-mapa de la jerarquía con coordenadas */}
+      <div>
+        <h2 className='text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5'>
+          <Globe className='w-3.5 h-3.5' /> Mapa de infraestructura ({puntosMapa.length} puntos con GPS)
+        </h2>
+        {puntosMapa.length === 0 ? (
+          <p className='text-sm text-slate-500'>Aún no hay elementos con latitud/longitud registrada.</p>
+        ) : (
+          <InfraMapaLeaflet puntos={puntosMapa} />
+        )}
+      </div>
 
       {modal && (
         <InfraModal
