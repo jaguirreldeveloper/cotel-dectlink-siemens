@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
-import { AppSidebar } from '@/widgets/AppSidebar';
+import { useState, useEffect } from 'react';
+import { AppSidebar, visibleTabIds } from '@/widgets/AppSidebar';
 import { UnifiedHeader } from '@/widgets/UnifiedHeader';
 import { AppFooter } from '@/widgets/AppFooter';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -48,6 +48,16 @@ export default function App() {
   const [externalCeldaFilter, setExternalCeldaFilter] = useState('');
   const [externalZoneFilter, setExternalZoneFilter] = useState('');
   const [externalYearFilter, setExternalYearFilter] = useState<number | undefined>(undefined);
+
+  // Si el tab activo no es visible para el rol de la sesión (o la sesión es
+  // de solo lectura), redirigir al primer módulo visible y sin 403 a ciegas.
+  useEffect(() => {
+    const visibles = visibleTabIds(auth.operador?.role);
+    if (!visibles.includes(activeTab) && visibles.length > 0) {
+      setActiveTab(visibles[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.operador?.role]);
 
   const handleFilterByZone = (zone: string) => {
     setExternalZoneFilter(zone);
@@ -249,6 +259,7 @@ export default function App() {
             onTabChange={setActiveTab}
             recordCount={data.records.length}
             auditIssueCount={data.auditIssues.length}
+            operadorRole={auth.operador?.role ?? null}
           />
 
           <main className='flex-1 overflow-auto bg-slate-100 dark:bg-slate-950'>

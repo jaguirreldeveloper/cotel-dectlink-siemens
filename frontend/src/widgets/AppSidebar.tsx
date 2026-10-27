@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Crosshair,
   ClipboardList,
@@ -56,8 +56,8 @@ const NAV_GROUPS: NavGroup[] = [
     icon: MapPin,
     color: 'text-brand-500',
     tabs: [
-      { id: 'gps-calibration', label: 'Calibración GPS', icon: Crosshair, badgeColor: 'bg-brand-500' },
-      { id: 'field-crews', label: 'Cuadrillas & Kanban', icon: ClipboardList, badgeColor: 'bg-indigo-500' },
+      { id: 'gps-calibration', label: 'Calibración GPS', icon: Crosshair, badgeColor: 'bg-brand-500', roles: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'] },
+      { id: 'field-crews', label: 'Cuadrillas & Kanban', icon: ClipboardList, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'DESPACHADOR'] },
       { id: 'dect', label: 'Operaciones DECT', icon: Radio, badgeColor: 'bg-indigo-600' },
     ],
   },
@@ -98,22 +98,31 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Settings,
     color: 'text-slate-500',
     tabs: [
-      { id: 'database', label: 'Base de Datos', icon: Database, badgeColor: 'bg-brand-500' },
+      { id: 'database', label: 'Base de Datos', icon: Database, badgeColor: 'bg-brand-500', roles: ['SUPERADMIN'] },
       { id: 'official-sheets', label: 'Fichas Oficiales', icon: FileText, badgeColor: 'bg-brand-500' },
       { id: 'infraestructura', label: 'Infraestructura', icon: Building2, badgeColor: 'bg-rose-500' },
-      { id: 'users', label: 'Usuarios & Roles', icon: Users, badgeColor: 'bg-indigo-500' },
-      { id: 'qa', label: 'Consultas', icon: HelpCircle, badgeColor: 'bg-slate-500' },
+      { id: 'users', label: 'Usuarios & Roles', icon: Users, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN'] },
+      { id: 'qa', label: 'Consultas', icon: HelpCircle, badgeColor: 'bg-slate-500', roles: ['SUPERADMIN'] },
     ],
   },
 ];
 
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.tabs);
 
+/** IDs de tabs visibles para un rol (misma lógica que el filtrado del sidebar). */
+export function visibleTabIds(operadorRole: string | null | undefined): AppTabId[] {
+  return NAV_GROUPS
+    .flatMap(g => g.tabs)
+    .filter(tab => !tab.roles || (operadorRole ? tab.roles.includes(operadorRole) : false))
+    .map(tab => tab.id);
+}
+
 interface AppSidebarProps {
   activeTab: AppTabId;
   onTabChange: (tab: AppTabId) => void;
   recordCount: number;
   auditIssueCount: number;
+  operadorRole?: string | null;
   className?: string;
 }
 
@@ -122,11 +131,25 @@ export function AppSidebar({
   onTabChange,
   recordCount,
   auditIssueCount,
+  operadorRole,
   className = '',
 }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(NAV_GROUPS.map(g => g.id));
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const toggleGroup = (groupId: string) => {
+    setOpenGroups(prev => prev.includes(groupId)
+      ? prev.filter(g => g !== groupId)
+      : [...prev, groupId]);
+  };
+
+  // Módulos visibles según el rol del operador autenticado (matriz RBAC).
+  // Un tab sin `roles` es visible para todos los roles autenticados.
+  const gruposVisibles = useMemo(() => NAV_GROUPS.map(group => ({
+    ...group,
+    tabs: group.tabs.filter(tab => !tab.roles || (operadorRole ? tab.roles.includes(operadorRole) : false)),
+  })).filter(group => group.tabs.length > 0), [operadorRole]);
 
   // Persistir estado colapsado
   useEffect(() => {
@@ -137,12 +160,6 @@ export function AppSidebar({
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', String(collapsed));
   }, [collapsed]);
-
-  const toggleGroup = (groupId: string) => {
-    setOpenGroups(prev => prev.includes(groupId)
-      ? prev.filter(g => g !== groupId)
-      : [...prev, groupId]);
-  };
 
   const getTabConfig = (tabId: AppTabId) => ALL_TABS.find(t => t.id === tabId);
 
@@ -255,7 +272,7 @@ export function AppSidebar({
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto p-3 space-y-3" aria-label="Navegación principal">
-              {NAV_GROUPS.map(group => renderGroup(group, true))}
+              {gruposVisibles.map(group => renderGroup(group, true))}
             </nav>
           </div>
         </aside>
@@ -302,7 +319,7 @@ export function AppSidebar({
 
       {/* Navegación */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-3" aria-label="Navegación principal">
-        {NAV_GROUPS.map(group => renderGroup(group, false))}
+        {gruposVisibles.map(group => renderGroup(group, false))}
       </nav>
 
       {/* Footer Sidebar - Usuario / Config */}
