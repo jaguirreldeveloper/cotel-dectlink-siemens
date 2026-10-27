@@ -18,15 +18,17 @@ use Illuminate\Notifications\Notifiable;
  * `RequireRole` (alias `role`).
  *
  * Roles jerárquicos canónicos (nivel 1 = mayor privilegio):
- *   1. SUPERADMIN   · Jefatura Técnica & Sistemas (control total)
- *   2. SUPERVISOR   · Ingeniero de Red DECTlink & Regulación ATT
- *   3. DESPACHADOR  · Coordinador de Cuadrillas & Despacho de OTs
- *   4. TECNICO      · Técnico de Planta Externa & Instalador FAU
- *   5. AUDITOR      · Auditor Regulatorio ATT & Consulta Comercial
+ *   1. SUPERADMIN   · Jefatura Técnica & Sistemas (implementa y controla todo)
+ *   2. ADMIN        · Administración Operativa (administra lo implementado)
+ *   3. SUPERVISOR   · Ingeniero de Red DECTlink & Regulación ATT
+ *   4. DESPACHADOR  · Coordinador de Cuadrillas & Despacho de OTs
+ *   5. TECNICO      · Técnico de Planta Externa & Instalador FAU
+ *   6. AUDITOR      · Auditor Regulatorio ATT & Consulta Comercial
  *
- * Se conservan los alias ADMIN (= SUPERADMIN) y OPERADOR (= TECNICO) por
- * compatibilidad con datos históricos no normalizados; `rolCanonico()`
- * los traduce al nombre canónico antes de cualquier comparación de acceso.
+ * Se conserva el alias OPERADOR (= TECNICO) por compatibilidad con datos
+ * históricos no normalizados; `rolCanonico()` lo traduce al nombre canónico
+ * antes de cualquier comparación de acceso. ADMIN ya es canónico (rol propio
+ * de nivel 2) y NO hereda el nivel de SUPERADMIN.
  *
  * @property int $id
  * @property string $email
@@ -44,6 +46,8 @@ class Operador extends Authenticatable
     // Roles jerárquicos canónicos (nivel 1 = mayor privilegio)
     public const ROLE_SUPERADMIN = 'SUPERADMIN';
 
+    public const ROLE_ADMIN = 'ADMIN';
+
     public const ROLE_SUPERVISOR = 'SUPERVISOR';
 
     public const ROLE_DESPACHADOR = 'DESPACHADOR';
@@ -53,13 +57,12 @@ class Operador extends Authenticatable
     public const ROLE_AUDITOR = 'AUDITOR';
 
     /** Alias históricos (el CHECK de la BD aún los acepta). */
-    public const ROLE_ADMIN = 'ADMIN';
-
     public const ROLE_OPERADOR = 'OPERADOR';
 
     /** Lista canónica de roles en orden de privilegio. */
     public const ROLES = [
         self::ROLE_SUPERADMIN,
+        self::ROLE_ADMIN,
         self::ROLE_SUPERVISOR,
         self::ROLE_DESPACHADOR,
         self::ROLE_TECNICO,
@@ -69,17 +72,16 @@ class Operador extends Authenticatable
     /** Nivel de privilegio por rol (1 = mayor). Los alias heredan el nivel. */
     private const NIVELES = [
         self::ROLE_SUPERADMIN => 1,
-        self::ROLE_SUPERVISOR => 2,
-        self::ROLE_DESPACHADOR => 3,
-        self::ROLE_TECNICO => 4,
-        self::ROLE_AUDITOR => 5,
-        self::ROLE_ADMIN => 1,
-        self::ROLE_OPERADOR => 4,
+        self::ROLE_ADMIN => 2,
+        self::ROLE_SUPERVISOR => 3,
+        self::ROLE_DESPACHADOR => 4,
+        self::ROLE_TECNICO => 5,
+        self::ROLE_AUDITOR => 6,
+        self::ROLE_OPERADOR => 5,
     ];
 
-    /** Traducción de alias históricos al rol canónico. */
+    /** Traducción de alias históricos al rol canónico (ADMIN ya es canónico). */
     private const ALIAS_CANONICO = [
-        self::ROLE_ADMIN => self::ROLE_SUPERADMIN,
         self::ROLE_OPERADOR => self::ROLE_TECNICO,
     ];
 
@@ -98,7 +100,7 @@ class Operador extends Authenticatable
     }
 
     /**
-     * Rol canónico del operador (traduce alias ADMIN/OPERADOR).
+     * Rol canónico del operador (traduce el alias histórico OPERADOR).
      */
     public function rolCanonico(): string
     {
@@ -122,11 +124,11 @@ class Operador extends Authenticatable
     }
 
     /**
-     * ¿Es SUPERADMIN?
+     * ¿Es SUPERADMIN? (un ADMIN de nivel 2 no hereda este privilegio)
      */
     public function esSuperadmin(): bool
     {
-        return $this->rolCanonico() === self::ROLE_SUPERADMIN;
+        return $this->role === self::ROLE_SUPERADMIN;
     }
 
     /**

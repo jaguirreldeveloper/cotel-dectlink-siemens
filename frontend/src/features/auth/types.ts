@@ -1,4 +1,4 @@
-export type OperadorRole = 'SUPERADMIN' | 'SUPERVISOR' | 'DESPACHADOR' | 'TECNICO' | 'AUDITOR';
+export type OperadorRole = 'SUPERADMIN' | 'ADMIN' | 'SUPERVISOR' | 'DESPACHADOR' | 'TECNICO' | 'AUDITOR';
 
 export interface Operador {
   id: number;

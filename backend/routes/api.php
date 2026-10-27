@@ -58,14 +58,14 @@ Route::get('git/status', [GitController::class, 'status']);
 // Escrituras y herramientas administrativas — control de acceso por rol (RBAC).
 // El header x-admin-token (token de servidor) conserva acceso total para CLI.
 
-// Calibración GPS y estados de servicio: Jefatura / Ingeniería.
-Route::middleware('role:superadmin,supervisor')->group(function (): void {
+// Calibración GPS y estados de servicio: Jefatura / Administración Operativa / Ingeniería.
+Route::middleware('role:superadmin,admin,supervisor')->group(function (): void {
     Route::patch('subscribers/{nro}/status', [SubscribersController::class, 'updateStatus']);
     Route::patch('subscribers/{nro}/coordinates', [SubscribersController::class, 'updateCoordinates']);
 });
 
-// Despacho de cuadrillas, órdenes de trabajo y materiales: Jefatura / Ingeniería / Despacho.
-Route::middleware('role:superadmin,supervisor,despachador')->group(function (): void {
+// Despacho de cuadrillas, órdenes de trabajo y materiales: Jefatura / Administración Operativa / Ingeniería / Despacho.
+Route::middleware('role:superadmin,admin,supervisor,despachador')->group(function (): void {
     Route::post('work-orders', [WorkOrdersController::class, 'store']);
     Route::patch('work-orders/{id}', [WorkOrdersController::class, 'update']);
     Route::delete('work-orders/{id}', [WorkOrdersController::class, 'destroy']);

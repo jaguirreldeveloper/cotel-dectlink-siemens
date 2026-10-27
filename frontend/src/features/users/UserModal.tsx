@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, Network, ClipboardList, FileCheck2 } from 'lucide-react';
+import { X, Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, UserCog, Network, ClipboardList, FileCheck2 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { OperadorUser, CreateOperadorInput, UpdateOperadorInput } from './types';
 import { OperadorRole } from '../auth/types';
@@ -7,6 +7,7 @@ import { OPERADOR_ROLES, ROLE_META, roleCardClasses, roleIconClasses, roleRadioC
 
 const ROLE_ICONS: Record<OperadorRole, React.ComponentType<{ className?: string }>> = {
   SUPERADMIN: ShieldCheck,
+  ADMIN: UserCog,
   SUPERVISOR: Network,
   DESPACHADOR: ClipboardList,
   TECNICO: Wrench,

@@ -71,23 +71,35 @@ class AuthTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_login_returns_canonical_role_for_alias(): void
+    public function test_admin_is_canonical_role(): void
     {
-        // Un operador cuyo rol histórico sea el alias ADMIN debe exponerse como SUPERADMIN.
+        // ADMIN ya no es alias de SUPERADMIN: es rol canónico de nivel 2.
         $operador = Operador::factory()->create([
-            'email' => 'jefatura@cotel.bo',
+            'email' => 'admin@cotel.bo',
             'password' => 'secret1234',
             'role' => Operador::ROLE_ADMIN,
         ]);
 
         $response = $this->postJson('/api/auth/login', [
-            'email' => 'jefatura@cotel.bo',
+            'email' => 'admin@cotel.bo',
             'password' => 'secret1234',
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('operador.role', 'SUPERADMIN');
-        $this->assertSame('SUPERADMIN', $response->json('operador.role'));
+            ->assertJsonPath('operador.role', 'ADMIN');
+
+        $this->assertSame('ADMIN', $response->json('operador.role'));
+        $this->assertFalse($operador->esSuperadmin());
+        $this->assertSame(2, $operador->nivel());
+    }
+
+    public function test_operador_alias_resolves_to_tecnico(): void
+    {
+        // Alias histórico aún admitido por el CHECK: se expone como TECNICO.
+        $operador = Operador::factory()->create(['role' => Operador::ROLE_OPERADOR]);
+
+        $this->assertSame('TECNICO', $operador->rolCanonico());
+        $this->assertSame(5, $operador->nivel());
     }
 
     public function test_me_returns_profile_when_token_is_valid(): void
@@ -247,5 +259,43 @@ class AuthTest extends TestCase
         $nonceTrasGenerar = (string) $operador->fresh()->remember_token;
         OperatorToken::generate($operador);
         $this->assertSame($nonceTrasGenerar, (string) $operador->fresh()->remember_token);
+    }
+
+    public function test_admin_can_update_subscriber_status(): void
+    {
+        $operador = Operador::factory()->admin()->create();
+        $token = OperatorToken::generate($operador);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->patchJson('/api/subscribers/1/status', ['estado' => 'FALLA']);
+
+        $this->assertNotSame(403, $response->status());
+        $this->assertNotSame(401, $response->status());
+    }
+
+    public function test_admin_is_forbidden_on_sql_console(): void
+    {
+        $operador = Operador::factory()->admin()->create();
+        $token = OperatorToken::generate($operador);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/database/query', ['query' => 'SELECT 1']);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_is_forbidden_on_user_management(): void
+    {
+        $operador = Operador::factory()->admin()->create();
+        $token = OperatorToken::generate($operador);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/operadores', [
+                'email' => 'otro@cotel.bo',
+                'role' => 'TECNICO',
+                'password' => 'clave123456',
+            ]);
+
+        $response->assertStatus(403);
     }
 }

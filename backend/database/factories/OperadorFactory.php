@@ -35,12 +35,11 @@ class OperadorFactory extends Factory
     }
 
     /**
-     * Alias histórico: equivale a SUPERADMIN. Se conserva para compatibilidad
-     * con pruebas y código que use `->admin()`.
+     * Operador ADMIN (nivel 2 · Administración Operativa: administra lo implementado).
      */
     public function admin(): static
     {
-        return $this->superadmin();
+        return $this->state(fn (): array => ['role' => Operador::ROLE_ADMIN]);
     }
 
     public function supervisor(): static

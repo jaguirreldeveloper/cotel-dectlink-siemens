@@ -11,6 +11,7 @@ import type { OperadorRole } from '@/features/auth/types';
 
 export const OPERADOR_ROLES: OperadorRole[] = [
   'SUPERADMIN',
+  'ADMIN',
   'SUPERVISOR',
   'DESPACHADOR',
   'TECNICO',
@@ -23,7 +24,7 @@ export interface RoleMeta {
   titulo: string;
   descripcion: string;
   nivel: string;
-  color: 'amber' | 'violet' | 'indigo' | 'sky' | 'slate';
+  color: 'amber' | 'rose' | 'violet' | 'indigo' | 'sky' | 'slate';
 }
 
 export const ROLE_META: Record<OperadorRole, RoleMeta> = {
@@ -35,6 +36,15 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
       'Control total del sistema: gestión de operadores, consola SQL, calibración de planta externa y despacho de OTs.',
     nivel: 'Nivel 1 · Acceso Total',
     color: 'amber',
+  },
+  ADMIN: {
+    id: 'ADMIN',
+    nombre: 'Administración',
+    titulo: 'Administración Operativa de la Red',
+    descripcion:
+      'Administración de lo implementado: operadores de la red, calibración de planta externa, despacho de cuadrillas y seguimiento de OTs. Sin acceso a consola SQL ni módulos en desarrollo.',
+    nivel: 'Nivel 2 · Administración',
+    color: 'rose',
   },
   SUPERVISOR: {
     id: 'SUPERVISOR',
@@ -79,6 +89,8 @@ export function roleBadgeClasses(role: OperadorRole): string {
   switch (role) {
     case 'SUPERADMIN':
       return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+    case 'ADMIN':
+      return 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
     case 'SUPERVISOR':
       return 'bg-violet-500/20 text-violet-300 border border-violet-500/30';
     case 'DESPACHADOR':
@@ -96,6 +108,7 @@ export function roleBadgeClasses(role: OperadorRole): string {
 export function roleCardClasses(role: OperadorRole, active: boolean): string {
   const map: Record<OperadorRole, string> = {
     SUPERADMIN: 'border-amber-500/80 bg-amber-500/10',
+    ADMIN: 'border-rose-500/80 bg-rose-500/10',
     SUPERVISOR: 'border-violet-500/80 bg-violet-500/10',
     DESPACHADOR: 'border-indigo-500/80 bg-indigo-500/10',
     TECNICO: 'border-sky-500/80 bg-sky-500/10',
@@ -119,6 +132,8 @@ export function roleIconClasses(role: OperadorRole): string {
   switch (role) {
     case 'SUPERADMIN':
       return 'text-amber-400';
+    case 'ADMIN':
+      return 'text-rose-400';
     case 'SUPERVISOR':
       return 'text-violet-400';
     case 'DESPACHADOR':
@@ -137,6 +152,8 @@ export function roleRadioClasses(role: OperadorRole): string {
   switch (role) {
     case 'SUPERADMIN':
       return 'text-amber-500 focus:ring-amber-500';
+    case 'ADMIN':
+      return 'text-rose-500 focus:ring-rose-500';
     case 'SUPERVISOR':
       return 'text-violet-500 focus:ring-violet-500';
     case 'DESPACHADOR':
@@ -155,6 +172,8 @@ export function roleAccentClasses(role: OperadorRole): string {
   switch (role) {
     case 'SUPERADMIN':
       return 'bg-amber-500/10 border-amber-500/30 text-amber-300';
+    case 'ADMIN':
+      return 'bg-rose-500/10 border-rose-500/30 text-rose-300';
     case 'SUPERVISOR':
       return 'bg-violet-500/10 border-violet-500/30 text-violet-300';
     case 'DESPACHADOR':

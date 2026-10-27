@@ -3,6 +3,7 @@ import {
   Users,
   ShieldCheck,
   Wrench,
+  UserCog,
   Search,
   Plus,
   Edit2,
@@ -49,6 +50,7 @@ import {
 
 const ROLE_ICONS: Record<OperadorRole, ComponentType<{ className?: string }>> = {
   SUPERADMIN: ShieldCheck,
+  ADMIN: UserCog,
   SUPERVISOR: Network,
   DESPACHADOR: ClipboardList,
   TECNICO: Wrench,
@@ -537,6 +539,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
               const RoleIcon = ROLE_ICONS[rid];
               const cardStyles: Record<typeof rid, string> = {
                 SUPERADMIN: 'bg-amber-500/5 border-amber-500/20 text-amber-400',
+                ADMIN: 'bg-rose-500/5 border-rose-500/20 text-rose-400',
                 SUPERVISOR: 'bg-violet-500/5 border-violet-500/20 text-violet-400',
                 DESPACHADOR: 'bg-indigo-500/5 border-indigo-500/20 text-indigo-400',
                 TECNICO: 'bg-sky-500/5 border-sky-500/20 text-sky-400',

@@ -201,31 +201,38 @@ class OperadoresController extends Controller
                     'color' => 'amber',
                 ],
                 [
+                    'id' => Operador::ROLE_ADMIN,
+                    'nombre' => 'Administración Operativa',
+                    'descripcion' => 'Administración de lo implementado: operadores de la red, calibración de planta externa, despacho de cuadrillas y seguimiento de OTs. Sin acceso a consola SQL ni módulos en desarrollo.',
+                    'nivel' => 'Nivel 2 · Administración',
+                    'color' => 'rose',
+                ],
+                [
                     'id' => Operador::ROLE_SUPERVISOR,
                     'nombre' => 'Ingeniero de Red DECTlink & Regulación ATT',
                     'descripcion' => 'Ingeniería de red: calibración GPS, estados de servicio, despacho de OTs y auditoría técnica de planta externa.',
-                    'nivel' => 'Nivel 2 · Ingeniería',
+                    'nivel' => 'Nivel 3 · Ingeniería',
                     'color' => 'violet',
                 ],
                 [
                     'id' => Operador::ROLE_DESPACHADOR,
                     'nombre' => 'Coordinador de Cuadrillas & Despacho de OTs',
                     'descripcion' => 'Despacho operativo: creación y seguimiento de órdenes de trabajo, gestión de cuadrillas y materiales.',
-                    'nivel' => 'Nivel 3 · Operativo',
+                    'nivel' => 'Nivel 4 · Operativo',
                     'color' => 'indigo',
                 ],
                 [
                     'id' => Operador::ROLE_TECNICO,
                     'nombre' => 'Técnico de Planta Externa & Instalador FAU',
                     'descripcion' => 'Acceso operativo y de consulta: mapas GIS, simulación de enlaces RF, visualización del padrón y fichas ATT.',
-                    'nivel' => 'Nivel 4 · Campo',
+                    'nivel' => 'Nivel 5 · Campo',
                     'color' => 'sky',
                 ],
                 [
                     'id' => Operador::ROLE_AUDITOR,
                     'nombre' => 'Auditor Regulatorio ATT & Consulta Comercial',
                     'descripcion' => 'Consulta regulatoria y comercial: padrón, fichas oficiales, mapas GIS y reportes para la ATT.',
-                    'nivel' => 'Nivel 5 · Consulta',
+                    'nivel' => 'Nivel 6 · Consulta',
                     'color' => 'slate',
                 ],
             ],
@@ -249,13 +256,13 @@ class OperadoresController extends Controller
                             'subscribers.status',
                             'Modificación de estados de servicio y operativos (C/SERV, FALLA, etc.)',
                             'Impacta la bitácora transaccional y el estado comercial de la línea en Supabase.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_SUPERVISOR]
+                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR]
                         ),
                         $this->permiso(
                             'subscribers.gps',
                             'Calibración y registro de nuevas coordenadas GPS en mapa',
                             'Recalcula distancia geodésica y azimut a la celda RFP Siemens.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_SUPERVISOR]
+                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR]
                         ),
                     ],
                 ],
@@ -272,19 +279,19 @@ class OperadoresController extends Controller
                             'work_orders.manage',
                             'Creación, asignación, modificación y cierre de órdenes de trabajo',
                             'Despacho formal de cuadrillas a terreno con asignación de materiales.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
+                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
                         ),
                         $this->permiso(
                             'cuadrillas.manage',
                             'Administración del catálogo de cuadrillas de planta externa',
                             'Alta, baja y actualización de vehículos y técnicos asignados.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
+                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
                         ),
                         $this->permiso(
                             'materiales.manage',
                             'Control de inventario y catálogo de materiales (cables, antenas, conectores)',
                             'Registro de insumos de telecomunicaciones y control de existencias.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
+                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
                         ),
                     ],
                 ],
