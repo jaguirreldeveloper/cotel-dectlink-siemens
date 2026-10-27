@@ -1,6 +1,8 @@
-﻿import React from 'react';
-import { Database, FileSpreadsheet, RefreshCw, Printer, ShieldCheck, Cloud, Menu, X, ShieldAlert } from 'lucide-react';
+import React from 'react';
+import { Database, FileSpreadsheet, RefreshCw, Printer, ShieldCheck, Cloud, Menu, X, ShieldAlert, User, LogOut } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Operador } from '@/features/auth';
+import { roleBadgeClasses, roleLabel } from '@/shared/utils/roles';
 
 interface UnifiedHeaderProps {
   dataSource: 'loading' | 'db' | 'csv' | 'demo' | 'empty';
@@ -22,6 +24,10 @@ interface UnifiedHeaderProps {
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
   onOpenMobileSidebar: () => void;
+  operador?: Operador | null;
+  onLogout?: () => void;
+  isDemoMode?: boolean;
+  onOpenLogin?: () => void;
 }
 
 export function UnifiedHeader(props: UnifiedHeaderProps) {
@@ -179,6 +185,40 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
               <Button variant='primary' size='md' icon={Printer} onClick={props.onPrint} title='Generar informe para impresión / PDF'>
                 Informe PDF
               </Button>
+
+              {/* Sección de autenticación y operador */}
+              {props.operador ? (
+                <div className='flex items-center gap-2 pl-2 border-l border-slate-800'>
+                  <div className='hidden sm:flex flex-col items-end text-right'>
+                    <span className='text-xs font-medium text-white max-w-[120px] truncate' title={props.operador.email}>
+                      {props.operador.nombre || props.operador.email.split('@')[0]}
+                    </span>
+                    <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.2 rounded ${roleBadgeClasses(props.operador.role)}`}>
+                      {props.operador.role} · {roleLabel(props.operador.role)}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={props.onLogout}
+                    title='Cerrar sesión'
+                    className='p-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-300 transition-colors border border-slate-700/80 hover:border-red-500/30'
+                  >
+                    <LogOut className='w-4 h-4' />
+                  </button>
+                </div>
+              ) : props.isDemoMode ? (
+                <div className='flex items-center gap-2 pl-2 border-l border-slate-800'>
+                  <span className='hidden sm:inline-block text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700'>
+                    Modo Consulta
+                  </span>
+                  <button
+                    onClick={props.onOpenLogin}
+                    className='px-2.5 py-1 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition'
+                  >
+                    Iniciar Sesión
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

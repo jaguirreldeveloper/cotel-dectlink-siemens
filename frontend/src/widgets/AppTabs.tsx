@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Network,
   FileText,
+  Users,
 } from 'lucide-react';
 
 /** Ids de pestaña de la aplicación (unión cerrada del shell). */
@@ -28,6 +29,7 @@ export type AppTabId =
   | 'table'
   | 'audit'
   | 'institutional'
+  | 'users'
   | 'qa';
 
 interface TabSpec {
@@ -75,6 +77,7 @@ export function AppTabs({ activeTab, onTabChange, recordCount, auditIssueCount }
       countClass: 'text-amber-600 dark:text-amber-400',
     },
     { id: 'institutional', label: 'Cuentas Clave', icon: Building2, accent: 'text-indigo-500' },
+    { id: 'users', label: 'Usuarios & Roles', icon: Users, accent: 'text-indigo-400' },
     { id: 'qa', label: 'Consultas', icon: HelpCircle, accent: 'text-slate-400' },
   ];
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -25,13 +25,17 @@ import { OfficialTechnicalSheetsView } from '@/features/technical-sheets/Officia
 import { SupabaseMigrationModal } from '@/features/supabase-migration/SupabaseMigrationModal';
 import { GitMigrationModal } from '@/features/git-migration/GitMigrationModal';
 import { QaView } from '@/features/qa/QaView';
+import { UserManagementView } from '@/features/users';
 import { ExecutiveReport } from '@/widgets/ExecutiveReport';
 import { VisualCharts } from '@/widgets/VisualCharts';
 import { buildSubscribersCsv, subscribersCsvFilename } from '@/entities/subscriber/exportCsv';
 import { useSubscriberData } from '@/entities/subscriber/hooks/useSubscriberData';
+import { useAuth, BrandedLoginView } from '@/features/auth';
 import { AppTabId } from '@/widgets/AppTabs';
+import { Radio } from 'lucide-react';
 
 export default function App() {
+  const auth = useAuth();
   const data = useSubscriberData();
 
   const [activeTab, setActiveTab] = useState<AppTabId>('gps-calibration');
@@ -170,12 +174,42 @@ export default function App() {
             onSelectRecord={data.selectRecord}
           />
         );
+      case 'users':
+        return <UserManagementView currentOperador={auth.operador} />;
       case 'qa':
         return <QaView />;
       default:
         return null;
     }
   };
+
+  if (auth.isLoading) {
+    return (
+      <div className='min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 p-6'>
+        <div className='w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4 animate-pulse'>
+          <Radio className='w-6 h-6' />
+        </div>
+        <div className='flex items-center gap-2 text-sm font-semibold text-white mb-1'>
+          <span>COTEL R.L.</span>
+          <span className='text-slate-600'>·</span>
+          <span className='text-indigo-400'>Siemens DECTlink</span>
+        </div>
+        <p className='text-xs text-slate-500'>Verificando sesión de operador...</p>
+      </div>
+    );
+  }
+
+  if (!auth.isAuthenticated && !auth.isDemoMode) {
+    return (
+      <ErrorBoundary>
+        <BrandedLoginView
+          onLogin={auth.login}
+          onEnterDemo={auth.enterDemoMode}
+          isLoading={auth.isLoading}
+        />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -200,6 +234,10 @@ export default function App() {
           onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
           sidebarCollapsed={sidebarCollapsed}
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+          operador={auth.operador}
+          onLogout={auth.logout}
+          isDemoMode={auth.isDemoMode}
+          onOpenLogin={auth.logout}
         />
 
         <div className='flex flex-1 overflow-hidden'>
