@@ -1,0 +1,77 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\Operador;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
+use Throwable;
+
+/**
+ * Emite y valida tokens cifrados para los operadores de la aplicación.
+ *
+ * Utiliza Crypt::encryptString con la APP_KEY (AES-256-CBC) para emitir tokens
+ * inviolables y sin necesidad de tablas adicionales. Verifica vigencia y estado
+ * activo del operador en cada petición.
+ */
+class OperatorToken
+{
+    private const DEFAULT_TTL_HOURS = 72;
+
+    /**
+     * Genera un token firmado y cifrado para el operador.
+     */
+    public static function generate(Operador $operador, int $ttlHours = self::DEFAULT_TTL_HOURS): string
+    {
+        $payload = [
+            'id' => $operador->id,
+            'email' => $operador->email,
+            'role' => $operador->role,
+            'exp' => time() + ($ttlHours * 3600),
+        ];
+
+        return Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * Resuelve el operador asociado a la petición si el token es válido y la cuenta está activa.
+     */
+    public static function resolve(Request $request): ?Operador
+    {
+        // 1. Si ya hay usuario autenticado por guard web
+        $currentUser = Auth::user();
+        if ($currentUser instanceof Operador && $currentUser->activo) {
+            return $currentUser;
+        }
+
+        // 2. Extraer token de encabezados
+        $rawToken = $request->bearerToken() ?? $request->header('x-operator-token');
+        if (! is_string($rawToken) || trim($rawToken) === '') {
+            return null;
+        }
+
+        try {
+            $decrypted = Crypt::decryptString(trim($rawToken));
+            /** @var array{id?: int, email?: string, role?: string, exp?: int} $payload */
+            $payload = json_decode($decrypted, true, 512, JSON_THROW_ON_ERROR);
+
+            if (! isset($payload['id'], $payload['exp'])) {
+                return null;
+            }
+
+            if ($payload['exp'] < time()) {
+                return null; // Token expirado
+            }
+
+            $operador = Operador::query()->find($payload['id']);
+            if (! $operador instanceof Operador || ! $operador->activo) {
+                return null;
+            }
+
+            return $operador;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+}

@@ -3,6 +3,7 @@ import {
   serial,
   uuid,
   text,
+  boolean,
   integer,
   bigint,
   date,
@@ -21,6 +22,24 @@ export const users = pgTable('users', {
   role: text('role').notNull().default('OPERADOR'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Operadores: usuarios reales de la aplicación (login email/contraseña).
+// Separada de users (ligada a Supabase Auth, sin contraseña) para no mezclar
+// ambos orígenes de identidad. RLS habilitada sin políticas (backend service).
+export const operadores = pgTable('operadores', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  password: text('password').notNull(),
+  nombre: text('nombre'),
+  role: text('role').notNull().default('TECNICO'),
+  activo: boolean('activo').notNull().default(true),
+  rememberToken: text('remember_token'),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  check('chk_operadores_role', sql`${t.role} IN ('SUPERADMIN','SUPERVISOR','DESPACHADOR','TECNICO','AUDITOR','ADMIN','OPERADOR')`),
+]);
 
 // Zonas: barrios / urbanizaciones normalizados (catálogo maestro).
 // La zona cruda de origen de cada línea se conserva en abonados_lineas.zona_origen.

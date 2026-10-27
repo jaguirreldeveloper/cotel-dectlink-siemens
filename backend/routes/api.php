@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CellsController;
 use App\Http\Controllers\Api\CuadrillasController;
 use App\Http\Controllers\Api\DatabaseController;
@@ -7,9 +8,9 @@ use App\Http\Controllers\Api\EventsController;
 use App\Http\Controllers\Api\GitController;
 use App\Http\Controllers\Api\LogsController;
 use App\Http\Controllers\Api\MaterialesController;
+use App\Http\Controllers\Api\OperadoresController;
 use App\Http\Controllers\Api\SubscribersController;
 use App\Http\Controllers\Api\WorkOrdersController;
-use App\Http\Middleware\AdminToken;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,6 +20,15 @@ use Illuminate\Support\Facades\Route;
 | server.ts (Express) → este archivo. Los payloads son de paridad exacta:
 | el frontend React no requiere cambios.
 */
+
+// Autenticación de Operadores
+Route::post('auth/login', [AuthController::class, 'login']);
+Route::get('auth/me', [AuthController::class, 'me']);
+Route::post('auth/logout', [AuthController::class, 'logout']);
+
+// Gestión de Operadores y Matriz de Roles (lectura)
+Route::get('operadores/permissions', [OperadoresController::class, 'permissions']);
+Route::get('operadores', [OperadoresController::class, 'index']);
 
 // Tiempo real (SSE)
 Route::get('events', [EventsController::class, 'stream']);
@@ -45,11 +55,17 @@ Route::get('database/tables/{table}/data', [DatabaseController::class, 'tableDat
 // Estado Git (stub no administrativo: solo informa que no está disponible)
 Route::get('git/status', [GitController::class, 'status']);
 
-// Escrituras y herramientas administrativas (header x-admin-token)
-Route::middleware(AdminToken::class)->group(function (): void {
+// Escrituras y herramientas administrativas — control de acceso por rol (RBAC).
+// El header x-admin-token (token de servidor) conserva acceso total para CLI.
+
+// Calibración GPS y estados de servicio: Jefatura / Ingeniería.
+Route::middleware('role:superadmin,supervisor')->group(function (): void {
     Route::patch('subscribers/{nro}/status', [SubscribersController::class, 'updateStatus']);
     Route::patch('subscribers/{nro}/coordinates', [SubscribersController::class, 'updateCoordinates']);
+});
 
+// Despacho de cuadrillas, órdenes de trabajo y materiales: Jefatura / Ingeniería / Despacho.
+Route::middleware('role:superadmin,supervisor,despachador')->group(function (): void {
     Route::post('work-orders', [WorkOrdersController::class, 'store']);
     Route::patch('work-orders/{id}', [WorkOrdersController::class, 'update']);
     Route::delete('work-orders/{id}', [WorkOrdersController::class, 'destroy']);
@@ -61,6 +77,13 @@ Route::middleware(AdminToken::class)->group(function (): void {
     Route::post('materiales', [MaterialesController::class, 'store']);
     Route::patch('materiales/{id}', [MaterialesController::class, 'update']);
     Route::delete('materiales/{id}', [MaterialesController::class, 'destroy']);
+});
+
+// Gestión de usuarios, consola SQL, conexión y Git: exclusivo de SUPERADMIN.
+Route::middleware('role:superadmin')->group(function (): void {
+    Route::post('operadores', [OperadoresController::class, 'store']);
+    Route::patch('operadores/{id}', [OperadoresController::class, 'update']);
+    Route::delete('operadores/{id}', [OperadoresController::class, 'destroy']);
 
     Route::post('database/query', [DatabaseController::class, 'query']);
     Route::post('database/test-connection', [DatabaseController::class, 'testConnection']);
