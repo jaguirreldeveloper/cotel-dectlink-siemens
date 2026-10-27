@@ -21,13 +21,22 @@ class OperatorToken
 
     /**
      * Genera un token firmado y cifrado para el operador.
+     *
+     * El nonce (`remember_token`) viaja dentro del payload y se compara contra
+     * la base de datos en cada resolución: si el nonce rotó, el token queda
+     * inválido. Si el operador aún no tiene nonce, se emite uno nuevo.
      */
     public static function generate(Operador $operador, int $ttlHours = self::DEFAULT_TTL_HOURS): string
     {
+        if (! $operador->remember_token) {
+            $operador->rotarNonceDeTokens();
+        }
+
         $payload = [
             'id' => $operador->id,
             'email' => $operador->email,
             'role' => $operador->role,
+            'nonce' => (string) $operador->remember_token,
             'exp' => time() + ($ttlHours * 3600),
         ];
 
@@ -66,6 +75,13 @@ class OperatorToken
 
             $operador = Operador::query()->find($payload['id']);
             if (! $operador instanceof Operador || ! $operador->activo) {
+                return null;
+            }
+
+            // Revocación: el nonce del token debe coincidir con el vigente en BD.
+            // Tokens sin nonce (emitidos antes de esta mejora) quedan rechazados.
+            $nonce = (string) ($payload['nonce'] ?? '');
+            if ($nonce === '' || ! hash_equals($nonce, (string) $operador->remember_token)) {
                 return null;
             }
 

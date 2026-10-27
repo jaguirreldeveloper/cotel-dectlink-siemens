@@ -58,7 +58,7 @@ class OperadoresController extends Controller
             'email.required' => 'El correo electrónico es requerido.',
             'email.email' => 'Ingrese un correo electrónico válido.',
             'email.unique' => 'Ya existe un operador con este correo electrónico.',
-            'role.in' => 'El rol no es válido. Roles válidos: ' . implode(', ', Operador::ROLES) . '.',
+            'role.in' => 'El rol no es válido. Roles válidos: '.implode(', ', Operador::ROLES).'.',
             'password.required' => 'La contraseña es requerida.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
@@ -103,7 +103,7 @@ class OperadoresController extends Controller
         ], [
             'email.email' => 'Ingrese un correo electrónico válido.',
             'email.unique' => 'Ese correo ya está registrado por otro operador.',
-            'role.in' => 'El rol no es válido. Roles válidos: ' . implode(', ', Operador::ROLES) . '.',
+            'role.in' => 'El rol no es válido. Roles válidos: '.implode(', ', Operador::ROLES).'.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
 
@@ -121,6 +121,8 @@ class OperadoresController extends Controller
             }
         }
 
+        $rotarNonce = false;
+
         if (isset($validated['email'])) {
             $operador->email = strtolower(trim((string) $validated['email']));
         }
@@ -135,9 +137,14 @@ class OperadoresController extends Controller
         }
         if (! empty($validated['password'])) {
             $operador->password = (string) $validated['password'];
+            $rotarNonce = true; // El restablecimiento de clave revoca las sesiones activas
         }
 
         $operador->save();
+
+        if ($rotarNonce) {
+            $operador->rotarNonceDeTokens();
+        }
 
         return response()->json([
             'message' => 'Operador actualizado exitosamente.',

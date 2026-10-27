@@ -126,25 +126,39 @@ Implementados en Laravel (`backend/routes/api.php`) con **paths y payloads idén
 | `GET` | `/api/database/export-sql` | DDL consolidado + seed (generados en backend) |
 | `GET` | `/api/git/status` | Estado del repositorio Git — **stub 501 en la nube** (`initialized: false`) |
 
-### Administrativos (requieren header `x-admin-token`)
+### Autenticación (`/api/auth/*`, token cifrado Bearer)
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `PATCH` | `/api/subscribers/:nro/status` | Cambia estado operativo + bitácora + broadcast SSE |
-| `PATCH` | `/api/subscribers/:nro/coordinates` | Calibra coordenadas GPS + bitácora |
-| `POST` | `/api/work-orders` | Crea orden de trabajo |
-| `PATCH` | `/api/work-orders/:id` | Actualiza orden (cierre automático al COMPLETADO) |
-| `DELETE` | `/api/work-orders/:id` | Elimina orden |
-| `POST` | `/api/database/query` | Consola SQL — **solo lectura** (SELECT/WITH/EXPLAIN/SHOW) |
-| `POST` | `/api/database/test-connection` | Prueba una conexión — **stub 501 en la nube** |
-| `POST` | `/api/database/apply-connection` | Conmuta la BD activa — **stub 501 en la nube** |
-| `POST` | `/api/git/init` | Inicializa repo Git + commit inicial — **stub 501 en la nube** |
-| `POST` | `/api/git/remote` | Configura remoto `origin` (solo HTTPS de GitHub) — **stub 501 en la nube** |
+| `POST` | `/api/auth/login` | Login con `email` + `password`; devuelve token y perfil |
+| `GET` | `/api/auth/me` | Perfil del operador autenticado |
+| `POST` | `/api/auth/logout` | Cierra sesión **y revoca en el servidor** todos los tokens de la cuenta |
+| `GET` | `/api/operadores` | Directorio de operadores (roles canónicos) |
+| `GET` | `/api/operadores/permissions` | Matriz RBAC: permiso × 5 roles |
+
+### Por rol (`role:...`: Bearer token de operador)
+| Método | Ruta | Roles |
+|--------|------|-------|
+| `PATCH` | `/api/subscribers/:nro/status` · `/api/subscribers/:nro/coordinates` | SUPERADMIN, SUPERVISOR |
+| `POST`/`PATCH`/`DELETE` | `/api/work-orders` | SUPERADMIN, SUPERVISOR, DESPACHADOR |
+| `POST`/`PATCH`/`DELETE` | `/api/cuadrillas` · `/api/materiales` | SUPERADMIN, SUPERVISOR, DESPACHADOR |
+| `POST`/`PATCH`/`DELETE` | `/api/operadores` | Solo SUPERADMIN |
+| `POST` | `/api/database/query` · `test-connection` · `apply-connection`, `git/init` · `git/remote` | Solo SUPERADMIN |
 
 ---
 
 ## 🔐 Seguridad
 
-Los endpoints administrativos exigen el header `x-admin-token`, validado contra `ADMIN_TOKEN` con comparación en tiempo constante (middleware `AdminToken` de Laravel; misma regla que el backend Express original, ya retirado).
+### Autenticación de operadores (Bearer token con revocación)
+
+1. **Emisión**: `OperatorToken::generate()` cifra con la `APP_KEY` (AES-256-CBC, Laravel Crypt) un payload `{ id, email, role, nonce, exp }` con vigencia de **72 h**. El `nonce` es la columna `operadores.remember_token`.
+2. **Validación**: en cada petición, `OperatorToken::resolve()` descifra el token, verifica `exp` y compara el `nonce` del payload contra el valor vigente en BD con `hash_equals`. Un token legítimo deja de ser aceptado si su nonce ya no coincide.
+3. **Revocación**:
+   - `POST /api/auth/logout` rota el nonce → **todos** los tokens activos de esa cuenta quedan inválidos al instante.
+   - El restablecimiento de contraseña (`PATCH /api/operadores/:id`) también rota el nonce (revoca sesiones activas).
+   - Desactivar un operador (`activo=false`) bloquea el token sin rotar nada (la resolución exige cuenta activa).
+   - Tokens sin `nonce` (emitidos antes de esta mejora) quedan **rechazados**.
+4. **RBAC jerárquico**: 5 roles canónicos `SUPERADMIN > SUPERVISOR > DESPACHADOR > TECNICO > AUDITOR` con los alias históricos `ADMIN`/`OPERADOR` traducidos por `Operador::rolCanonico()`. El middleware `requireRole` compara por **nivel de privilegio** (`Operador::esAlMenos()`), no por identidad de rol.
+5. **Defensa en profundidad**: las rutas internas garantizan el rol además vía `OperadoresController::ensureAdmin()`; el header `x-admin-token` es solo una vía CLI de servicios, se sigue aceptando y se compara en tiempo constante.
 
 - **Consola SQL** (`SqlGuard`): restringida a una única instrucción de **solo lectura**; bloquea `pg_read_file`, `COPY … PROGRAM`, `dblink`, `lo_import`, `GRANT`, etc.
 - **Conexión a BD**: `test-connection`/`apply-connection` quedan como **stub 501** en la nube (la plataforma fija la BD por variables de entorno); la allowlist de hosts se conserva en la referencia Express.

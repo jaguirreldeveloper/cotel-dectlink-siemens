@@ -43,13 +43,18 @@ class Operador extends Authenticatable
 
     // Roles jerárquicos canónicos (nivel 1 = mayor privilegio)
     public const ROLE_SUPERADMIN = 'SUPERADMIN';
+
     public const ROLE_SUPERVISOR = 'SUPERVISOR';
+
     public const ROLE_DESPACHADOR = 'DESPACHADOR';
+
     public const ROLE_TECNICO = 'TECNICO';
+
     public const ROLE_AUDITOR = 'AUDITOR';
 
     /** Alias históricos (el CHECK de la BD aún los acepta). */
     public const ROLE_ADMIN = 'ADMIN';
+
     public const ROLE_OPERADOR = 'OPERADOR';
 
     /** Lista canónica de roles en orden de privilegio. */
@@ -122,6 +127,23 @@ class Operador extends Authenticatable
     public function esSuperadmin(): bool
     {
         return $this->rolCanonico() === self::ROLE_SUPERADMIN;
+    }
+
+    /**
+     * Rota el nonce de revocación de tokens (`remember_token`).
+     *
+     * Al cambiar el nonce, todos los tokens emitidos con el valor anterior
+     * quedan inválidos de inmediato. Se usa en logout, restablecimiento de
+     * contraseña y cualquier revocación de sesión del lado servidor.
+     *
+     * @return string El nuevo nonce (32 hex)
+     */
+    public function rotarNonceDeTokens(): string
+    {
+        $this->remember_token = bin2hex(random_bytes(16));
+        $this->save();
+
+        return (string) $this->remember_token;
     }
 
     /**

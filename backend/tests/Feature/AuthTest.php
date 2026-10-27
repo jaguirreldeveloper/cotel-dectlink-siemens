@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Operador;
 use App\Support\OperatorToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -172,5 +173,79 @@ class AuthTest extends TestCase
 
         // El acceso está restringido a SUPERADMIN/SUPERVISOR; DESPACHADOR recibe 403.
         $response->assertStatus(403);
+    }
+
+    public function test_logout_revokes_active_token(): void
+    {
+        $operador = Operador::factory()->superadmin()->create();
+
+        $token = OperatorToken::generate($operador);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/auth/me')
+            ->assertOk();
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/auth/logout');
+
+        $response->assertOk();
+
+        // El token emitido antes del logout queda revocado por el nonce rotado.
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/auth/me')
+            ->assertStatus(401);
+    }
+
+    public function test_password_reset_revokes_previous_token(): void
+    {
+        $operador = Operador::factory()->superadmin()->create();
+        $token = OperatorToken::generate($operador);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/auth/me')
+            ->assertOk();
+
+        // Cambio de contraseña + rotación de nonce (como hace OperadoresController::update).
+        $operador->password = 'nuevaClave123';
+        $operador->rotarNonceDeTokens();
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/auth/me')
+            ->assertStatus(401);
+    }
+
+    public function test_tokens_without_nonce_are_rejected(): void
+    {
+        // Token de la era pre-nonce: payload sin `nonce` y sin vigencia de revocación.
+        $operador = Operador::factory()->superadmin()->create();
+
+        $legacyPayload = [
+            'id' => $operador->id,
+            'email' => $operador->email,
+            'role' => $operador->role,
+            'exp' => time() + 3600,
+        ];
+        $legacyToken = Crypt::encryptString(json_encode($legacyPayload, JSON_THROW_ON_ERROR));
+
+        $this->withHeader('Authorization', "Bearer {$legacyToken}")
+            ->getJson('/api/auth/me')
+            ->assertStatus(401);
+    }
+
+    public function test_login_rotates_nonce_on_issue(): void
+    {
+        // Primer token emitido con nonce vacío en BD: generate asigna el nonce inicial.
+        $operador = Operador::factory()->tecnico()->create(['remember_token' => null]);
+        $this->assertNull($operador->remember_token);
+
+        OperatorToken::generate($operador);
+
+        $this->assertNotNull($operador->remember_token);
+        $this->assertNotSame('', (string) $operador->remember_token);
+
+        // Generar otro token no rota el nonce (no invalida la sesión previa).
+        $nonceTrasGenerar = (string) $operador->fresh()->remember_token;
+        OperatorToken::generate($operador);
+        $this->assertSame($nonceTrasGenerar, (string) $operador->fresh()->remember_token);
     }
 }

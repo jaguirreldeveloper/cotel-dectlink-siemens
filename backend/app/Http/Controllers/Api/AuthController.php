@@ -92,9 +92,19 @@ class AuthController extends Controller
 
     /**
      * Cerrar sesión.
+     *
+     * Rota el nonce de revocación del operador: todos los tokens emitidos
+     * para su cuenta quedan inválidos de inmediato en el lado servidor,
+     * además de descartarse el token en el cliente.
      */
     public function logout(Request $request): JsonResponse
     {
+        $operador = OperatorToken::resolve($request);
+
+        if ($operador instanceof Operador) {
+            $operador->rotarNonceDeTokens();
+        }
+
         return response()->json([
             'message' => 'Sesión cerrada exitosamente.',
         ]);
