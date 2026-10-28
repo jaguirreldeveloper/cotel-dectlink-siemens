@@ -28,6 +28,46 @@ class RequireRole
     {
         $permitidos = array_map('strtoupper', $roles);
 
+        // 1. Operador autenticado vía token de sesión
+        $operador = OperatorToken::resolve($request);
+
+        if ($operador !== null) {
+            // Si el operador es SUPERADMIN, siempre permite acceso
+            if ($operador->esSuperadmin()) {
+                return $next($request);
+            }
+            // Comparar el rol canónico (para traducir alias como OPERADOR → TECNICO)
+            if (in_array($operador->rolCanonico(), $permitidos, true)) {
+                return $next($request);
+            }
+
+            return response()->json([
+                'error' => 'Acceso denegado: esta operación requiere uno de los roles: ' . implode(', ', $permitidos) . '.',
+            ], 403);
+        }
+
+        // 2. Fallback: header x-admin-token (acceso total para CLI/automatización)
+        $expected = config('cotel.admin_token');
+
+        if (! $expected) {
+            return response()->json([
+                'error' => 'Endpoint administrativo bloqueado: inicie sesión con un rol autorizado o defina ADMIN_TOKEN en el entorno.',
+            ], 503);
+        }
+
+        $provided = $request->header('x-admin-token', '');
+
+        if ($provided !== '' && hash_equals($expected, $provided)) {
+            return $next($request);
+        }
+
+        return response()->json([
+            'error' => 'Token de administración inválido o ausente (header x-admin-token).',
+        ], 401);
+    }
+    {
+        $permitidos = array_map('strtoupper', $roles);
+
         // 1. Operador autenticado vía token cifrado / sesión
         $operador = OperatorToken::resolve($request);
 

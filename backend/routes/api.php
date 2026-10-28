@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\GitController;
 use App\Http\Controllers\Api\LogsController;
 use App\Http\Controllers\Api\MaterialesController;
 use App\Http\Controllers\Api\OperadoresController;
+use App\Http\Controllers\Api\PadronCargasController;
 use App\Http\Controllers\Api\SheltersController;
 use App\Http\Controllers\Api\SubcentralesController;
 use App\Http\Controllers\Api\SubscribersController;
@@ -136,3 +137,20 @@ Route::get('centrales', [CentralesController::class, 'index']);
 Route::get('subcentrales', [SubcentralesController::class, 'index']);
 Route::get('shelters', [SheltersController::class, 'index']);
 Route::get('armarios', [ArmariosController::class, 'index']);
+
+// ===========================================================================
+// CARGA DEL PADRÓN POR LOTE (dry-run + aplicación)
+// Lectura del lote, subida y anulación: SUPERADMIN/ADMIN. Aplicar el lote
+// sobre el padrón vigente: exclusivo de SUPERADMIN.
+// ===========================================================================
+Route::middleware('role:superadmin,admin')->group(function (): void {
+    Route::get('padron/cargas', [PadronCargasController::class, 'index']);
+    Route::post('padron/cargas', [PadronCargasController::class, 'store']);
+    Route::get('padron/cargas/{id}', [PadronCargasController::class, 'show']);
+    Route::post('padron/cargas/{id}/anular', [PadronCargasController::class, 'anular']);
+});
+
+// Aplicar el lote: exclusivo de SUPERADMIN.
+Route::middleware('role:superadmin')->group(function (): void {
+    Route::post('padron/cargas/{id}/apply', [PadronCargasController::class, 'apply']);
+});
