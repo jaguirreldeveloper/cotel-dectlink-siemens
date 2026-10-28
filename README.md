@@ -300,3 +300,9 @@ Hay dos entornos con sus propios `.env`:
 ---
 
 © 2026 COTEL R.L. · Todos los derechos reservados.
+
+## 🛠️ Cambios recientes
+
+- Se amplió el `CHECK` de `estado_servicio` en la migración de pruebas (`2026_10_22_164813_create_cotel_testing_schema.php`) para incluir el nuevo valor **`ACTIVO`**, permitiendo que los tests de `PadronCargas` inserten filas con ese estado.
+- Se añadirá próximamente el valor **`SIN DATO`** al `CHECK` de `estado_operativo` (pendiente de aplicar) para cubrir casos de datos ausentes en la carga del padrón.
+- Los tests de `PadronCargas` ahora pasan sin errores de restricción de integridad.

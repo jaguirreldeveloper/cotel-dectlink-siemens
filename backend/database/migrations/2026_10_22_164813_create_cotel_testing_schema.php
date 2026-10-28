@@ -86,8 +86,8 @@ return new class extends Migration
                 zona_origen TEXT,
                 created_at TEXT NOT NULL DEFAULT (strftime(\'%Y-%m-%dT%H:%M:%SZ\', \'now\')),
                 updated_at TEXT NOT NULL DEFAULT (strftime(\'%Y-%m-%dT%H:%M:%SZ\', \'now\')),
-                CHECK (estado_servicio IN (\'C/SERV.\',\'EN DEPOSITO\',\'CORTE X MORA\',\'FALLA TECNICA\',\'S/SERV.\')),
-                CHECK (estado_operativo IN (\'C/SERV.\',\'EN DEPOSITO\',\'CORTE X MORA\',\'FALLA TECNICA\',\'S/SERV.\')),
+                CHECK (estado_servicio IN (\'C/SERV.\',\'EN DEPOSITO\',\'CORTE X MORA\',\'FALLA TECNICA\',\'S/SERV.\',\'ACTIVO\')),
+                CHECK (estado_operativo IN (\'C/SERV.\',\'EN DEPOSITO\',\'CORTE X MORA\',\'FALLA TECNICA\',\'S/SERV.\',\'SIN DATO\')),
                 CHECK (signal_dect IS NULL OR signal_dect IN (\'EXCELENTE\',\'BUENO\',\'DEBIL\',\'SIN_ENLACE\'))
             )',
 

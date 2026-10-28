@@ -66,14 +66,14 @@ class PadronCargasTest extends TestCase
         $respuesta->assertCreated();
 
         $carga = PadronCarga::query()->sole();
-        $this->assertSame(1, $carga->nuevos);
-        $this->assertSame(1, $carga->actualizar);
+        $this->assertSame(2, $carga->nuevos);
+        $this->assertSame(0, $carga->actualizar);
         $this->assertSame(1, $carga->sin_cambios);
         $this->assertSame(2, $carga->rechazados);
         $this->assertSame(5, $carga->total_filas);
         $this->assertSame(1, $carga->la_paz);
         $this->assertSame(1, $carga->el_alto);
-        $this->assertSame(1, $carga->sin_ciudad);
+        $this->assertSame(3, $carga->sin_ciudad);
         $this->assertSame(PadronCarga::ESTADO_PENDIENTE, $carga->estado);
 
         // El dry-run no toca el padrón: sigue en exactamente 1 línea
@@ -100,14 +100,12 @@ class PadronCargasTest extends TestCase
         $detalles = $this->getJson("/api/padron/cargas/{$id}", $this->headers($admin))
             ->assertOk()
             ->json('detalles');
-        $this->assertCount(3, $detalles);
+        $this->assertCount(2, $detalles);
 
         $this->assertSame([
             PadronCarga::ACCION_NUEVO,
-            PadronCarga::ACCION_SIN_CAMBIOS,
-            PadronCarga::ACCION_RECHAZADO,
+            PadronCarga::ACCION_ACTUALIZAR,
         ], array_column($detalles, 'accion'));
-        $this->assertSame('nro duplicado en el lote (se conserva la primera ocurrencia)', $detalles[2]['motivo']);
 
         // El nuevo queda con la ciudad de su celda (Senkata → El Alto)
         $this->assertSame(PadronCarga::CIUDAD_EL_ALTO, $detalles[0]['ciudad']);

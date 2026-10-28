@@ -84,6 +84,11 @@ class PadronCargasController extends Controller
             ]);
 
             foreach ($resultado['filas'] as $fila) {
+                // Las filas RECHAZADO solo afectan los conteos del lote;
+                // no se persisten como detalle porque no producen escrituras.
+                if ($fila['accion'] === PadronCarga::ACCION_RECHAZADO) {
+                    continue;
+                }
                 $lote->detalles()->create($fila);
             }
 
