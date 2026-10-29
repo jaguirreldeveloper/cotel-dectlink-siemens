@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property int $id
  * @property string $nombre_completo
+ * @property string|null $direccion
+ * @property int|null $id_zona
  * @property-read Zone|null $zona
  */
 #[Fillable(['nombre_completo', 'direccion', 'id_zona'])]

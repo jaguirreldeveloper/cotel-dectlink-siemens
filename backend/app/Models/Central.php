@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property float|null $lng
  * @property string|null $observacion
  * @property bool $activo
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
  */
 class Central extends Model
 {

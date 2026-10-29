@@ -35,6 +35,13 @@ use Illuminate\Notifications\Notifiable;
  * @property string|null $nombre
  * @property string $role
  * @property bool $activo
+ * @property string $password
+ * @property string|null $remember_token
+ * @property string|null $last_login_at
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ *
+ * @method static \App\Models\Operador create(array<string, mixed> $attributes = [])
  */
 #[Fillable(['email', 'password', 'nombre', 'role', 'activo'])]
 #[Hidden(['password', 'remember_token'])]
@@ -95,7 +102,6 @@ class Operador extends Authenticatable
         return [
             'password' => 'hashed',
             'activo' => 'boolean',
-            'last_login_at' => 'datetime',
         ];
     }
 

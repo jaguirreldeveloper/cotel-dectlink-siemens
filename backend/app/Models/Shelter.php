@@ -23,6 +23,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float|null $lng
  * @property string|null $observacion
  * @property bool $activo
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Subcentral|null $subcentral
  */
 class Shelter extends Model
 {
@@ -65,6 +68,9 @@ class Shelter extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Subcentral, $this>
+     */
     public function subcentral(): BelongsTo
     {
         return $this->belongsTo(Subcentral::class, 'id_subcentral');

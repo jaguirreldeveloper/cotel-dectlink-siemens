@@ -11,8 +11,7 @@ class RequireRoleTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function admin_token_grants_access()
+    public function test_admin_token_grants_access()
     {
         $response = $this->withHeaders([
             'x-admin-token' => config('cotel.admin_token'),
@@ -21,8 +20,7 @@ class RequireRoleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
-    public function superadmin_can_access_protected_route()
+    public function test_superadmin_can_access_protected_route()
     {
         // crear operador SUPERADMIN
         $operador = Operador::factory()->create([
@@ -31,7 +29,7 @@ class RequireRoleTest extends TestCase
         ]);
 
         // generar token de sesión usando soporte OperatorToken (simulado)
-        $token = OperatorToken::create($operador);
+        $token = OperatorToken::generate($operador);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$token}",
@@ -40,18 +38,17 @@ class RequireRoleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
-    public function tecnico_cannot_access_superadmin_route()
+    public function test_tecnico_cannot_access_superadmin_route()
     {
         $operador = Operador::factory()->create([
             'role' => Operador::ROLE_TECNICO,
             'password' => bcrypt('secret'),
         ]);
-        $token = OperatorToken::create($operador);
+        $token = OperatorToken::generate($operador);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$token}",
-        ])->getJson('/api/operadores'); // route is guarded by role:superadmin in routes
+        ])->postJson('/api/operadores', []); // ruta reservada a SUPERADMIN
 
         $response->assertStatus(403);
     }

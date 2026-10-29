@@ -25,6 +25,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float|null $lng
  * @property string|null $observacion
  * @property bool $activo
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Central|null $central
  */
 class Subcentral extends Model
 {
@@ -59,6 +62,9 @@ class Subcentral extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Central, $this>
+     */
     public function central(): BelongsTo
     {
         return $this->belongsTo(Central::class, 'id_central');

@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $accion
  * @property int|null $operador_id
  * @property array|null $payload
+ * @property \Carbon\CarbonImmutable|null $created_at
+ *
+ * @method static \App\Models\InfraestructuraBitacora create(array<string, mixed> $attributes = [])
  */
 #[Fillable(['tabla', 'registro_id', 'accion', 'operador_id', 'payload'])]
 class InfraestructuraBitacora extends Model

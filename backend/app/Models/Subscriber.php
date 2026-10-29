@@ -18,13 +18,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $nro
  * @property string $numero_telefono
  * @property string $codigo_area
+ * @property int|null $contrato
+ * @property int|null $id_cliente
+ * @property int|null $id_celda
+ * @property string|null $fecha_servicio
  * @property string $estado_servicio
  * @property string $estado_operativo
  * @property string|null $signal_dect
  * @property float|null $lat
  * @property float|null $lng
- * @property-read Client $cliente
- * @property-read Cell $celda
+ * @property-read Client|null $cliente
+ * @property-read Cell|null $celda
  */
 #[Fillable([
     'nro', 'numero_telefono', 'codigo_area', 'contrato', 'id_cliente', 'id_celda',
@@ -56,11 +60,17 @@ class Subscriber extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Client, $this>
+     */
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'id_cliente');
     }
 
+    /**
+     * @return BelongsTo<Cell, $this>
+     */
     public function celda(): BelongsTo
     {
         return $this->belongsTo(Cell::class, 'id_celda');

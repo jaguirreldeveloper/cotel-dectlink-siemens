@@ -46,7 +46,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $operador->last_login_at = now();
+        $operador->last_login_at = now()->toDateTimeString();
         $operador->save();
 
         $token = OperatorToken::generate($operador);
@@ -59,7 +59,7 @@ class AuthController extends Controller
                 'nombre' => $operador->nombre ?? 'Operador',
                 'role' => $operador->rolCanonico(),
                 'activo' => $operador->activo,
-                'lastLoginAt' => $operador->last_login_at?->toISOString(),
+                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
             ],
             'message' => 'Inicio de sesión exitoso.',
         ]);
@@ -85,7 +85,7 @@ class AuthController extends Controller
                 'nombre' => $operador->nombre ?? 'Operador',
                 'role' => $operador->rolCanonico(),
                 'activo' => $operador->activo,
-                'lastLoginAt' => $operador->last_login_at?->toISOString(),
+                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
             ],
         ]);
     }

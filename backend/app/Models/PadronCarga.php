@@ -75,11 +75,17 @@ class PadronCarga extends Model
         ];
     }
 
+    /**
+     * @return HasMany<PadronCargaDetalle, $this>
+     */
     public function detalles(): HasMany
     {
         return $this->hasMany(PadronCargaDetalle::class, 'id_carga');
     }
 
+    /**
+     * @return BelongsTo<Operador, $this>
+     */
     public function operador(): BelongsTo
     {
         return $this->belongsTo(Operador::class, 'operador_id');

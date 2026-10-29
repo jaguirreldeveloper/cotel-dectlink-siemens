@@ -33,9 +33,9 @@ class OperadoresController extends Controller
                 'nombre' => $op->nombre,
                 'role' => $op->rolCanonico(),
                 'activo' => (bool) $op->activo,
-                'lastLoginAt' => $op->last_login_at?->toISOString(),
-                'createdAt' => $op->created_at?->toISOString(),
-                'updatedAt' => $op->updated_at?->toISOString(),
+                'lastLoginAt' => ($v = $op->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
+                'createdAt' => $op->created_at instanceof \Carbon\CarbonInterface ? $op->created_at->toISOString() : null,
+                'updatedAt' => $op->updated_at instanceof \Carbon\CarbonInterface ? $op->updated_at->toISOString() : null,
             ]);
 
         return response()->json($operadores);
@@ -80,7 +80,7 @@ class OperadoresController extends Controller
                 'role' => $operador->rolCanonico(),
                 'activo' => (bool) $operador->activo,
                 'lastLoginAt' => null,
-                'createdAt' => $operador->created_at?->toISOString(),
+                'createdAt' => $operador->created_at instanceof \Carbon\CarbonInterface ? $operador->created_at->toISOString() : null,
             ],
         ], 201);
     }
@@ -154,8 +154,8 @@ class OperadoresController extends Controller
                 'nombre' => $operador->nombre,
                 'role' => $operador->rolCanonico(),
                 'activo' => (bool) $operador->activo,
-                'lastLoginAt' => $operador->last_login_at?->toISOString(),
-                'updatedAt' => $operador->updated_at?->toISOString(),
+                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
+                'updatedAt' => $operador->updated_at instanceof \Carbon\CarbonInterface ? $operador->updated_at->toISOString() : null,
             ],
         ]);
     }

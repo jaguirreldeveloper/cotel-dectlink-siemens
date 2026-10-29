@@ -40,11 +40,9 @@ class CellsController extends Controller
         $antes = $cell->id_subcentral;
 
         $cell->id_subcentral = $validated['id_subcentral'] ?? null;
-        assert($cell instanceof Cell);
         $cell->save();
 
         $operador = OperatorToken::resolve($request);
-        assert($operador instanceof Operador || $operador === null);
 
         InfraestructuraBitacora::create([
             'tabla' => 'celdas',

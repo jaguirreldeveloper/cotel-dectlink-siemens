@@ -62,7 +62,7 @@ class OperatorToken
 
         try {
             $decrypted = Crypt::decryptString(trim($rawToken));
-            /** @var array{id?: int, email?: string, role?: string, exp?: int} $payload */
+            /** @var array{id?: int, email?: string, role?: string, nonce?: string, exp?: int} $payload */
             $payload = json_decode($decrypted, true, 512, JSON_THROW_ON_ERROR);
 
             if (! isset($payload['id'], $payload['exp'])) {

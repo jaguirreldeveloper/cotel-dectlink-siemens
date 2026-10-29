@@ -24,7 +24,7 @@ abstract class InfraestructuraBaseController extends Controller
     /**
      * Serializa una fila de cualquiera de las 4 tablas del módulo.
      *
-     * @param  Model&Central|Subcentral|Shelter|Armario  $model
+     * @param  \Illuminate\Database\Eloquent\Model  $model
      * @return array<string, mixed>
      */
     abstract protected function serializar(Model $model): array;

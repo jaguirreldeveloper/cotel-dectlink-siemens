@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string                    $accion
  * @property string|null               $motivo
  * @property array|null                $campos_cambiados
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property-read \App\Models\PadronCarga|null $carga
  */
 class PadronCargaDetalle extends Model
 {
@@ -47,6 +49,9 @@ class PadronCargaDetalle extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<PadronCarga, $this>
+     */
     public function carga(): BelongsTo
     {
         return $this->belongsTo(PadronCarga::class, 'id_carga');

@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $tecnologia
  * @property float|null $latitud
  * @property float|null $longitud
+ * @property int|null $id_subcentral
+ * @property-read \App\Models\Subcentral|null $subcentral
  */
 #[Fillable([
     'id', 'nombre', 'tecnologia', 'descripcion', 'rfp_modelo', 'banda_frecuencia',
@@ -59,6 +61,8 @@ class Cell extends Model
 
     /**
      * Subcentral de servicio de la RFP (opcional hasta asignación por UI).
+     *
+     * @return BelongsTo<Subcentral, $this>
      */
     public function subcentral(): BelongsTo
     {

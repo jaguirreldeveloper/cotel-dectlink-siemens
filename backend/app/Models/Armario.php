@@ -20,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float|null $lng
  * @property string|null $observacion
  * @property bool $activo
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Shelter|null $shelter
  */
 class Armario extends Model
 {
@@ -62,6 +65,9 @@ class Armario extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Shelter, $this>
+     */
     public function shelter(): BelongsTo
     {
         return $this->belongsTo(Shelter::class, 'id_shelter');

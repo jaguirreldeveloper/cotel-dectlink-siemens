@@ -66,7 +66,7 @@ class PadronBatchLoader
         $filas = self::parsear($csv);
         $vistos = [];
 
-        /** @var list<Subscriber> $existentes Indexed por nro */
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Subscriber> $existentes Indexed por nro */
         $existentes = Subscriber::query()
             ->whereIn('nro', array_filter(array_column($filas, 'nro'), fn ($n): bool => $n !== null))
             ->get()
@@ -155,7 +155,7 @@ class PadronBatchLoader
             $valores = str_getcsv($linea);
             $fila = [];
             foreach ($cabecera as $i => $clave) {
-                if ($clave === '' || $clave === null) {
+                if ($clave === '') {
                     continue;
                 }
                 $fila[$clave] = $valores[$i] ?? null;
@@ -191,7 +191,7 @@ class PadronBatchLoader
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     private static function emplear(array $info, string $accion, string $motivo, string $ciudad, array $cambios = []): array
     {

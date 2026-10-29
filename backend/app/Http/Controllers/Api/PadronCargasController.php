@@ -241,7 +241,7 @@ class PadronCargasController extends Controller
             'estado_anterior' => null,
             'nuevo_estado' => 'ACTIVO',
             'detalle' => sprintf('Carga por lote #%d: alta desde padrón', $detalle->id_carga),
-            'tecnico' => $operador?->nombre ?? 'sistema',
+            'tecnico' => $operador instanceof Operador ? $operador->nombre : 'sistema',
             'timestamp' => now(),
         ]);
     }
@@ -324,8 +324,8 @@ class PadronCargasController extends Controller
             'sinCiudad' => $lote->sin_ciudad,
             'estado' => $lote->estado,
             'aplicadoPor' => $lote->aplicado_por,
-            'aplicadoEn' => $lote->aplicado_en?->toIso8601String(),
-            'createdAt' => $lote->created_at?->toIso8601String(),
+            'aplicadoEn' => ($a = $lote->getAttribute('aplicado_en')) instanceof \Carbon\CarbonInterface ? $a->toIso8601String() : null,
+            'createdAt' => ($c = $lote->getAttribute('created_at')) instanceof \Carbon\CarbonInterface ? $c->toIso8601String() : null,
         ];
     }
 
