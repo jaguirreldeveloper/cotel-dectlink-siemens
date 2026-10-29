@@ -113,7 +113,6 @@ export function InfraModal({
     if (nivel === 'shelter') { delete base.id_central; delete base.id_shelter; delete base.tipo; delete base.ubicacion; }
     if (nivel === 'armario') { delete base.id_central; delete base.id_subcentral; delete base.modo_enlace; delete base.estado_clima; delete base.kva_rectificador; delete base.autonomia_baterias_horas; }
     setForm(base);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, nivel, idEditar, padre, fila]);
 
   const set = (campo: string, valor: string) => setForm(prev => ({ ...prev, [campo]: valor }));

@@ -6,11 +6,16 @@ import { SubscriberMigrationPlan } from '@/features/tech-migration/types';
  */
 export function evaluateSubscribersMigration(records: EnrichedSubscriberRecord[]): SubscriberMigrationPlan[] {
   return records.map(sub => {
+    // eslint-disable-next-line no-useless-assignment
     let tecnologiaRecomendada: 'FTTH_GPON' | 'FWA_LTE' | 'DECT_LEGACY' = 'FWA_LTE';
+    // eslint-disable-next-line no-useless-assignment
     let criterioSeleccion = '';
+    // eslint-disable-next-line no-useless-assignment
     let capexUsd = 110;
     let ahorroMantenimientoAnualUsd = 96; // $8/month savings in avoided DECT maintenance
+    // eslint-disable-next-line no-useless-assignment
     let prioridadMigracion: 'INMEDIATA' | 'CORTO_PLAZO' | 'MEDIANO_PLAZO' | 'CONSERVAR' = 'CORTO_PLAZO';
+    // eslint-disable-next-line no-useless-assignment
     let faseRecomendada = 'Fase 2 (Q2 2027)';
 
     // Urban dense cells with good fiber penetration (11 - 16 de Julio, 12 - Viacha Centro)

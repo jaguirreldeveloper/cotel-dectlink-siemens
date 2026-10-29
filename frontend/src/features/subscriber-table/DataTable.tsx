@@ -2,19 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { filterRecords } from '@/shared/utils/recordFilters';
 import {
   Search,
-  Filter,
   ArrowUpDown,
-  Download,
   AlertCircle,
   Copy,
   Check,
   Eye,
   SlidersHorizontal,
   X,
-  Phone,
-  FileCheck
 } from 'lucide-react';
-import { EnrichedSubscriberRecord, ClientType } from '@/entities/subscriber/types';
+import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
 
 interface DataTableProps {
@@ -24,7 +20,7 @@ interface DataTableProps {
   externalYearFilter?: number;
   externalCeldaFilter?: string;
   onClearExternalFilters?: () => void;
-  onUpdateStatus?: (nro: number, newStatus: any, details?: any) => void;
+  onUpdateStatus?: (nro: number, newStatus: OperationalStatus, details?: { fallaDescripcion?: string; deudaMeses?: number; tiempoDepositoMeses?: number }) => void;
 }
 
 export const DataTable: React.FC<DataTableProps> = ({
@@ -34,7 +30,6 @@ export const DataTable: React.FC<DataTableProps> = ({
   externalYearFilter,
   externalCeldaFilter,
   onClearExternalFilters,
-  onUpdateStatus,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedZone, setSelectedZone] = useState<string>('');

@@ -5,15 +5,10 @@ import {
   WifiOff,
   AlertOctagon,
   Clock,
-  ShieldCheck,
-  Zap,
   RotateCcw,
-  Sliders,
-  DollarSign,
-  Wrench,
   CheckCircle2,
-  Building,
-  ArrowRight,
+  Wrench,
+  DollarSign,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { computeCeldaStatistics } from '@/entities/subscriber/analysis';
@@ -30,7 +25,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
   onUpdateStatus,
   onSelectRecord,
 }) => {
-  const [selectedCeldaFilter, setSelectedCeldaFilter] = useState<string>('');
+
   const [activeSubTab, setActiveSubTab] = useState<'fallas' | 'mora' | 'deposito' | 'celdas'>('fallas');
 
   const celdaStats = computeCeldaStatistics(records);

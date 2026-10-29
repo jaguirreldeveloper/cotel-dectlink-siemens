@@ -44,7 +44,7 @@ export default function App() {
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const [externalCeldaFilter, setExternalCeldaFilter] = useState('');
   const [externalZoneFilter, setExternalZoneFilter] = useState('');
   const [externalYearFilter, setExternalYearFilter] = useState<number | undefined>(undefined);
@@ -246,7 +246,7 @@ export default function App() {
           onOpenGitMigration={() => setIsGitModalOpen(true)}
           onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
           sidebarCollapsed={sidebarCollapsed}
-          onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+          onOpenMobileSidebar={() => {}}
           operador={auth.operador}
           onLogout={auth.logout}
           isDemoMode={auth.isDemoMode}

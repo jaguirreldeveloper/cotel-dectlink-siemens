@@ -3,21 +3,13 @@ import { filterRecords } from '@/shared/utils/recordFilters';
 import {
   Radio,
   Sliders,
-  Compass,
-  ArrowRight,
-  TrendingUp,
   AlertTriangle,
   CheckCircle2,
   XCircle,
   Info,
-  Maximize2,
   RefreshCw,
-  Search,
-  Zap,
-  Layers,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
-import { ElevationPoint } from '@/entities/cell/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { simulateRfLink } from '@/entities/cell/rfCalculations';
 
@@ -34,9 +26,9 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
   const [txTowerHeight, setTxTowerHeight] = useState<number>(30); // 10 to 60 meters
   const [rxMastHeight, setRxMastHeight] = useState<number>(6); // 3 to 15 meters
   const [txPowerDbm, setTxPowerDbm] = useState<number>(24); // 250mW DECT peak
-  const [txAntennaGain, setTxAntennaGain] = useState<number>(14); // dBi
-  const [rxAntennaGain, setRxAntennaGain] = useState<number>(9); // dBi FAU Yagi/Patch
-  const [frequencyMhz, setFrequencyMhz] = useState<number>(1890); // DECT band
+  const [txAntennaGain] = useState<number>(14); // dBi
+  const [rxAntennaGain] = useState<number>(9); // dBi FAU Yagi/Patch
+  const [frequencyMhz] = useState<number>(1890); // DECT band
 
   const selectedCell = useMemo(() => {
     return SIEMENS_DECT_CELLS[selectedCeldaId] || SIEMENS_DECT_CELLS['17'];
@@ -84,7 +76,7 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
   // SVG Chart Dimensions & Scaling for Elevation Cross-Section
   const svgWidth = 850;
   const svgHeight = 320;
-  const padding = { top: 35, right: 40, bottom: 45, left: 65 };
+  const padding = useMemo(() => ({ top: 35, right: 40, bottom: 45, left: 65 }), []);
 
   const chartData = useMemo(() => {
     if (!simResult) return null;
@@ -163,7 +155,7 @@ export const RfLineOfSightView: React.FC<RfLineOfSightViewProps> = ({ records })
       clearance60Path,
       points,
     };
-  }, [simResult]);
+  }, [simResult, padding]);
 
   // Sin registros (carga inicial o padrón vacío): no hay abonado que simular.
   if (!selectedSub) {

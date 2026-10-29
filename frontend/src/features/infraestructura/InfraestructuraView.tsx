@@ -37,10 +37,12 @@ import { InfraModal } from './InfraModal';
 const PUEDE_ESCRIBIR: OperadorRole[] = ['SUPERADMIN', 'ADMIN'];
 const PUEDE_ELIMINAR: OperadorRole[] = ['SUPERADMIN'];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function puedeEscribirInfra(rol: OperadorRole | undefined | null): boolean {
   return !!rol && PUEDE_ESCRIBIR.includes(rol);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function puedeEliminarInfra(rol: OperadorRole | undefined | null): boolean {
   return !!rol && PUEDE_ELIMINAR.includes(rol);
 }
@@ -472,6 +474,7 @@ export function InfraestructuraView({ operador }: InfraestructuraViewProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useInfraestructura() {
   // Reservado para futuras integraciones (módulos externos reusando datos).
 }

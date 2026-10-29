@@ -13,6 +13,7 @@ export interface StatusUpdateDetails {
 }
 
 /** Convierte un DTO camelCase de /api/subscribers al registro crudo de la UI. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapSubscriberDto(d: any): RawSubscriberRecord {
   return {
     nro: d.nro,

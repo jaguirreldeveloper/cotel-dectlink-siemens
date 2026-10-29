@@ -41,8 +41,6 @@ import { OperadorRole } from '../auth/types';
 import {
   OPERADOR_ROLES,
   ROLE_META,
-  canManageUsers,
-  roleAccentClasses,
   roleBadgeClasses,
   roleIconClasses,
   roleLabel,

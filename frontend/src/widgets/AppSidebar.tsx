@@ -15,19 +15,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ChevronUp,
   User,
   Users,
   Settings,
   Layers,
   MapPin,
-  Wrench,
-  Zap,
-  SparkleIcon,
   BarChart2,
   Search,
-  List,
-  MoreHorizontal,
 } from 'lucide-react';
 import { AppTabId } from './AppTabs';
 
@@ -107,9 +101,8 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const ALL_TABS = NAV_GROUPS.flatMap(g => g.tabs);
-
 /** IDs de tabs visibles para un rol (misma lógica que el filtrado del sidebar). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function visibleTabIds(operadorRole: string | null | undefined): AppTabId[] {
   return NAV_GROUPS
     .flatMap(g => g.tabs)
@@ -161,10 +154,7 @@ export function AppSidebar({
     localStorage.setItem('sidebar-collapsed', String(collapsed));
   }, [collapsed]);
 
-  const getTabConfig = (tabId: AppTabId) => ALL_TABS.find(t => t.id === tabId);
-
   const renderTab = (tab: NavTab, isMobile: boolean) => {
-    const config = getTabConfig(tab.id);
     const isActive = activeTab === tab.id;
     const count = tab.id === 'table' ? recordCount : tab.id === 'audit' ? auditIssueCount : tab.badge;
 
@@ -343,6 +333,7 @@ export function AppSidebar({
 }
 
 // Hook para usar en vistas que necesiten el estado del sidebar
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   return { collapsed, setCollapsed };

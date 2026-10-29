@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, RotateCcw, AlertCircle, FileText } from 'lucide-react';
+import { X, RotateCcw, AlertCircle, FileText } from 'lucide-react';
 import { RAW_CSV_DATA } from '@/demo/initialData';
 import { Modal } from '@/shared/ui/Modal';
 

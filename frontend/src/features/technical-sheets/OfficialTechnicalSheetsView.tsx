@@ -4,15 +4,6 @@ import {
   Printer,
   FileText,
   Search,
-  Download,
-  ShieldCheck,
-  Radio,
-  MapPin,
-  QrCode,
-  CheckCircle2,
-  ExternalLink,
-  Layers,
-  Award,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';

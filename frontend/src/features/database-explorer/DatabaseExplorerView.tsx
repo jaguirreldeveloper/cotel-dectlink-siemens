@@ -17,14 +17,12 @@ import {
   Server,
   Layers,
   Cpu,
-  Clock,
   HardDrive,
   AlertCircle,
   FileCode,
   ExternalLink,
   ShieldCheck,
   Eye,
-  Radio,
   History,
   Trash2,
 } from 'lucide-react';
@@ -69,6 +67,7 @@ interface QueryResult {
   rowCount?: number;
   durationMs?: number;
   fields?: { name: string; dataTypeId: number }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rows?: any[];
   error?: string;
   detail?: string | null;
@@ -218,6 +217,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
 
   // Data Browser
   const [selectedTable, setSelectedTable] = useState<string>('abonados_lineas');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [tableData, setTableData] = useState<any[]>([]);
   const [tableColumns, setTableColumns] = useState<string[]>([]);
   const [page, setPage] = useState<number>(1);
@@ -226,6 +226,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
   const [totalPages, setTotalPages] = useState<number>(1);
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [isLoadingTableData, setIsLoadingTableData] = useState<boolean>(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [expandedRow, setExpandedRow] = useState<any | null>(null);
 
   // Fetch status and schema
@@ -283,8 +284,8 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
         setTotalPages(data.totalPages || 1);
         setPage(data.page || 1);
       }
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError') {
         console.error('Error fetching table data:', err);
       }
     } finally {
@@ -298,7 +299,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
     if (subTab === 'browser') {
       fetchTableData(selectedTable, page, limit, searchFilter);
     }
-  }, [subTab, selectedTable, page, limit]);
+  }, [subTab, selectedTable, page, limit, searchFilter]);
 
   const handleExecuteSql = async (customSql?: string) => {
     const queryToRun = (customSql || sqlQuery).trim();
@@ -323,10 +324,10 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
           return [queryToRun, ...filtered].slice(0, 15);
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       setQueryResult({
         success: false,
-        error: err.message || 'Error de comunicación con el servidor',
+        error: (err as Error)?.message || 'Error de comunicación con el servidor',
       });
     } finally {
       setIsExecuting(false);

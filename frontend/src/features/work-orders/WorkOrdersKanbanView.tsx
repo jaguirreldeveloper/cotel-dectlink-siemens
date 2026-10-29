@@ -151,7 +151,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
       const data: WorkOrderRow[] = await res.json();
       setRows(Array.isArray(data) ? data : []);
       setLoadError(null);
-    } catch (err: any) {
+    } catch {
       setLoadError('No se pudieron cargar las órdenes de trabajo desde PostgreSQL.');
     } finally {
       setIsLoading(false);
@@ -286,8 +286,8 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
       setIsCreateModalOpen(false);
       setNewObservaciones('');
       setLoadError(null);
-    } catch (err: any) {
-      setLoadError(err.message || 'No se pudo crear la orden de trabajo.');
+    } catch (err) {
+      setLoadError((err as Error)?.message || 'No se pudo crear la orden de trabajo.');
     } finally {
       setIsSaving(false);
     }

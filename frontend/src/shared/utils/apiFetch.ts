@@ -106,6 +106,7 @@ export function setStoredOperatorUser(user: unknown, persist = true): void {
 export function resolveAdminToken(): string | null {
   const stored = getStoredAdminToken();
   if (stored) return stored;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fromEnv = (import.meta as any).env?.VITE_ADMIN_TOKEN as string | undefined;
   return fromEnv && fromEnv.trim() ? fromEnv.trim() : null;
 }

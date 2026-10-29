@@ -106,7 +106,7 @@ export function useAuth() {
       });
 
       return { success: true };
-    } catch (err) {
+    } catch {
       return {
         success: false,
         message: 'No fue posible comunicarse con el servidor. Verifique su conexión de red.',

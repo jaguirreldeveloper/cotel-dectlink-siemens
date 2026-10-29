@@ -15,7 +15,6 @@ import {
   FolderTree,
   Terminal,
   ShieldCheck,
-  ArrowRight,
   Database,
   CloudUpload,
 } from 'lucide-react';
@@ -86,8 +85,8 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
       } else {
         setFeedbackMessage({ type: 'error', text: data.error || 'Error al inicializar Git' });
       }
-    } catch (err: any) {
-      setFeedbackMessage({ type: 'error', text: err.message || 'Error de conexión' });
+    } catch (err) {
+      setFeedbackMessage({ type: 'error', text: (err as Error)?.message || 'Error de conexión' });
     } finally {
       setIsInitializing(false);
     }
@@ -110,8 +109,8 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
       } else {
         setFeedbackMessage({ type: 'error', text: data.error || 'Error al configurar remoto' });
       }
-    } catch (err: any) {
-      setFeedbackMessage({ type: 'error', text: err.message || 'Error de red' });
+    } catch (err) {
+      setFeedbackMessage({ type: 'error', text: (err as Error)?.message || 'Error de red' });
     } finally {
       setIsSavingRemote(false);
     }

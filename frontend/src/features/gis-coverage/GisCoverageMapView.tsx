@@ -2,21 +2,11 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { filterRecords } from '@/shared/utils/recordFilters';
 import L from 'leaflet';
 import {
-  MapPin,
   Radio,
   Download,
-  Filter,
   Search,
   Crosshair,
-  Wifi,
-  Clock,
-  DollarSign,
-  Wrench,
-  Layers,
-  FileSpreadsheet,
   Globe,
-  Maximize2,
-  Navigation,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
@@ -35,7 +25,6 @@ interface GisCoverageMapViewProps {
 export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
   records,
   onSelectRecord,
-  onUpdateStatus,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -333,7 +322,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
 
   // Export to KML (Google Earth)
   const handleExportKml = () => {
-    let kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+    const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Red Siemens DECTlink COTEL - El Alto y Viacha</name>

@@ -1,23 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import {
   Network,
-  Zap,
   DollarSign,
   TrendingUp,
-  Download,
-  Filter,
   Search,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  ShieldAlert,
   Layers,
-  Sparkles,
-  Radio,
   FileSpreadsheet,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
-import { MigrationTechTarget, SubscriberMigrationPlan } from '@/features/tech-migration/types';
 import { evaluateSubscribersMigration } from './data/fieldOperationsData';
 import { downloadTextFile } from '@/shared/utils/downloadTextFile';
 

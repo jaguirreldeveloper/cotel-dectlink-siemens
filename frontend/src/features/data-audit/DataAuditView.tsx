@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, CheckCircle2, ArrowRight, Wand2, RefreshCw, AlertTriangle, FileCode2, Database } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, Wand2 } from 'lucide-react';
 import { AuditIssue, EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 
 interface DataAuditViewProps {

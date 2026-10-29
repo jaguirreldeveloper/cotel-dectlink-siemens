@@ -114,7 +114,6 @@ export function simulateRfLink(input: RfSimInput): RfSimulationResult {
   const elevationProfile: ElevationPoint[] = [];
 
   let minClearancePct = 100;
-  let hasObstruction = false;
   let maxFresnelRadius = 0;
 
   for (let i = 0; i <= numSteps; i++) {
@@ -137,7 +136,7 @@ export function simulateRfLink(input: RfSimInput): RfSimulationResult {
     const fresnelLowerMeters = losLineAlt - fRadius;
     const clearanceMeters = losLineAlt - groundElev;
 
-    let pointClearancePct = 100;
+    let pointClearancePct: number;
     if (fRadius > 0) {
       pointClearancePct = Number(((clearanceMeters / fRadius) * 100).toFixed(0));
       if (pointClearancePct < minClearancePct) {
@@ -146,9 +145,6 @@ export function simulateRfLink(input: RfSimInput): RfSimulationResult {
     }
 
     const isObstructed = clearanceMeters < fRadius * 0.6;
-    if (isObstructed && i > 1 && i < numSteps - 1) {
-      hasObstruction = true;
-    }
 
     elevationProfile.push({
       distKm: currentDist,
@@ -185,7 +181,7 @@ export function simulateRfLink(input: RfSimInput): RfSimulationResult {
   const linkMarginDb = Number((rxRssiCalculatedDbm - DECT_SENSITIVITY_DBM).toFixed(1));
 
   let status: 'OPTIMO' | 'MARGINAL' | 'OBSTRUIDO';
-  let statusExplanation = '';
+  let statusExplanation: string;
 
   if (linkMarginDb >= 15 && minClearancePct >= 60) {
     status = 'OPTIMO';

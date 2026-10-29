@@ -8,7 +8,7 @@ interface MetricCardsProps {
   onSelectTab: (tab: string) => void;
 }
 
-export const MetricCards: React.FC<MetricCardsProps> = ({ records, auditIssues, onSelectTab }) => {
+export const MetricCards: React.FC<MetricCardsProps> = ({ records, onSelectTab }) => {
   const total = records.length;
 
   // Contadores derivados: se recalculan solo cuando cambia el padrón.

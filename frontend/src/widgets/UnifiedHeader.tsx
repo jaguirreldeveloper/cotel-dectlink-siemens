@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, FileSpreadsheet, RefreshCw, Printer, ShieldCheck, Cloud, Menu, X, ShieldAlert, User, LogOut } from 'lucide-react';
+import { Database, FileSpreadsheet, RefreshCw, Printer, Cloud, Menu, X, ShieldAlert, LogOut } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Operador } from '@/features/auth';
 import { roleBadgeClasses, roleLabel } from '@/shared/utils/roles';
@@ -31,46 +31,7 @@ interface UnifiedHeaderProps {
 }
 
 export function UnifiedHeader(props: UnifiedHeaderProps) {
-  const {
-    dataSource, rawCount, loadAttempt, maxLoadAttempts, backendError, onDismissError,
-    onReload, isNormalizedApplied, onToggleNormalization, dbProvider,
-    onOpenUploader, onExportCsv, onPrint, onOpenDatabase,
-    onOpenSupabaseMigration, onOpenGitMigration,
-    onToggleSidebar, sidebarCollapsed, onOpenMobileSidebar
-  } = props;
-
-  const getDataSourceLabel = () => {
-    switch (dataSource) {
-      case 'loading': return 'Cargando padrón real' + (loadAttempt > 1 ? ' (intento ' + loadAttempt + '/' + maxLoadAttempts + ')' : '');
-      case 'db': return rawCount > 0 ? 'Conectado a BD - ' + rawCount + ' líneas' : 'BD vacía - falta npm run db:load';
-      case 'csv': return 'CSV cargado localmente - ' + rawCount + ' líneas';
-      case 'demo': return 'Modo demo (' + rawCount + ' líneas) - BD no disponible';
-      case 'empty': return 'BD vacía - falta npm run db:load';
-      default: return 'Estado desconocido';
-    }
-  };
-
-  const getDataSourceColor = () => {
-    switch (dataSource) {
-      case 'loading': return 'bg-yellow-50 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800';
-      case 'db': return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900';
-      case 'csv': return 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900';
-      case 'demo': return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900';
-      case 'empty': return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900';
-      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
-    }
-  };
-
-  const getDataSourceIcon = () => {
-    switch (dataSource) {
-      case 'loading': return <RefreshCw className='w-3.5 h-3.5 animate-spin' />;
-      case 'db': return <Database className='w-3.5 h-3.5' />;
-      case 'csv': return <FileSpreadsheet className='w-3.5 h-3.5' />;
-      case 'demo': return <ShieldAlert className='w-3.5 h-3.5' />;
-      case 'empty': return <ShieldAlert className='w-3.5 h-3.5' />;
-      default: return <Database className='w-3.5 h-3.5' />;
-    }
-  };
+  const { dataSource, rawCount, loadAttempt, maxLoadAttempts, sidebarCollapsed } = props;
 
   return (
     <header className='bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40'>

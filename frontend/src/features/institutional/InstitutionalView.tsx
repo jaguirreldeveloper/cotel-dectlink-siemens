@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Building2, Landmark, Users, Radio, ArrowRight, ShieldCheck, PhoneCall } from 'lucide-react';
+import { Building2, Landmark, Users, ArrowRight, PhoneCall } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 
 interface InstitutionalViewProps {

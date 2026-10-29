@@ -11,7 +11,6 @@ interface NavbarProps {
   onOpenDatabase?: () => void;
   onOpenSupabaseMigration?: () => void;
   onOpenGitMigration?: () => void;
-  dbStatus?: 'connected' | 'offline';
   dbProvider?: string;
 }
 
@@ -24,7 +23,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenDatabase,
   onOpenSupabaseMigration,
   onOpenGitMigration,
-  dbStatus = 'connected',
   dbProvider = 'PostgreSQL',
 }) => {
   return (

@@ -7,14 +7,11 @@ import {
   Save,
   Navigation,
   CheckCircle2,
-  AlertTriangle,
   RotateCcw,
   Search,
   Filter,
   Info,
-  Radio,
   Compass,
-  ArrowRight,
   ShieldCheck,
   Smartphone,
   ExternalLink,
@@ -42,7 +39,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
   const [selectedNro, setSelectedNro] = useState<number>(records[0]?.nro || 1);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPrecision, setFilterPrecision] = useState<string>('ALL');
-  const [filterCelda, setFilterCelda] = useState<string>('');
+
   const [isCapturingMobile, setIsCapturingMobile] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [showTechnicalBasisModal, setShowTechnicalBasisModal] = useState(false);
@@ -96,10 +93,9 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
   const filteredRecords = useMemo(() => {
     return filterRecords(records, searchQuery).filter(r => {
       if (filterPrecision !== 'ALL' && r.precisionGps !== filterPrecision) return false;
-      if (filterCelda && r.celda !== filterCelda) return false;
       return true;
     });
-  }, [records, searchQuery, filterPrecision, filterCelda]);
+  }, [records, searchQuery, filterPrecision]);
 
   // Leaflet Map Refs
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -148,8 +144,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
-
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Update Markers and Line when selection or coordinates change
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -206,7 +201,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
       autoPan: true,
     }).addTo(map);
 
-    subMarker.on('dragend', (e: any) => {
+    subMarker.on('dragend', (e: L.DragEndEvent) => {
       const position = e.target.getLatLng();
       setCurrentLat(Number(position.lat.toFixed(6)));
       setCurrentLng(Number(position.lng.toFixed(6)));

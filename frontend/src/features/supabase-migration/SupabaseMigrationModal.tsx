@@ -9,17 +9,12 @@ import {
   Check,
   Download,
   AlertTriangle,
-  Play,
   ArrowRight,
   Shield,
-  Layers,
   Sparkles,
   Server,
   Key,
-  Globe,
-  Radio,
   RefreshCw,
-  HelpCircle,
   FileCode,
   Eye,
   EyeOff,
@@ -51,7 +46,7 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
   const [sqlScripts, setSqlScripts] = useState<SqlScripts | null>(null);
 
   // Supabase Project Specific Inputs
-  const [projectId, setProjectId] = useState('jeenkfugbqdmcxbwoefa');
+  const [projectId] = useState('jeenkfugbqdmcxbwoefa');
   const [connectionMode, setConnectionMode] = useState<'direct' | 'pooler'>('direct');
   const [poolerRegion, setPoolerRegion] = useState('sa-east-1');
   const [passwordInput, setPasswordInput] = useState('');
@@ -135,16 +130,6 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
     downloadTextFile('cotel_supabase_schema_seed.sql', fullSql, 'text/plain;charset=utf-8');
   };
 
-  // Replace password helper in connection string
-  const handleApplyPassword = () => {
-    if (!passwordInput.trim()) return;
-    if (connectionString.includes('[YOUR-PASSWORD]')) {
-      setConnectionString(connectionString.replace('[YOUR-PASSWORD]', encodeURIComponent(passwordInput.trim())));
-    } else if (connectionString.includes(':password@')) {
-      setConnectionString(connectionString.replace(/:password@/, `:${encodeURIComponent(passwordInput.trim())}@`));
-    }
-  };
-
   const handleTestConnection = async () => {
     if (!connectionString.trim()) return;
     setIsTesting(true);
@@ -158,10 +143,10 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
       });
       const data = await res.json();
       setTestResult(data);
-    } catch (err: any) {
+    } catch (err) {
       setTestResult({
         success: false,
-        error: err.message || 'Error de conexión con el servidor local',
+        error: (err as Error)?.message || 'Error de conexión con el servidor local',
       });
     } finally {
       setIsTesting(false);
@@ -191,18 +176,15 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
         });
         if (onConnected) onConnected(data.provider);
       }
-    } catch (err: any) {
+    } catch (err) {
       setApplyResult({
         success: false,
-        error: err.message || 'Error al conmutar base de datos',
+        error: (err as Error)?.message || 'Error al conmutar base de datos',
       });
     } finally {
       setIsApplying(false);
     }
   };
-
-  const hasPasswordPlaceholder = connectionString.includes('[YOUR-PASSWORD]') || connectionString.includes(':password@');
-  const isSupabaseDetected = connectionString.includes('supabase.co') || connectionString.includes('supabase.com') || connectionString.includes('pooler.supabase');
 
   return (
     <Modal

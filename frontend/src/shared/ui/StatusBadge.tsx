@@ -5,6 +5,7 @@ import { OperationalStatus } from '@/entities/subscriber/types';
  * Estilos y etiqueta para cada estado operativo de una línea DECT.
  * Centraliza la lógica de color/badge antes duplicada en 5 componentes.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const STATUS_STYLES: Record<
   OperationalStatus,
   { label: string; className: string }
@@ -47,6 +48,7 @@ interface StatusBadgeProps {
  * Sustituye las cadenas ternarias idénticas que estaban duplicadas en
  * DataTable y RecordDetailModal.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const STATUS_TEXT_CLASS: Record<OperationalStatus, string> = {
   'C/SERV.': 'text-emerald-600 dark:text-emerald-400',
   'EN DEPOSITO': 'text-blue-600 dark:text-blue-400',
@@ -56,6 +58,7 @@ export const STATUS_TEXT_CLASS: Record<OperationalStatus, string> = {
 };
 
 /** Devuelve las clases de color de texto para un estado (con fallback slate). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function statusTextClass(status: OperationalStatus): string {
   return STATUS_TEXT_CLASS[status] ?? STATUS_TEXT_CLASS['S/SERV.'];
 }

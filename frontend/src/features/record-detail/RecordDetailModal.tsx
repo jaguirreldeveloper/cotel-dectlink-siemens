@@ -2,21 +2,10 @@ import React, { useState } from 'react';
 import {
   X,
   Phone,
-  User,
-  MapPin,
-  Calendar,
   Radio,
-  FileText,
-  CheckCircle2,
   AlertTriangle,
-  Building2,
   Copy,
   Check,
-  Wifi,
-  Wrench,
-  DollarSign,
-  Clock,
-  RotateCcw,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
