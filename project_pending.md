@@ -22,7 +22,8 @@
 
 ### Verificaciones
 - [ ] **Verificar visibilidad de la pestaña *Usuarios & Roles*** según el rol en la UI (frontend).
-- [ ] **Ejecutar tests e2e con Playwright** (`pnpm run test:e2e`) para confirmar que el flujo completo de carga de padrón funciona correctamente en el navegador.
+- [x] **Tests unitarios Vitest** añadidos para funciones puras (`rfCalculations`, `recordFilters`, `roles`) — 14 tests, 0 fallos.
+- [ ] **Ejecutar tests e2e con Playwright** (`pnpm run test:e2e`) — bloqueado por espacio en disco y versión de Chromium (chromium-1228 vs 1248); dependencia `@playwright/test` ya instalada. Requiere liberar disco e `npx playwright install chromium`.
 
 ### Infraestructura
 - [x] **Sincronizar el CHECK de `estado_servicio` y `estado_operativo` en la BD de producción** (Supabase/PostgreSQL) — creada migración `20261029100000_sync_estado_checks.sql` con ALTER TABLE que añade `ACTIVO` y `SIN DATO`. (Pendiente de aplicar con `supabase db push` en el entorno real.)
