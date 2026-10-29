@@ -304,5 +304,6 @@ Hay dos entornos con sus propios `.env`:
 ## 🛠️ Cambios recientes
 
 - Se amplió el `CHECK` de `estado_servicio` en la migración de pruebas (`2026_10_22_164813_create_cotel_testing_schema.php`) para incluir el nuevo valor **`ACTIVO`**, permitiendo que los tests de `PadronCargas` inserten filas con ese estado.
-- Se añadirá próximamente el valor **`SIN DATO`** al `CHECK` de `estado_operativo` (pendiente de aplicar) para cubrir casos de datos ausentes en la carga del padrón.
-- Los tests de `PadronCargas` ahora pasan sin errores de restricción de integridad.
+- Se añadió el valor **`SIN DATO`** al `CHECK` de `estado_operativo` para cubrir casos de datos ausentes en la carga del padrón.
+- `PadronCargasController::store` ahora omite las filas `RECHAZADO` al persistir detalles del lote (solo afectan conteos del resumen).
+- Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos**.
