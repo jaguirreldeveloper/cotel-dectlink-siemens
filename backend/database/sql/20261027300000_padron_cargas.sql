@@ -51,6 +51,8 @@ CREATE INDEX IF NOT EXISTS padron_cargas_detalles_accion_idx ON public.padron_ca
 
 -- RLS (mismo patrón del resto del esquema)
 DO $$
+DECLARE
+  t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['padron_cargas', 'padron_cargas_detalles'] LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
