@@ -113,7 +113,7 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
                   {dataSource === 'csv' && <FileSpreadsheet className='w-3 h-3' />}
                   {dataSource === 'demo' && <ShieldAlert className='w-3 h-3' />}
                   {dataSource === 'empty' && <ShieldAlert className='w-3 h-3' />}
-                  {dataSource === 'loading' && loadAttempt > 1 ? 'Cargando... (' + loadAttempt + '/' + maxLoadAttempts + ')' : dataSource === 'db' ? 'Conectado a BD - ' + rawCount + ' líneas' : dataSource === 'csv' ? 'CSV - ' + rawCount + ' líneas' : dataSource === 'demo' ? 'Modo demo (' + rawCount + ' líneas)' : 'BD vacía'}
+                  {dataSource === 'loading' && loadAttempt > 1 ? 'Cargando... (' + loadAttempt + '/' + maxLoadAttempts + ')' : dataSource === 'db' ? 'Conectado a BD · ' + rawCount + ' líneas' : dataSource === 'csv' ? 'CSV - ' + rawCount + ' líneas' : dataSource === 'demo' ? 'Modo demo (' + rawCount + ' líneas)' : 'BD vacía'}
                 </span>
                 <button
                   onClick={props.onReload}
