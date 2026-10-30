@@ -15,6 +15,8 @@
 - [x] Activar `RequireRoleTest` (3 tests) y corregir `OperatorToken::create` → `generate`.
 - [x] Eliminar componente `AppTabs` no utilizado (conservar tipo `AppTabId`).
 - [x] UI de gestión de cargas por lote (`PadronCargasView`) — subir CSV (ADMIN+), listar/detalle, aplicar y anular (solo SUPERADMIN) con RBAC en sidebar.
+- [x] Tests e2e Playwright reparados y en verde (5/5): demo-fallback, padron-load, search-filter, status-change, work-order-create.
+- [x] Corrección de codificación del badge "Conectado a BD" (punto medio) en UnifiedHeader.
 
 ## 🔲 Pendientes
 
@@ -24,7 +26,7 @@
 ### Verificaciones
 - [ ] **Verificar visibilidad de la pestaña *Usuarios & Roles*** según el rol en la UI (frontend).
 - [x] **Tests unitarios Vitest** añadidos para funciones puras (`rfCalculations`, `recordFilters`, `roles`) — 14 tests, 0 fallos.
-- [ ] **Ejecutar tests e2e con Playwright** (`pnpm run test:e2e`) — bloqueado por espacio en disco y versión de Chromium (chromium-1228 vs 1248); dependencia `@playwright/test` ya instalada. Requiere liberar disco e `npx playwright install chromium`.
+- [x] **Ejecutar tests e2e con Playwright** (`pnpm run test:e2e`) — 5/5 verdes. Se liberó disco (chromium-1228 → 1248), se repararon specs (entrada a modo consulta, selectores de sidebar, ruta de backend/.env en helpers) y se corrigió el badge "Conectado a BD" (UnifiedHeader) para usar punto medio. Operador de prueba `testadmin@cotel.bo` (ADMIN) creado para el spec de OT.
 
 ### Infraestructura
 - [x] **Sincronizar el CHECK de `estado_servicio` y `estado_operativo` en la BD de producción** (Supabase/PostgreSQL) — creada migración `20261029100000_sync_estado_checks.sql` con ALTER TABLE que añade `ACTIVO` y `SIN DATO`. (Pendiente de aplicar con `supabase db push` en el entorno real.)
