@@ -309,4 +309,4 @@ Hay dos entornos con sus propios `.env`:
 - Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos**.
 - Nueva pestaña **Carga de Padrón** (`PadronCargasView`) en el frontend: subir CSV (ADMIN+), listar lotes, ver detalle por fila, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
 - Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
-- Dependencia `@playwright/test` instalada para los specs e2e existentes; ejecución bloqueada por espacio en disco y versión de Chromium (chromium-1228 vs 1248).
+- Tests e2e Playwright reparados y en verde (5/5): se liberó disco, se instaló Chromium 1248, se corrigieron los specs (entrada a modo consulta, selectores de sidebar, ruta de `backend/.env` en helpers) y el badge "Conectado a BD" (punto medio) en `UnifiedHeader`.
