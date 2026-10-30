@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterDemoMode } from './helpers';
 
 /**
  * Humo: el padrón real se carga desde la BD (216 líneas) y el badge de la
@@ -6,6 +7,7 @@ import { expect, test } from '@playwright/test';
  */
 test('carga el padrón real desde la BD (badge de 216 líneas)', async ({ page }) => {
   await page.goto('/');
+  await enterDemoMode(page);
 
   await expect(page.getByText('Conectado a BD · 216 líneas')).toBeVisible({ timeout: 45_000 });
 

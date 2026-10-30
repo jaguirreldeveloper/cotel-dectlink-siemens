@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterDemoMode } from './helpers';
 
 /**
  * Humo: mientras el backend responde, el fallback demo queda APAGADO
@@ -6,6 +7,7 @@ import { expect, test } from '@playwright/test';
  */
 test('con el backend vivo el fallback demo queda apagado', async ({ page }) => {
   await page.goto('/');
+  await enterDemoMode(page);
 
   await expect(page.getByText(/Conectado a BD · \d+ líneas/)).toBeVisible({ timeout: 45_000 });
 

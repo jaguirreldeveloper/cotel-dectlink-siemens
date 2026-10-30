@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { adminToken, seedAdminToken } from './helpers';
+import { adminToken, seedAdminToken, enterDemoMode } from './helpers';
 
 /**
  * Humo: cambio de estado operativo desde la tabla con token admin.
@@ -19,9 +19,10 @@ test('cambia el estado operativo desde el padrón con token admin y lo restaura'
 
   await seedAdminToken(page);
   await page.goto('/');
+  await enterDemoMode(page);
   await expect(page.getByText(/Conectado a BD/)).toBeVisible({ timeout: 45_000 });
 
-  await page.getByRole('button', { name: /Padrón \(\d+\)/ }).click();
+  await page.getByRole('button', { name: /Padrón \d+/ }).click();
   await page.getByPlaceholder(/Buscar por abonado/).fill(String(target.numero));
   await page.locator('tbody tr').first().getByRole('button', { name: 'Ficha' }).click();
 

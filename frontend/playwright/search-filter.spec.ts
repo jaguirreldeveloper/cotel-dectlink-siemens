@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterDemoMode } from './helpers';
 
 /**
  * Humo: filtro de búsqueda del padrón — una consulta concreta reduce las
@@ -13,9 +14,10 @@ test('filtra el padrón por búsqueda y muestra el estado vacío sin coincidenci
   expect(numero.length, 'el padrón trae al menos un abonado').toBeGreaterThan(0);
 
   await page.goto('/');
+  await enterDemoMode(page);
   await expect(page.getByText(/Conectado a BD/)).toBeVisible({ timeout: 45_000 });
 
-  await page.getByRole('button', { name: /Padrón \(\d+\)/ }).click();
+  await page.getByRole('button', { name: /Padrón \d+/ }).click();
   const search = page.getByPlaceholder(/Buscar por abonado/);
   await expect(search).toBeVisible();
 

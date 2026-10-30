@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
 function readBackendEnv(): Record<string, string> {
   const env: Record<string, string> = {};
   try {
-    const raw = readFileSync(resolve(process.cwd(), 'backend', '.env'), 'utf8');
+    const raw = readFileSync(resolve(process.cwd(), '..', 'backend', '.env'), 'utf8');
     for (const line of raw.split(/\r?\n/)) {
       const eq = line.indexOf('=');
       if (line.startsWith('#') || eq <= 0) continue;
@@ -38,4 +38,41 @@ export async function seedAdminToken(page: Page): Promise<void> {
       // sessionStorage no disponible
     }
   }, adminToken);
+}
+
+/**
+ * Siembra una sesión de operador (token + usuario) en sessionStorage ANTES de
+ * que la app arranque, de modo que useAuth la recupere sin pasar por el login.
+ */
+export async function seedOperatorSession(
+  page: Page,
+  token: string,
+  operador: unknown
+): Promise<void> {
+  await page.addInitScript(
+    ({ token, operador }) => {
+      try {
+        window.sessionStorage.setItem('cotel_operator_token', token);
+        window.sessionStorage.setItem('cotel_operator_user', JSON.stringify(operador));
+      } catch {
+        // sessionStorage no disponible
+      }
+    },
+    { token, operador }
+  );
+}
+
+/**
+ * Entra en "Modo Consulta" (auditoría / solo lectura) para saltar la pantalla
+ * de login y acceder a la app con el padrón real. Necesario porque los specs
+ * de humo asumen la app ya autenticada.
+ */
+export async function enterDemoMode(page: Page): Promise<void> {
+  const btn = page.getByRole('button', { name: /Acceder en Modo Consulta/i });
+  try {
+    await btn.waitFor({ state: 'visible', timeout: 15_000 });
+    await btn.click();
+  } catch {
+    // Ya autenticado o botón no presente: continuar.
+  }
 }

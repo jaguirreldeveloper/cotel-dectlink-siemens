@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { adminToken, seedAdminToken } from './helpers';
+import { adminToken, seedAdminToken, seedOperatorSession } from './helpers';
 
 /**
  * Humo: creación de una Orden de Trabajo en el Kanban de cuadrillas.
@@ -11,6 +11,14 @@ test('crea una OT en el Kanban y la elimina al terminar', async ({ page, request
 
   const before = await (await request.get('/api/work-orders')).json();
 
+  // Autenticar como ADMIN real para tener acceso a la pestaña Cuadrillas
+  const loginRes = await request.post('/api/auth/login', {
+    data: { email: 'testadmin@cotel.bo', password: 'TestPass123!' },
+  });
+  test.skip(!loginRes.ok(), 'no se pudo autenticar al operador de prueba');
+  const loginData = await loginRes.json();
+
+  await seedOperatorSession(page, loginData.token, loginData.operador);
   await seedAdminToken(page);
   await page.goto('/');
   await expect(page.getByText(/Conectado a BD/)).toBeVisible({ timeout: 45_000 });
