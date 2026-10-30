@@ -1,6 +1,6 @@
 # Tareas Pendientes — COTEL DECTlink Siemens
 
-> Última actualización: 2026-10-28
+> Última actualización: 2026-10-29
 
 ## ✅ Completadas
 
@@ -14,6 +14,7 @@
 - [x] Limpiar 160 warnings de ESLint en frontend (0 warnings).
 - [x] Activar `RequireRoleTest` (3 tests) y corregir `OperatorToken::create` → `generate`.
 - [x] Eliminar componente `AppTabs` no utilizado (conservar tipo `AppTabId`).
+- [x] UI de gestión de cargas por lote (`PadronCargasView`) — subir CSV (ADMIN+), listar/detalle, aplicar y anular (solo SUPERADMIN) con RBAC en sidebar.
 
 ## 🔲 Pendientes
 

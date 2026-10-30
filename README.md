@@ -307,3 +307,6 @@ Hay dos entornos con sus propios `.env`:
 - Se añadió el valor **`SIN DATO`** al `CHECK` de `estado_operativo` para cubrir casos de datos ausentes en la carga del padrón.
 - `PadronCargasController::store` ahora omite las filas `RECHAZADO` al persistir detalles del lote (solo afectan conteos del resumen).
 - Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos**.
+- Nueva pestaña **Carga de Padrón** (`PadronCargasView`) en el frontend: subir CSV (ADMIN+), listar lotes, ver detalle por fila, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
+- Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
+- Dependencia `@playwright/test` instalada para los specs e2e existentes; ejecución bloqueada por espacio en disco y versión de Chromium (chromium-1228 vs 1248).
