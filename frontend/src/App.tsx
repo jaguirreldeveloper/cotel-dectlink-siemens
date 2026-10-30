@@ -27,6 +27,7 @@ import { GitMigrationModal } from '@/features/git-migration/GitMigrationModal';
 import { QaView } from '@/features/qa/QaView';
 import { UserManagementView } from '@/features/users';
 import { InfraestructuraView } from '@/features/infraestructura';
+import { PadronCargasView } from '@/features/padron-cargas';
 import { ExecutiveReport } from '@/widgets/ExecutiveReport';
 import { VisualCharts } from '@/widgets/VisualCharts';
 import { buildSubscribersCsv, subscribersCsvFilename } from '@/entities/subscriber/exportCsv';
@@ -189,6 +190,8 @@ export default function App() {
         return <UserManagementView currentOperador={auth.operador} />;
       case 'infraestructura':
         return <InfraestructuraView operador={auth.operador} />;
+      case 'padron-cargas':
+        return <PadronCargasView currentOperador={auth.operador} />;
       case 'qa':
         return <QaView />;
       default:
