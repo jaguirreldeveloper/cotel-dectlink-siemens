@@ -304,5 +304,5 @@ Hay dos entornos con sus propios `.env`:
 ## 🛠️ Cambios recientes
 
 - Se amplió el `CHECK` de `estado_servicio` en la migración de pruebas (`2026_10_22_164813_create_cotel_testing_schema.php`) para incluir el nuevo valor **`ACTIVO`**, permitiendo que los tests de `PadronCargas` inserten filas con ese estado.
-- Se añadirá próximamente el valor **`SIN DATO`** al `CHECK` de `estado_operativo` (pendiente de aplicar) para cubrir casos de datos ausentes en la carga del padrón.
+- ✅ Ya aplicado: la migración de producción `20261031100000_sin_dato_estado_operativo.sql` añade **`SIN DATO`** al `CHECK` de `estado_operativo` y **`ACTIVO`** al de `estado_servicio` en `abonados_dect`, alineando el esquema PostgreSQL con el código de `PadronCargasController::alta()` (pendiente de ejecutar contra la BD viva). Los tipos compartidos (`packages/types`) y el schema Drizzle (`scripts/src/db/schema.ts`) reflejan ahora ambos catálogos, y hay una aserción de regresión en `PadronCargasTest`.
 - Los tests de `PadronCargas` ahora pasan sin errores de restricción de integridad.

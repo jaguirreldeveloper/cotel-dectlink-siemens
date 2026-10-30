@@ -192,8 +192,8 @@ export const abonadosLineas = pgTable('abonados_lineas', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
-  check('chk_abonados_estado_servicio', sql`${t.estadoServicio} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
-  check('chk_abonados_estado_operativo', sql`${t.estadoOperativo} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.')`),
+  check('chk_abonados_estado_servicio', sql`${t.estadoServicio} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.','ACTIVO')`),
+  check('chk_abonados_estado_operativo', sql`${t.estadoOperativo} IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.','SIN DATO')`),
   check('chk_abonados_signal', sql`${t.signalDect} IS NULL OR ${t.signalDect} IN ('EXCELENTE','BUENO','DEBIL','SIN_ENLACE')`),
 ]);
 
