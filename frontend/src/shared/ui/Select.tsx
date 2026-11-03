@@ -16,6 +16,8 @@ type FieldSize = 'sm' | 'md';
 interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   size?: FieldSize;
   invalid?: boolean;
+  /** Tono oscuro forzado (para paneles/modales oscuros). */
+  dark?: boolean;
   className?: string;
 }
 
@@ -24,12 +26,19 @@ const SIZE_CLASSES: Record<FieldSize, string> = {
   md: 'px-3 py-2 pr-8 text-sm',
 };
 
+/** Tono claro (con dark: para el tema del sistema). */
+const TONE_LIGHT =
+  'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 ' +
+  'text-slate-900 dark:text-slate-100';
+
+/** Tono oscuro forzado (paneles oscuros bajo cualquier tema del sistema). */
+const TONE_DARK = 'bg-slate-800 border-slate-700 hover:border-slate-600 text-white';
+
 const BASE =
-  'appearance-none w-full bg-slate-50 dark:bg-slate-800/80 border text-slate-900 dark:text-slate-100 ' +
-  'rounded-control transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ' +
+  'appearance-none w-full border rounded-control transition-colors cursor-pointer ' +
+  'disabled:opacity-50 disabled:cursor-not-allowed ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ' +
-  'focus-visible:border-brand-500 border-slate-200 dark:border-slate-700 ' +
-  'hover:border-slate-300 dark:hover:border-slate-600';
+  'focus-visible:border-brand-500';
 
 const INVALID =
   'border-rose-400 dark:border-rose-600 hover:border-rose-400 dark:hover:border-rose-600 ' +
@@ -40,13 +49,14 @@ const CHEVRON_SIZES = { sm: 'w-3.5 h-3.5 right-1.5', md: 'w-4 h-4 right-2' } as 
 export const Select: React.FC<SelectProps> = ({
   size = 'md',
   invalid = false,
+  dark = false,
   className = '',
   children,
   ...rest
 }) => (
   <div className={`relative inline-flex ${className}`}>
     <select
-      className={`${BASE} ${invalid ? INVALID : ''} ${SIZE_CLASSES[size]}`}
+      className={`${BASE} ${dark ? TONE_DARK : TONE_LIGHT} ${invalid ? INVALID : ''} ${SIZE_CLASSES[size]}`}
       {...rest}
     >
       {children}

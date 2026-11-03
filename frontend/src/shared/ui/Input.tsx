@@ -21,6 +21,8 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
   icon?: LucideIcon;
   /** Muestra borde/anillo de error. */
   invalid?: boolean;
+  /** Tono oscuro forzado (para paneles/modales oscuros). */
+  dark?: boolean;
   /** Si se define, muestra un botón «×» accesible cuando hay valor. */
   onClear?: () => void;
   /** Contenido extra a la derecha (ej. unidad, botón de lupa). */
@@ -33,14 +35,20 @@ const SIZE_CLASSES: Record<FieldSize, string> = {
   md: 'px-3 py-2 text-sm',
 };
 
+/** Tono claro (con dark: para el tema del sistema). */
+const TONE_LIGHT =
+  'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 ' +
+  'text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500';
+
+/** Tono oscuro forzado (paneles oscuros bajo cualquier tema del sistema). */
+const TONE_DARK =
+  'bg-slate-800 border-slate-700 hover:border-slate-600 text-white placeholder:text-slate-400';
+
 const BASE =
-  'w-full bg-slate-50 dark:bg-slate-800/80 border text-slate-900 dark:text-slate-100 ' +
-  'placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-control ' +
+  'w-full border rounded-control ' +
   'transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ' +
-  'focus-visible:ring-brand-500 border-slate-200 dark:border-slate-700 ' +
-  'hover:border-slate-300 dark:hover:border-slate-600 ' +
-  'focus-visible:border-brand-500';
+  'focus-visible:ring-brand-500 focus-visible:border-brand-500';
 
 const INVALID =
   'border-rose-400 dark:border-rose-600 hover:border-rose-400 dark:hover:border-rose-600 ' +
@@ -53,6 +61,7 @@ export const Input: React.FC<InputProps> = ({
   size = 'md',
   icon: Icon,
   invalid = false,
+  dark = false,
   onClear,
   trailing,
   className = '',
@@ -73,7 +82,7 @@ export const Input: React.FC<InputProps> = ({
         />
       )}
       <input
-        className={`${BASE} ${invalid ? INVALID : ''} ${Icon ? ICON_LEFT_PAD[size] : ''} ${
+        className={`${BASE} ${dark ? TONE_DARK : TONE_LIGHT} ${invalid ? INVALID : ''} ${Icon ? ICON_LEFT_PAD[size] : ''} ${
           showClear ? 'pr-8' : ''
         } ${SIZE_CLASSES[size]}`}
         onFocus={e => {

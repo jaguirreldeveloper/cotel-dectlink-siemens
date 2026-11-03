@@ -11,6 +11,7 @@ import {
   ExternalLink,
   RefreshCw,
   AlertTriangle,
+  X,
 } from 'lucide-react';
 import {
   WorkOrder,
@@ -20,6 +21,9 @@ import {
 import { FieldCrew } from '@/entities/crew/types';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 import { apiFetch } from '@/shared/utils/apiFetch';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
+import { Textarea } from '@/shared/ui/Textarea';
 
 interface WorkOrdersKanbanViewProps {
   records: EnrichedSubscriberRecord[];
@@ -325,7 +329,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <div className="p-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30">
               <ClipboardList className="w-5 h-5" />
             </div>
             <h2 className="text-lg font-bold tracking-tight text-white">
@@ -365,10 +369,10 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
           </span>
           <button
             onClick={() => setLoadError(null)}
-            aria-label="Descartar aviso de error"
-            className="font-bold px-2 rounded hover:bg-amber-100 dark:hover:bg-amber-900"
+            aria-label='Descartar aviso de error'
+            className='font-bold px-2 py-1.5 rounded hover:bg-amber-100 dark:hover:bg-amber-900 cursor-pointer'
           >
-            ✕
+            <X className='w-4 h-4' aria-hidden='true' />
           </button>
         </div>
       )}
@@ -388,7 +392,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-indigo-500" />
+                    <Truck className="w-4 h-4 text-brand-500" />
                     <span className="font-bold text-sm text-slate-900 dark:text-white">
                       {crew.nombre}
                     </span>
@@ -431,7 +435,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
 
               <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                 <span className="text-slate-500">Órdenes asignadas activas:</span>
-                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                <span className="font-mono font-bold text-brand-600 dark:text-brand-400">
                   {crewActiveOrders}
                 </span>
               </div>
@@ -442,22 +446,24 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
 
       {/* Kanban Filters */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-          <input
+        <div className="w-full sm:w-72">
+          <Input
             type="text"
+            size="sm"
+            icon={Search}
             placeholder="Buscar OT, abonado, teléfono, zona..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:ring-1 focus:ring-indigo-500"
+            aria-label="Buscar órdenes de trabajo"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
+          <Select
+            size="sm"
             value={filterCrew}
             onChange={e => setFilterCrew(e.target.value)}
-            className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-300"
+            aria-label="Filtrar por cuadrilla"
           >
             <option value="ALL">Todas las cuadrillas</option>
             {crews.map(c => (
@@ -465,18 +471,19 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 {c.nombre}
               </option>
             ))}
-          </select>
+          </Select>
 
-          <select
+          <Select
+            size="sm"
             value={filterPriority}
             onChange={e => setFilterPriority(e.target.value)}
-            className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-300"
+            aria-label="Filtrar por prioridad"
           >
             <option value="ALL">Todas las prioridades</option>
             <option value="ALTA">Alta</option>
             <option value="MEDIA">Media</option>
             <option value="BAJA">Baja</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -501,10 +508,10 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
               <div
                 key={order.id}
                 onClick={() => setSelectedOrder(order)}
-                className="bg-white dark:bg-slate-800 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs hover:border-indigo-500/50 transition cursor-pointer space-y-2.5"
+                className="bg-white dark:bg-slate-800 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs hover:border-brand-500/50 transition cursor-pointer space-y-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                  <span className="font-mono text-[11px] font-bold text-brand-600 dark:text-brand-400">
                     {order.codigoOt}
                   </span>
                   {getPriorityBadge(order.prioridad)}
@@ -520,7 +527,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 </div>
 
                 <div className="text-[11px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/60 p-2 rounded">
-                  <span className="font-semibold block text-indigo-500">{getTipoLabel(order.tipoTrabajo)}</span>
+                  <span className="font-semibold block text-brand-500">{getTipoLabel(order.tipoTrabajo)}</span>
                   <span className="line-clamp-2 text-slate-500 text-[10px] mt-0.5">{order.observaciones}</span>
                 </div>
 
@@ -532,7 +539,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                       handleMoveStatus(order.id, 'forward');
                     }}
                     disabled={isSaving}
-                    className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-bold px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/80 cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1 text-brand-600 dark:text-brand-400 hover:text-brand-700 font-bold px-2 py-1 rounded bg-brand-50 dark:bg-brand-950/80 cursor-pointer disabled:opacity-50"
                   >
                     <span>Despachar</span>
                     <ArrowRight className="w-3 h-3" />
@@ -767,7 +774,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
           <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-6 text-slate-200 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between border-b border-slate-800 pb-3">
               <div>
-                <span className="text-[10px] font-mono text-indigo-400 font-bold block">
+                <span className="text-[10px] font-mono text-brand-400 font-bold block">
                   ORDEN DE TRABAJO EN TERRENO
                 </span>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -779,9 +786,9 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
               <button
                 onClick={() => setSelectedOrder(null)}
                 aria-label="Cerrar detalle de orden"
-                className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                className="font-bold p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -864,7 +871,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
 
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                 >
                   Cerrar
                 </button>
@@ -890,35 +897,41 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
                 aria-label="Cerrar formulario"
-                className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                className="font-bold p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
                 <label className="text-slate-300 block mb-1 font-medium">Seleccionar Abonado:</label>
-                <select
+                <Select
+                  dark
+                  size="sm"
+                  className="w-full"
                   value={newSubNro}
                   onChange={e => setNewSubNro(parseInt(e.target.value, 10))}
-                  className="w-full text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  aria-label="Seleccionar abonado"
                 >
                   {records.map(r => (
                     <option key={r.nro} value={r.nro}>
                       #{r.nro} - {r.nombre} (Tel: {r.numero} · {r.normalizedZona})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-300 block mb-1 font-medium">Tipo de Trabajo:</label>
-                  <select
+                  <Select
+                    dark
+                    size="sm"
+                    className="w-full"
                     value={newTipo}
                     onChange={e => setNewTipo(e.target.value as WorkOrderType)}
-                    className="w-full text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                    aria-label="Tipo de trabajo"
                   >
                     <option value="REUBICACION_ANTENA">Reubicación Antena FAU</option>
                     <option value="MEDICION_RSSI">Medición Señal / RSSI</option>
@@ -926,48 +939,56 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                     <option value="RETIRO_EQUIPO">Retiro de Equipo (Baja)</option>
                     <option value="INSPECCION_TORRE">Inspección Torre / RFP</option>
                     <option value="MIGRACION_FIBRA">Migración GPON / Fibra</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="text-slate-300 block mb-1 font-medium">Prioridad:</label>
-                  <select
+                  <Select
+                    dark
+                    size="sm"
+                    className="w-full"
                     value={newPrioridad}
                     onChange={e => setNewPrioridad(e.target.value as 'ALTA' | 'MEDIA' | 'BAJA')}
-                    className="w-full text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                    aria-label="Prioridad"
                   >
                     <option value="ALTA">Alta (Falla total)</option>
                     <option value="MEDIA">Media</option>
                     <option value="BAJA">Baja (Mantenimiento)</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
               <div>
                 <label className="text-slate-300 block mb-1 font-medium">Cuadrilla Asignada:</label>
-                <select
+                <Select
+                  dark
+                  size="sm"
+                  className="w-full"
                   value={newCrewId}
                   onChange={e => setNewCrewId(e.target.value)}
-                  className="w-full text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  aria-label="Cuadrilla asignada"
                 >
                   {crews.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.nombre} · {c.zonaAsignada} ({c.estado})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="text-slate-300 block mb-1 font-medium">
                   Materiales y Repuestos Requeridos (separados por coma):
                 </label>
-                <input
+                <Input
+                  dark
+                  size="sm"
                   type="text"
                   value={newMateriales}
                   onChange={e => setNewMateriales(e.target.value)}
                   placeholder="Mástil 3m, Antena Yagi 1.9GHz, Conector SMA..."
-                  className="w-full text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  aria-label="Materiales y repuestos requeridos"
                 />
               </div>
 
@@ -975,12 +996,14 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 <label className="text-slate-300 block mb-1 font-medium">
                   Observaciones / Instrucciones Técnicas:
                 </label>
-                <textarea
+                <Textarea
+                  dark
+                  size="sm"
                   rows={3}
                   value={newObservaciones}
                   onChange={e => setNewObservaciones(e.target.value)}
                   placeholder="Describa el diagnóstico previo o indicación para el técnico en terreno..."
-                  className="w-full text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  aria-label="Observaciones e instrucciones técnicas"
                 />
               </div>
             </div>
