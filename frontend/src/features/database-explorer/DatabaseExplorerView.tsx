@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/shared/utils/apiFetch';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 import { downloadTextFile } from '@/shared/utils/downloadTextFile';
 import { Modal } from '@/shared/ui/Modal';
 import {
@@ -542,13 +544,14 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
 
               <div className="flex items-center gap-2">
                 {/* Presets quick loader */}
-                <select
+                <Select
+                  size="sm"
+                  defaultValue=""
                   onChange={e => {
                     const preset = PRESET_QUERIES.find(p => p.id === e.target.value);
                     if (preset) setSqlQuery(preset.sql);
                   }}
-                  defaultValue=""
-                  className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2.5 py-1 text-slate-700 dark:text-slate-300"
+                  aria-label="Cargar consulta predeterminada"
                 >
                   <option value="" disabled>Cargar consulta predeterminada...</option>
                   {PRESET_QUERIES.map(p => (
@@ -556,7 +559,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
                       {p.title}
                     </option>
                   ))}
-                </select>
+                </Select>
 
                 <button
                   onClick={() => setSqlQuery('')}
@@ -880,36 +883,38 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
 
               {/* Search & Limit */}
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchFilter}
-                    onChange={e => setSearchFilter(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        setPage(1);
-                        fetchTableData(selectedTable, 1, limit, searchFilter);
-                      }
-                    }}
-                    placeholder="Filtrar registros..."
-                    className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 dark:text-slate-200 w-44 sm:w-60 font-mono"
-                  />
-                </div>
-
-                <select
-                  value={limit}
-                  onChange={e => {
-                    setLimit(Number(e.target.value));
-                    setPage(1);
+                <Input
+                  size="sm"
+                  type="text"
+                  icon={Search}
+                  value={searchFilter}
+                  onChange={e => setSearchFilter(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      setPage(1);
+                      fetchTableData(selectedTable, 1, limit, searchFilter);
+                    }
                   }}
-                  className="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1.5 text-slate-700 dark:text-slate-300 font-mono"
-                >
-                  <option value={10}>10 por pág.</option>
-                  <option value={25}>25 por pág.</option>
-                  <option value={50}>50 por pág.</option>
-                  <option value={100}>100 por pág.</option>
-                </select>
+                  placeholder="Filtrar registros..."
+                  aria-label="Filtrar registros de la tabla"
+                  className="w-44 sm:w-60"
+                />
+
+                <Select
+                size="sm"
+                value={limit}
+                onChange={e => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                aria-label="Registros por página"
+                className="font-mono"
+              >
+                <option value={10}>10 por pág.</option>
+                <option value={25}>25 por pág.</option>
+                <option value={50}>50 por pág.</option>
+                <option value={100}>100 por pág.</option>
+              </Select>
 
                 <button
                   onClick={() => fetchTableData(selectedTable, page, limit, searchFilter)}

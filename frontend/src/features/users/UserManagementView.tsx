@@ -22,6 +22,8 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 import {
   OperadorUser,
   CreateOperadorInput,
@@ -187,13 +189,13 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
       {/* Encabezado del Módulo */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-6'>
         <div className='flex items-center gap-4'>
-          <div className='w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400'>
+          <div className='w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400'>
             <Users className='w-6 h-6' />
           </div>
           <div>
             <div className='flex items-center gap-2'>
               <h1 className='text-xl font-bold text-white'>Gestión de Usuarios & Control de Accesos</h1>
-              <span className='text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold uppercase'>
+              <span className='text-xs px-2.5 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 font-semibold uppercase'>
                 RBAC
               </span>
             </div>
@@ -209,7 +211,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
             onClick={() => setActiveTab('operadores')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'operadores'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
@@ -220,7 +222,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
             onClick={() => setActiveTab('permisos')}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'permisos'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
@@ -273,7 +275,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
             <div className='p-4 rounded-xl bg-slate-900 border border-slate-800'>
               <div className='flex items-center justify-between text-slate-400 text-xs mb-1'>
                 <span>Total Operadores</span>
-                <Users className='w-4 h-4 text-indigo-400' />
+                <Users className='w-4 h-4 text-brand-400' />
               </div>
               <span className='text-2xl font-bold text-white font-mono'>{metrics.total}</span>
             </div>
@@ -289,9 +291,9 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
             <div className='p-4 rounded-xl bg-slate-900 border border-slate-800'>
               <div className='flex items-center justify-between text-slate-400 text-xs mb-1'>
                 <span>Técnicos de Campo</span>
-                <Wrench className='w-4 h-4 text-indigo-400' />
+                <Wrench className='w-4 h-4 text-brand-400' />
               </div>
-              <span className='text-2xl font-bold text-indigo-400 font-mono'>{metrics.tecnicos}</span>
+              <span className='text-2xl font-bold text-brand-400 font-mono'>{metrics.tecnicos}</span>
             </div>
 
             <div className='p-4 rounded-xl bg-slate-900 border border-slate-800'>
@@ -307,22 +309,24 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
           <div className='flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-4 rounded-xl'>
             <div className='flex flex-1 items-center gap-3'>
               {/* Buscador */}
-              <div className='relative flex-1 max-w-sm'>
-                <Search className='w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2' />
-                <input
+              <div className='flex-1 max-w-sm'>
+                <Input
+                  dark
                   type='text'
+                  icon={Search}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder='Buscar por nombre o correo...'
-                  className='w-full pl-9 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none'
+                  aria-label='Buscar operadores'
                 />
               </div>
 
               {/* Filtro por Rol */}
-              <select
+              <Select
+                dark
                 value={roleFilter}
                 onChange={e => setRoleFilter(e.target.value as 'ALL' | OperadorRole)}
-                className='px-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none'
+                aria-label='Filtrar por rol'
               >
                 <option value='ALL'>Todos los Roles</option>
                 {OPERADOR_ROLES.map(rol => (
@@ -330,18 +334,19 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                     Solo {roleLabel(rol)}
                   </option>
                 ))}
-              </select>
+              </Select>
 
               {/* Filtro por Estado */}
-              <select
+              <Select
+                dark
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
-                className='px-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none'
+                aria-label='Filtrar por estado'
               >
                 <option value='ALL'>Todos los Estados</option>
                 <option value='ACTIVE'>Solo Activos</option>
                 <option value='INACTIVE'>Solo Inactivos</option>
-              </select>
+              </Select>
             </div>
 
             <div className='flex items-center gap-2'>
@@ -373,7 +378,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
           <div className='bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg'>
             {isLoading ? (
               <div className='p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3'>
-                <RefreshCw className='w-6 h-6 animate-spin text-indigo-500' />
+                <RefreshCw className='w-6 h-6 animate-spin text-brand-500' />
                 <span className='text-xs'>Cargando operadores desde el servidor...</span>
               </div>
             ) : error ? (
@@ -410,7 +415,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold border ${
                                   op.role === 'SUPERADMIN'
                                     ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                                    : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+                                    : 'bg-brand-500/10 border-brand-500/30 text-brand-300'
                                 }`}
                               >
                                 {op.nombre
@@ -539,7 +544,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                 SUPERADMIN: 'bg-amber-500/5 border-amber-500/20 text-amber-400',
                 ADMIN: 'bg-rose-500/5 border-rose-500/20 text-rose-400',
                 SUPERVISOR: 'bg-violet-500/5 border-violet-500/20 text-violet-400',
-                DESPACHADOR: 'bg-indigo-500/5 border-indigo-500/20 text-indigo-400',
+                DESPACHADOR: 'bg-brand-500/5 border-brand-500/20 text-brand-400',
                 TECNICO: 'bg-sky-500/5 border-sky-500/20 text-sky-400',
                 AUDITOR: 'bg-slate-500/5 border-slate-500/20 text-slate-400',
               };
@@ -571,7 +576,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
             <div key={idx} className='bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg'>
               <div className='px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between'>
                 <div className='flex items-center gap-2.5'>
-                  <SlidersHorizontal className='w-4 h-4 text-indigo-400' />
+                  <SlidersHorizontal className='w-4 h-4 text-brand-400' />
                   <h3 className='font-bold text-sm text-white'>{modulo.categoria}</h3>
                 </div>
                 <span className='text-xs text-slate-400 font-mono'>
@@ -621,13 +626,13 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
           {/* Resumen de seguridad institucional */}
           <div className='p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3'>
             <div className='flex items-center gap-2'>
-              <FileCheck2 className='w-5 h-5 text-indigo-400' />
+              <FileCheck2 className='w-5 h-5 text-brand-400' />
               <h4 className='font-bold text-sm text-white'>
                 Políticas de Seguridad y Auditoría de COTEL R.L.
               </h4>
             </div>
             <p className='text-xs text-slate-400 leading-relaxed'>
-              Las restricciones aplicadas al rol <strong>OPERADOR</strong> tienen como finalidad salvaguardar la consistencia de los datos del padrón en Supabase PostgreSQL 17 y evitar alteraciones accidentales en el historial de bitácora exigido por la ATT. Toda modificación de coordenadas o estados realizada por un <strong>ADMIN</strong> queda estampada en la tabla transaccional <code className='text-indigo-300 font-mono text-[11px]'>bitacora</code> con marca de tiempo UTC y detalle del cambio.
+              Las restricciones aplicadas al rol <strong>OPERADOR</strong> tienen como finalidad salvaguardar la consistencia de los datos del padrón en Supabase PostgreSQL 17 y evitar alteraciones accidentales en el historial de bitácora exigido por la ATT. Toda modificación de coordenadas o estados realizada por un <strong>ADMIN</strong> queda estampada en la tabla transaccional <code className='text-brand-300 font-mono text-[11px]'>bitacora</code> con marca de tiempo UTC y detalle del cambio.
             </p>
           </div>
         </div>

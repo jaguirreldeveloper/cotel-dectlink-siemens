@@ -11,6 +11,8 @@ import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscrib
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
 import { Modal } from '@/shared/ui/Modal';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 
 interface RecordDetailModalProps {
   record: EnrichedSubscriberRecord | null;
@@ -182,14 +184,14 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
 
             {/* Quick Status Modifier Form */}
             {onUpdateStatus && (
-              <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/40">
+              <div className="pt-2 border-t border-brand-100 dark:border-brand-900/40">
                 {!editingStatus ? (
                   <button
                     onClick={() => {
                       setTargetStatus(record.estadoOperativo);
                       setEditingStatus(true);
                     }}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1"
+                    className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1"
                   >
                     <span>Cambiar Estado Operativo (Depósito / Mora / Falla / Reconexión)</span>
                   </button>
@@ -198,27 +200,31 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
                     <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                       Seleccionar Nuevo Estado Operativo:
                     </label>
-                    <select
+                    <Select
+                      size="sm"
+                      className="w-full font-medium"
                       value={targetStatus}
                       onChange={e => setTargetStatus(e.target.value as OperationalStatus)}
-                      className="w-full p-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-100 font-medium"
+                      aria-label="Seleccionar nuevo estado operativo"
                     >
                       <option value="C/SERV.">Activo (C/SERV. - Con Servicio)</option>
                       <option value="EN DEPOSITO">En Depósito (Custodia)</option>
                       <option value="CORTE X MORA">Corte por Mora (Falta de Pago)</option>
                       <option value="FALLA TECNICA">Falla Técnica DECT / Avería</option>
                       <option value="S/SERV.">Sin Servicio / Baja</option>
-                    </select>
+                    </Select>
 
                     {targetStatus === 'FALLA TECNICA' && (
                       <div>
                         <span className="text-[10px] text-slate-400">Descripción de avería DECT:</span>
-                        <input
+                        <Input
+                          size="sm"
                           type="text"
                           value={fallaText}
                           onChange={e => setFallaText(e.target.value)}
                           placeholder="Ej: Antena Yagi desorientada por viento"
-                          className="w-full p-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-100 mt-0.5"
+                          aria-label="Descripción de avería DECT"
+                          className="mt-0.5"
                         />
                       </div>
                     )}
@@ -226,13 +232,15 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
                     {targetStatus === 'CORTE X MORA' && (
                       <div>
                         <span className="text-[10px] text-slate-400">Meses adeudados:</span>
-                        <input
+                        <Input
+                          size="sm"
                           type="number"
                           min={1}
                           max={36}
                           value={deudaInput}
                           onChange={e => setDeudaInput(Number(e.target.value))}
-                          className="w-full p-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-100 mt-0.5"
+                          aria-label="Meses adeudados"
+                          className="mt-0.5"
                         />
                       </div>
                     )}
@@ -240,13 +248,15 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
                     {targetStatus === 'EN DEPOSITO' && (
                       <div>
                         <span className="text-[10px] text-slate-400">Meses solicitados en depósito:</span>
-                        <input
+                        <Input
+                          size="sm"
                           type="number"
                           min={1}
                           max={60}
                           value={depositoInput}
                           onChange={e => setDepositoInput(Number(e.target.value))}
-                          className="w-full p-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-100 mt-0.5"
+                          aria-label="Meses solicitados en depósito"
+                          className="mt-0.5"
                         />
                       </div>
                     )}
