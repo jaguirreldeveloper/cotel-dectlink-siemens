@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, UserCog, Network, ClipboardList, FileCheck2 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
 import { OperadorUser, CreateOperadorInput, UpdateOperadorInput } from './types';
 import { OperadorRole } from '../auth/types';
 import { OPERADOR_ROLES, ROLE_META, roleCardClasses, roleIconClasses, roleRadioClasses } from '@/shared/utils/roles';
@@ -144,43 +145,37 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
             <label className='block text-xs font-semibold text-slate-300 mb-1.5'>
               Nombre y Apellidos
             </label>
-            <div className='relative'>
-              <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500'>
-                <User className='w-4 h-4' />
-              </div>
-              <input
-                type='text'
-                value={nombre}
-                onChange={e => setNombre(e.target.value)}
-                placeholder='Ej. Ing. Carlos Mamani'
-                className='w-full pl-9 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none'
-              />
-            </div>
+            <Input
+              dark
+              type='text'
+              icon={User}
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder='Ej. Ing. Carlos Mamani'
+              aria-label='Nombre y apellidos'
+            />
           </div>
 
           <div>
             <label className='block text-xs font-semibold text-slate-300 mb-1.5'>
-              Correo Electrónico Corporativo <span className='text-red-400'>*</span>
+              Correo Electrónico Corporativo <span className='text-rose-400'>*</span>
             </label>
-            <div className='relative'>
-              <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500'>
-                <Mail className='w-4 h-4' />
-              </div>
-              <input
-                type='email'
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder='operador@cotel.bo'
-                className='w-full pl-9 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none'
-              />
-            </div>
+            <Input
+              dark
+              type='email'
+              icon={Mail}
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder='operador@cotel.bo'
+              aria-label='Correo electrónico corporativo'
+            />
           </div>
 
           {/* Selección de Rol con resumen de accesos */}
           <div>
             <label className='block text-xs font-semibold text-slate-300 mb-2'>
-              Rol y Nivel de Acceso <span className='text-red-400'>*</span>
+              Rol y Nivel de Acceso <span className='text-rose-400'>*</span>
             </label>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-2.5'>
               {OPERADOR_ROLES.map(rolKey => {
@@ -227,19 +222,16 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
             <label className='block text-xs font-semibold text-slate-300 mb-1.5'>
               {isEditing ? 'Nueva Contraseña (dejar vacío para mantener la actual)' : 'Contraseña de Acceso *'}
             </label>
-            <div className='relative'>
-              <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500'>
-                <Lock className='w-4 h-4' />
-              </div>
-              <input
-                type='password'
-                required={!isEditing}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder={isEditing ? 'Sin cambios' : 'Mínimo 8 caracteres'}
-                className='w-full pl-9 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700/80 text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none'
-              />
-            </div>
+            <Input
+              dark
+              type='password'
+              icon={Lock}
+              required={!isEditing}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder={isEditing ? 'Sin cambios' : 'Mínimo 8 caracteres'}
+              aria-label="Contraseña de acceso"
+            />
           </div>
 
           {/* Estado activo */}
@@ -254,7 +246,7 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
                 disabled={Boolean(isSelf)}
                 checked={activo}
                 onChange={e => setActivo(e.target.checked)}
-                className='rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 w-4 h-4'
+                className='rounded border-slate-700 bg-slate-900 text-brand-600 focus:ring-brand-500 w-4 h-4'
               />
               <div>
                 <span className='font-semibold text-xs text-white block'>Cuenta Activa</span>

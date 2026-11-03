@@ -163,7 +163,7 @@ Lectura pública (`GET /api/centrales`, `/subcentrales`, `/shelters`, `/armarios
    - El restablecimiento de contraseña (`PATCH /api/operadores/:id`) también rota el nonce (revoca sesiones activas).
    - Desactivar un operador (`activo=false`) bloquea el token sin rotar nada (la resolución exige cuenta activa).
    - Tokens sin `nonce` (emitidos antes de esta mejora) quedan **rechazados**.
-4. **RBAC jerárquico**: 5 roles canónicos `SUPERADMIN > SUPERVISOR > DESPACHADOR > TECNICO > AUDITOR` con los alias históricos `ADMIN`/`OPERADOR` traducidos por `Operador::rolCanonico()`. El middleware `requireRole` compara por **nivel de privilegio** (`Operador::esAlMenos()`), no por identidad de rol.
+4. **RBAC jerárquico**: 6 roles canónicos `SUPERADMIN > ADMIN > SUPERVISOR > DESPACHADOR > TECNICO > AUDITOR`. El alias histórico `OPERADOR` se traduce a `TECNICO` vía `Operador::rolCanonico()`. El middleware `RequireRole` compara por **nivel de privilegio** (`Operador::esAlMenos()`), no por identidad de rol.
 5. **Defensa en profundidad**: las rutas internas garantizan el rol además vía `OperadoresController::ensureAdmin()`; el header `x-admin-token` es solo una vía CLI de servicios, se sigue aceptando y se compara en tiempo constante.
 
 - **Consola SQL** (`SqlGuard`): restringida a una única instrucción de **solo lectura**; bloquea `pg_read_file`, `COPY … PROGRAM`, `dblink`, `lo_import`, `GRANT`, etc.

@@ -1,33 +1,238 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+@import "./cotel-design-tokens.css";
 
 /*
- * Sistema de diseño COTEL — tokens en Tailwind v4 (@theme).
- * Definen radios, elevación y color de marca de forma centralizada para
- * que las 21 vistas compartan un lenguaje visual consistente.
+ * Sistema de diseño COTEL — Sistema UI/UX Pro Max v2.15.0
+ * Diseño industrial Siemens/DECTlink con jerarquía de 6 roles RBAC
+ * Paleta: Naranjas Siemens + Verdes operativos + Fondo azul técnico
  */
+
 @theme {
-  /* ---- Radios consistentes ---- */
-  --radius-control: 0.5rem; /* 8px: botones, inputs, chips */
-  --radius-card: 0.75rem; /* 12px: tarjetas */
-  --radius-panel: 1rem; /* 16px: paneles elevados, modales */
+  /* ====== RADIOS INDUSTRIALES ====== */
+  --radius-control: 0.5rem;      /* 8px: botones, inputs, chips */
+  --radius-card: 0.75rem;        /* 12px: tarjetas */
+  --radius-panel: 1rem;          /* 16px: paneles elevados, modales */
+  --radius-round: 9999px;        /* Circular completo */
 
-  /* ---- Elevación de superficies (jerarquía sutil, sin ruido) ---- */
-  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
-  --shadow-card-hover: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
-  --shadow-panel: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.05);
-  --shadow-float: 0 20px 25px -5px rgb(15 23 42 / 0.10), 0 8px 10px -6px rgb(15 23 42 / 0.05);
+  /* ====== ELEVACIÓN TÉCNICA ====== */
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.08), 0 1px 3px 0 rgb(15 23 42 / 0.10);
+  --shadow-card-hover: 0 4px 6px -1px rgb(15 23 42 / 0.12), 0 2px 4px -2px rgb(15 23 42 / 0.10);
+  --shadow-panel: 0 10px 15px -3px rgb(15 23 42 / 0.15), 0 4px 6px -4px rgb(15 23 42 / 0.10);
+  --shadow-float: 0 20px 25px -5px rgb(15 23 42 / 0.20), 0 8px 10px -6px rgb(15 23 42 / 0.10);
+  
+  /* ====== COLOR DE MARCA SIEMENS (Naranja técnico) ====== */
+  --color-brand-50: #FFF7ED;
+  --color-brand-100: #FFEDD5;
+  --color-brand-200: #FED7AA;
+  --color-brand-300: #FDBA74;
+  --color-brand-400: #FB923C;
+  --color-brand-500: #EA580C;    /* Naranja Siemens principal */
+  --color-brand-600: #C2410C;
+  --color-brand-700: #9A3412;
+  --color-brand-800: #7C2D12;
+  --color-brand-900: #5A271A;
+  --color-brand-950: #341E14;
 
-  /* ---- Color de marca (alias de emerald, identidad COTEL) ---- */
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-200: #a7f3d0;
-  --color-brand-300: #6ee7b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
-  --color-brand-900: #064e3b;
-  --color-brand-950: #022c22;
+  /* ====== COLORES SEMÁNTICOS OPERATIVOS ====== */
+  /* Éxito/Operativo (Verde Siemens) */
+  --color-success-50: #ECFDF5;
+  --color-success-100: #D1FAE5;
+  --color-success-200: #A7F3D0;
+  --color-success-300: #6EE7B7;
+  --color-success-400: #34D399;
+  --color-success-500: #059669;  /* Verde operativo Siemens */
+  --color-success-600: #047857;
+  --color-success-700: #065F46;
+  --color-success-800: #064E3B;
+  --color-success-900: #043427;
+
+  /* Advertencia (Ámbar técnico) */
+  --color-warning-50: #FFFBEB;
+  --color-warning-100: #FEF3C7;
+  --color-warning-200: #FDE68A;
+  --color-warning-300: #FCD34D;
+  --color-warning-400: #FBBF24;
+  --color-warning-500: #D97706;
+  --color-warning-600: #B45309;
+  --color-warning-700: #92400E;
+  --color-warning-800: #78350F;
+  --color-warning-900: #5A2D09;
+
+  /* Error (Rojo industrial) */
+  --color-error-50: #FEF2F2;
+  --color-error-100: #FEE2E2;
+  --color-error-200: #FECACA;
+  --color-error-300: #FCA5A5;
+  --color-error-400: #F87171;
+  --color-error-500: #DC2626;
+  --color-error-600: #B91C1C;
+  --color-error-700: #991B1B;
+  --color-error-800: #7F1D1D;
+  --color-error-900: #5E1515;
+
+  /* ====== ROLES RBAC - Paleta jerárquica ====== */
+  --color-role-superadmin: var(--color-brand-500);     /* Naranja Siemens */
+  --color-role-admin: #F472B6;                         /* Rosa administración */
+  --color-role-supervisor: #8B5CF6;                    /* Violeta ingeniería */
+  --color-role-despachador: #6366F1;                   /* Índigo operativo */
+  --color-role-tecnico: #0EA5E9;                       /* Azul campo */
+  --color-role-auditor: #64748B;                       /* Slate consulta */
+}
+
+/* ====== RESET Y BASE INDUSTRIAL ====== */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--cotel-font-family), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--cotel-background);
+  color: var(--cotel-foreground);
+  font-size: var(--cotel-text-base);
+  line-height: var(--cotel-leading-normal);
+  min-height: 100vh;
+}
+
+/* ====== ACCESIBILIDAD CRÍTICA ====== */
+:focus-visible {
+  outline: 2px solid var(--cotel-primary-500);
+  outline-offset: 2px;
+  border-radius: var(--cotel-border-radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --cotel-border: rgba(255, 255, 255, 0.3);
+    --cotel-border-emphasis: rgba(255, 255, 255, 0.6);
+  }
+  
+  .border-cotel-border {
+    border-color: var(--cotel-border-emphasis);
+  }
+}
+
+/* ====== SCROLLBAR INDUSTRIAL ====== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cotel-background-muted);
+  border-radius: var(--cotel-border-radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cotel-primary-500);
+  border-radius: var(--cotel-border-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cotel-primary-600);
+}
+
+/* ====== UTILIDADES ESPECIALES ====== */
+.siemens-glow {
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.3);
+}
+
+.industrial-gradient {
+  background: linear-gradient(135deg, 
+    var(--cotel-primary-500) 0%, 
+    var(--cotel-background) 50%, 
+    var(--cotel-accent-500) 100%
+  );
+}
+
+.role-badge {
+  @apply px-2 py-1 text-xs font-semibold rounded-full border;
+}
+
+.role-badge-superadmin { @apply bg-amber-500/20 text-amber-300 border-amber-500/30; }
+.role-badge-admin { @apply bg-rose-500/20 text-rose-300 border-rose-500/30; }
+.role-badge-supervisor { @apply bg-violet-500/20 text-violet-300 border-violet-500/30; }
+.role-badge-despachador { @apply bg-indigo-500/20 text-indigo-300 border-indigo-500/30; }
+.role-badge-tecnico { @apply bg-sky-500/20 text-sky-300 border-sky-500/30; }
+.role-badge-auditor { @apply bg-slate-500/20 text-slate-300 border-slate-500/30; }
+
+/* ====== TRANSICIONES SUAVES INDUSTRIALES ====== */
+.transition-industrial {
+  transition: all var(--cotel-transition);
+}
+
+.hover-lift {
+  transition: transform var(--cotel-transition), box-shadow var(--cotel-transition);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cotel-shadow-md);
+}
+
+/* ====== ESTADOS DE CARGA ====== */
+.loading-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ====== TIPOGRAFÍA TÉCNICA ====== */
+.font-technical {
+  font-family: 'Inter', 'SF Mono', monospace;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.font-headline {
+  font-size: var(--cotel-text-3xl);
+  font-weight: var(--cotel-font-bold);
+  line-height: var(--cotel-leading-tight);
+  letter-spacing: -0.025em;
+}
+
+.font-subhead {
+  font-size: var(--cotel-text-xl);
+  font-weight: var(--cotel-font-semibold);
+  line-height: var(--cotel-leading-snug);
+  letter-spacing: -0.015em;
+}
+
+/* ====== RESPONSIVE GRIDS INDUSTRIALES ====== */
+.grid-industrial {
+  display: grid;
+  gap: var(--cotel-spacing-6);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+@media (min-width: 768px) {
+  .grid-industrial {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-industrial {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
 }

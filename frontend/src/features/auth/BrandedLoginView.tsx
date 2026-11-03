@@ -12,9 +12,14 @@ import {
   ArrowRight,
   Database,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Cpu,
+  Signal,
+  Globe,
+  Wifi
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
 
 interface BrandedLoginViewProps {
   onLogin: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; message?: string }>;
@@ -53,32 +58,35 @@ export function BrandedLoginView({ onLogin, onEnterDemo, isLoading = false }: Br
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white'>
-      {/* Barra superior institucional */}
-      <header className='border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md px-6 py-4'>
+    <div className='min-h-screen industrial-gradient text-cotel-foreground flex flex-col justify-between selection:bg-cotel-primary selection:text-black font-technical'>
+      {/* Barra superior institucional Siemens */}
+      <header className='border-b border-cotel-border bg-cotel-background-card/80 backdrop-blur-md px-6 py-4 siemens-glow'>
         <div className='max-w-7xl mx-auto flex items-center justify-between'>
           <div className='flex items-center gap-3'>
-            <div className='w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-inner'>
-              <Radio className='w-5 h-5 animate-pulse' />
+            <div className='w-10 h-10 rounded-xl bg-cotel-primary/20 border border-cotel-primary/30 flex items-center justify-center text-cotel-primary shadow-inner loading-pulse'>
+              <Radio className='w-5 h-5' />
             </div>
             <div>
               <div className='flex items-center gap-2'>
                 <span className='font-bold text-lg tracking-tight text-white'>COTEL R.L.</span>
-                <span className='text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold uppercase tracking-wider'>
-                  Siemens DECTlink
+                <span className='text-xs px-2 py-0.5 rounded-full bg-cotel-accent/10 border border-cotel-accent/20 text-cotel-accent font-semibold uppercase tracking-wider font-technical'>
+                  Siemens DECTlink PRO
                 </span>
               </div>
-              <p className='text-xs text-slate-400'>Cooperativa de Teléfonos La Paz · Gestión de Planta Externa</p>
+              <p className='text-xs text-cotel-foreground-muted'>Cooperativa de Teléfonos La Paz · Sistema Industrial de Gestión de Planta Externa</p>
             </div>
           </div>
 
-          <div className='hidden md:flex items-center gap-4 text-xs text-slate-400'>
+          <div className='hidden md:flex items-center gap-4 text-xs text-cotel-foreground-muted'>
             <div className='flex items-center gap-1.5'>
-              <span className='w-2 h-2 rounded-full bg-emerald-400 animate-ping' />
-              <span className='text-slate-300 font-medium'>Banda 1880–1900 MHz</span>
+              <span className='w-2 h-2 rounded-full bg-cotel-accent animate-ping' />
+              <span className='text-cotel-accent font-medium'>Banda 1880–1900 MHz</span>
             </div>
-            <span className='text-slate-700'>|</span>
-            <span>Área EAI: El Alto · Tilata · Viacha · Senkata · Laja</span>
+            <span className='text-cotel-border'>|</span>
+            <span className='flex items-center gap-1'>
+              <Globe className='w-3 h-3 text-cotel-primary' />
+              <span>Área EAI: El Alto · Tilata · Viacha · Senkata · Laja</span>
+            </span>
           </div>
         </div>
       </header>
@@ -90,160 +98,164 @@ export function BrandedLoginView({ onLogin, onEnterDemo, isLoading = false }: Br
           {/* Columna Izquierda: Presentación Institucional y Especificaciones */}
           <div className='lg:col-span-7 space-y-8 pr-0 lg:pr-6'>
             <div className='space-y-4'>
-              <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-300'>
-                <ShieldCheck className='w-4 h-4 text-indigo-400' />
+              <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cotel-primary/10 border border-cotel-primary/20 text-xs font-semibold text-cotel-primary font-technical'>
+                <ShieldCheck className='w-4 h-4 text-cotel-primary' />
                 <span>Plataforma de Ingeniería & Auditoría Regulatoria ATT</span>
               </div>
 
-              <h1 className='text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight'>
+              <h1 className='text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-headline'>
                 Control Maestro de Red Inalámbrica Fija
-                <span className='block text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400'>
+                <span className='block text-transparent bg-clip-text bg-gradient-to-r from-cotel-primary via-cotel-secondary to-cotel-accent'>
                   Siemens DECTlink & Migraciones
                 </span>
               </h1>
 
-              <p className='text-slate-300 text-sm md:text-base leading-relaxed max-w-xl'>
+              <p className='text-cotel-foreground-muted text-sm md:text-base leading-relaxed max-w-xl'>
                 Portal unificado para calibración geodésica de abonados, despacho técnico de cuadrillas, cálculo de enlaces de radiofrecuencia (ITU-R P.525) y planificación financiera de migración tecnológica a GPON y LTE.
               </p>
             </div>
 
             {/* Tarjetas de Capacidades Técnicas */}
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2'>
-              <div className='p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-colors'>
-                <div className='w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3'>
+              <div className='p-4 rounded-xl bg-cotel-background-card/60 border border-cotel-border hover:border-cotel-primary/40 transition-industrial hover-lift'>
+                <div className='w-8 h-8 rounded-lg bg-cotel-primary/10 border border-cotel-primary/20 flex items-center justify-center text-cotel-primary mb-3'>
                   <MapPin className='w-4 h-4' />
                 </div>
                 <h3 className='font-semibold text-sm text-white mb-1'>Calibración GPS en Terreno</h3>
-                <p className='text-xs text-slate-400'>
+                <p className='text-xs text-cotel-foreground-muted'>
                   Georreferenciación de unidades FAU-200/300 con cálculo de azimut y distancia a las estaciones base RFP.
                 </p>
               </div>
 
-              <div className='p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-colors'>
-                <div className='w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3'>
+              <div className='p-4 rounded-xl bg-cotel-background-card/60 border border-cotel-border hover:border-cotel-accent/40 transition-industrial hover-lift'>
+                <div className='w-8 h-8 rounded-lg bg-cotel-accent/10 border border-cotel-accent/20 flex items-center justify-center text-cotel-accent mb-3'>
                   <Zap className='w-4 h-4' />
                 </div>
                 <h3 className='font-semibold text-sm text-white mb-1'>Despacho de Cuadrillas</h3>
-                <p className='text-xs text-slate-400'>
+                <p className='text-xs text-cotel-foreground-muted'>
                   Órdenes de trabajo sincronizadas en tiempo real vía Server-Sent Events con balance de materiales.
                 </p>
               </div>
 
-              <div className='p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-sky-500/40 transition-colors'>
+              <div className='p-4 rounded-xl bg-cotel-background-card/60 border border-cotel-border hover:border-sky-500/40 transition-industrial hover-lift'>
                 <div className='w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-3'>
                   <Radio className='w-4 h-4' />
                 </div>
                 <h3 className='font-semibold text-sm text-white mb-1'>Simulación de Línea de Vista</h3>
-                <p className='text-xs text-slate-400'>
+                <p className='text-xs text-cotel-foreground-muted'>
                   Cálculo de despeje de 1ª zona de Fresnel y atenuación en espacio libre (FSL) para enlaces DECT.
                 </p>
               </div>
 
-              <div className='p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 transition-colors'>
+              <div className='p-4 rounded-xl bg-cotel-background-card/60 border border-cotel-border hover:border-amber-500/40 transition-industrial hover-lift'>
                 <div className='w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-3'>
                   <Database className='w-4 h-4' />
                 </div>
                 <h3 className='font-semibold text-sm text-white mb-1'>Padrón Normalizado</h3>
-                <p className='text-xs text-slate-400'>
+                <p className='text-xs text-cotel-foreground-muted'>
                   PostgreSQL 17 en Supabase Cloud con auditoría de estados, catálogo de zonas y exportación ATT.
                 </p>
               </div>
             </div>
 
             {/* Ficha técnica rápida */}
-            <div className='flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-2'>
-              <div className='flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800'>
-                <Server className='w-3.5 h-3.5 text-indigo-400' />
-                <span>RFP Siemens: <strong>Celdas 5, 11, 15, 17</strong></span>
+            <div className='flex flex-wrap items-center gap-3 text-xs text-cotel-foreground-muted pt-2'>
+              <div className='flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cotel-background-card/80 border border-cotel-border'>
+                <Cpu className='w-3.5 h-3.5 text-cotel-primary' />
+                <span>RFP Siemens: <strong className='text-cotel-primary'>Celdas 5, 11, 15, 17</strong></span>
               </div>
-              <div className='flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900/80 border border-slate-800'>
-                <CheckCircle2 className='w-3.5 h-3.5 text-emerald-400' />
-                <span>Terminales: <strong>FAU-200 / FAU-300</strong></span>
+              <div className='flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cotel-background-card/80 border border-cotel-border'>
+                <Signal className='w-3.5 h-3.5 text-cotel-accent' />
+                <span>Terminales: <strong className='text-cotel-accent'>FAU-200 / FAU-300</strong></span>
+              </div>
+              <div className='flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cotel-background-card/80 border border-cotel-border'>
+                <Wifi className='w-3.5 h-3.5 text-cotel-secondary' />
+                <span>Banda: <strong className='text-cotel-secondary'>1880–1900 MHz</strong></span>
               </div>
             </div>
           </div>
 
           {/* Columna Derecha: Tarjeta de Acceso y Credenciales */}
           <div className='lg:col-span-5'>
-            <div className='rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl p-8 relative overflow-hidden'>
-              <div className='absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none' />
+            <div className='rounded-2xl bg-cotel-background-card/90 border border-cotel-border shadow-2xl backdrop-blur-xl p-8 relative overflow-hidden siemens-glow'>
+              <div className='absolute -top-24 -right-24 w-48 h-48 bg-cotel-primary/10 rounded-full blur-3xl pointer-events-none' />
+              <div className='absolute -bottom-24 -left-24 w-48 h-48 bg-cotel-accent/10 rounded-full blur-3xl pointer-events-none' />
 
               <div className='mb-6'>
-                <div className='inline-flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-2'>
+                <div className='inline-flex items-center gap-2 text-cotel-primary text-xs font-semibold uppercase tracking-wider mb-2 font-technical'>
                   <Lock className='w-3.5 h-3.5' />
                   <span>Acceso Corporativo</span>
                 </div>
-                <h2 className='text-2xl font-bold text-white'>Iniciar Sesión</h2>
-                <p className='text-xs text-slate-400 mt-1'>
+                <h2 className='text-2xl font-bold text-white font-headline'>Iniciar Sesión</h2>
+                <p className='text-xs text-cotel-foreground-muted mt-1'>
                   Autenticación de operadores de planta externa y jefatura técnica.
                 </p>
               </div>
 
               {errorMessage && (
-                <div className='mb-5 p-3.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-start gap-2.5'>
-                  <Info className='w-4 h-4 shrink-0 text-red-400 mt-0.5' />
+                <div className='mb-5 p-3.5 rounded-lg bg-cotel-error/10 border border-cotel-error/30 text-cotel-error text-xs flex items-start gap-2.5 transition-industrial'>
+                  <Info className='w-4 h-4 shrink-0 text-cotel-error mt-0.5' />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className='space-y-4'>
                 <div>
-                  <label className='block text-xs font-medium text-slate-300 mb-1.5'>
+                  <label className='block text-xs font-medium text-cotel-foreground mb-1.5'>
                     Correo Electrónico
                   </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500'>
-                      <Mail className='w-4 h-4' />
-                    </div>
-                    <input
-                      type='email'
-                      required
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder='operador@cotel.bo'
-                      className='w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all'
-                      disabled={isSubmitting || isLoading}
-                    />
-                  </div>
+                  <Input
+                    dark
+                    type='email'
+                    icon={Mail}
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder='operador@cotel.bo'
+                    aria-label='Correo electrónico'
+                    disabled={isSubmitting || isLoading}
+                    className='focus-ring-cotel'
+                  />
                 </div>
 
                 <div>
                   <div className='flex items-center justify-between mb-1.5'>
-                    <label className='block text-xs font-medium text-slate-300'>
+                    <label className='block text-xs font-medium text-cotel-foreground'>
                       Contraseña
                     </label>
                   </div>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500'>
-                      <Lock className='w-4 h-4' />
-                    </div>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder='••••••••'
-                      className='w-full pl-9 pr-10 py-2.5 rounded-lg bg-slate-950 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all'
-                      disabled={isSubmitting || isLoading}
-                    />
-                    <button
-                      type='button'
-                      onClick={() => setShowPassword(prev => !prev)}
-                      className='absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors'
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
-                    </button>
-                  </div>
+                  <Input
+                    dark
+                    type={showPassword ? 'text' : 'password'}
+                    icon={Lock}
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder='••••••••'
+                    aria-label='Contraseña'
+                    trailing={
+                      <button
+                        type='button'
+                        onClick={() => setShowPassword(prev => !prev)}
+                        className='text-cotel-foreground-muted hover:text-cotel-foreground transition-colors cursor-pointer focus-ring-cotel rounded-sm'
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        {showPassword ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
+                      </button>
+                    }
+                    disabled={isSubmitting || isLoading}
+                    className='focus-ring-cotel'
+                  />
                 </div>
 
                 <div className='flex items-center justify-between pt-1'>
-                  <label className='flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300'>
+                  <label className='flex items-center gap-2 cursor-pointer select-none text-xs text-cotel-foreground transition-industrial'>
                     <input
                       type='checkbox'
                       checked={rememberMe}
                       onChange={e => setRememberMe(e.target.checked)}
-                      className='rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-indigo-500 w-4 h-4'
+                      className='rounded border-cotel-border bg-cotel-background-card text-cotel-primary focus:ring-cotel-primary w-4 h-4 focus-ring-cotel'
                     />
                     <span>Recordar sesión</span>
                   </label>
@@ -253,7 +265,7 @@ export function BrandedLoginView({ onLogin, onEnterDemo, isLoading = false }: Br
                   type='submit'
                   variant='primary'
                   size='lg'
-                  className='w-full mt-2 font-semibold !py-2.5 justify-center shadow-lg shadow-indigo-600/20'
+                  className='w-full mt-2 font-semibold !py-2.5 justify-center shadow-lg shadow-cotel-primary/30 hover-lift transition-industrial bg-gradient-to-r from-cotel-primary to-cotel-secondary border-0'
                   disabled={isSubmitting || isLoading}
                 >
                   {isSubmitting ? (
@@ -271,22 +283,22 @@ export function BrandedLoginView({ onLogin, onEnterDemo, isLoading = false }: Br
               </form>
 
               {/* Acceso rápido a demostración / consulta */}
-              <div className='mt-6 pt-5 border-t border-slate-800 text-center space-y-3'>
-                <p className='text-xs text-slate-400'>
+              <div className='mt-6 pt-5 border-t border-cotel-border text-center space-y-3'>
+                <p className='text-xs text-cotel-foreground-muted'>
                   ¿No dispone de credenciales de operador?
                 </p>
                 <button
                   type='button'
                   onClick={onEnterDemo}
-                  className='w-full py-2 px-3 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-medium border border-slate-700 transition flex items-center justify-center gap-2'
+                  className='w-full py-2 px-3 rounded-lg bg-cotel-background-card/80 hover:bg-cotel-background-card text-cotel-foreground-muted hover:text-white text-xs font-medium border border-cotel-border transition-industrial hover-lift flex items-center justify-center gap-2 focus-ring-cotel'
                 >
-                  <Eye className='w-3.5 h-3.5 text-indigo-400' />
+                  <Eye className='w-3.5 h-3.5 text-cotel-primary' />
                   <span>Acceder en Modo Consulta (Auditoría / Solo Lectura)</span>
                 </button>
 
-                <p className='text-[11px] text-slate-500 pt-1'>
+                <p className='text-[11px] text-cotel-foreground-muted/70 pt-1'>
                   Para crear cuentas administrativas en el servidor use:<br />
-                  <code className='bg-slate-950 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[10px]'>
+                  <code className='bg-cotel-background text-cotel-primary px-1.5 py-0.5 rounded font-mono text-[10px] border border-cotel-border'>
                     php artisan operador:create admin@cotel.bo --role=ADMIN
                   </code>
                 </p>
@@ -298,10 +310,10 @@ export function BrandedLoginView({ onLogin, onEnterDemo, isLoading = false }: Br
       </main>
 
       {/* Pie de página institucional */}
-      <footer className='border-t border-slate-800/80 bg-slate-950/80 px-6 py-4 text-xs text-slate-400 text-center'>
+      <footer className='border-t border-cotel-border bg-cotel-background-card/80 px-6 py-4 text-xs text-cotel-foreground-muted text-center'>
         <div className='max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2'>
           <p>© 2026 COTEL R.L. · Todos los derechos reservados · La Paz, Bolivia.</p>
-          <p className='text-slate-500'>Planta Externa Siemens DECTlink · Red Inalámbrica WLL</p>
+          <p className='text-cotel-foreground-muted/70 font-technical'>Planta Externa Siemens DECTlink · Sistema Industrial de Red Inalámbrica Fija WLL</p>
         </div>
       </footer>
     </div>

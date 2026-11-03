@@ -1,0 +1,195 @@
+/* COTEL Design System - Tokens UI/UX Pro Max */
+
+/**
+ * Sistema de diseño industrial Siemens/DECTlink
+ * Generado por UI/UX Pro Max v2.15.0
+ * Paleta: Industrial técnico con naranjas Siemens y verdes operativos
+ */
+
+:root {
+  /* ====== COLORS - Sistema Industrial Siemens ====== */
+  
+  /* Primarios (Siemens Orange) */
+  --cotel-primary-50: #FFF7ED;
+  --cotel-primary-100: #FFEDD5;
+  --cotel-primary-200: #FED7AA;
+  --cotel-primary-300: #FDBA74;
+  --cotel-primary-400: #FB923C;
+  --cotel-primary-500: #EA580C;    /* Principal Siemens */
+  --cotel-primary-600: #C2410C;
+  --cotel-primary-700: #9A3412;
+  --cotel-primary-800: #7C2D12;
+  --cotel-primary-900: #5A271A;
+  
+  /* Secundarios */
+  --cotel-secondary-500: #F97316;
+  --cotel-secondary-600: #EA580C;
+  
+  /* Acentos Operativos (Verdes) */
+  --cotel-accent-500: #059669;     /* Verde Siemens - Estado operativo */
+  --cotel-accent-600: #047857;
+  
+  /* Fondo Industrial (Azul Noche Técnico) */
+  --cotel-background: #0F172A;
+  --cotel-background-card: #192134;
+  --cotel-background-muted: #1E293B;
+  
+  /* Texto */
+  --cotel-foreground: #FFFFFF;
+  --cotel-foreground-muted: #94A3B8;
+  
+  /* Estados */
+  --cotel-success: #059669;
+  --cotel-warning: #D97706;
+  --cotel-error: #DC2626;
+  --cotel-info: #0EA5E9;
+  
+  /* Bordes */
+  --cotel-border: rgba(255, 255, 255, 0.08);
+  --cotel-border-emphasis: rgba(255, 255, 255, 0.16);
+  
+  /* ====== TYPOGRAPHY - Inter Technical ====== */
+  --cotel-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Font Sizes - Escala técnica */
+  --cotel-text-xs: 0.75rem;     /* 12px */
+  --cotel-text-sm: 0.875rem;    /* 14px */
+  --cotel-text-base: 1rem;      /* 16px */
+  --cotel-text-lg: 1.125rem;    /* 18px */
+  --cotel-text-xl: 1.25rem;     /* 20px */
+  --cotel-text-2xl: 1.5rem;     /* 24px */
+  --cotel-text-3xl: 1.875rem;   /* 30px */
+  --cotel-text-4xl: 2.25rem;    /* 36px */
+  --cotel-text-5xl: 3rem;       /* 48px */
+  
+  /* Line Heights */
+  --cotel-leading-none: 1;
+  --cotel-leading-tight: 1.25;
+  --cotel-leading-snug: 1.375;
+  --cotel-leading-normal: 1.5;
+  --cotel-leading-relaxed: 1.625;
+  --cotel-leading-loose: 2;
+  
+  /* Font Weights */
+  --cotel-font-thin: 100;
+  --cotel-font-extralight: 200;
+  --cotel-font-light: 300;
+  --cotel-font-normal: 400;
+  --cotel-font-medium: 500;
+  --cotel-font-semibold: 600;
+  --cotel-font-bold: 700;
+  --cotel-font-extrabold: 800;
+  --cotel-font-black: 900;
+  
+  /* ====== SPACING - Escala técnica 4px ====== */
+  --cotel-spacing-1: 0.25rem;   /* 4px */
+  --cotel-spacing-2: 0.5rem;    /* 8px */
+  --cotel-spacing-3: 0.75rem;   /* 12px */
+  --cotel-spacing-4: 1rem;      /* 16px */
+  --cotel-spacing-5: 1.25rem;   /* 20px */
+  --cotel-spacing-6: 1.5rem;    /* 24px */
+  --cotel-spacing-8: 2rem;      /* 32px */
+  --cotel-spacing-10: 2.5rem;   /* 40px */
+  --cotel-spacing-12: 3rem;     /* 48px */
+  --cotel-spacing-16: 4rem;     /* 64px */
+  --cotel-spacing-20: 5rem;     /* 80px */
+  
+  /* ====== BORDERS - Industrial ====== */
+  --cotel-border-radius-sm: 0.125rem;  /* 2px */
+  --cotel-border-radius: 0.25rem;      /* 4px */
+  --cotel-border-radius-md: 0.375rem;  /* 6px */
+  --cotel-border-radius-lg: 0.5rem;    /* 8px */
+  --cotel-border-radius-xl: 0.75rem;   /* 12px */
+  --cotel-border-radius-2xl: 1rem;     /* 16px */
+  --cotel-border-radius-full: 9999px;  /* Circular */
+  
+  /* ====== SHADOWS - Técnicos sutiles ====== */
+  --cotel-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --cotel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --cotel-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.35);
+  --cotel-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  
+  /* ====== ANIMATION - Industrial smooth ====== */
+  --cotel-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --cotel-transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --cotel-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ====== ROLES - Paleta jerárquica ====== */
+  --cotel-role-superadmin: var(--cotel-primary-500);
+  --cotel-role-admin: #F472B6;     /* rose-500 */
+  --cotel-role-supervisor: #8B5CF6; /* violet-500 */
+  --cotel-role-despachador: #6366F1; /* indigo-500 */
+  --cotel-role-tecnico: #0EA5E9;   /* sky-500 */
+  --cotel-role-auditor: #64748B;   /* slate-500 */
+}
+
+/* ====== UTILITY CLASSES ====== */
+
+/* Backgrounds */
+.bg-cotel-primary { background-color: var(--cotel-primary-500); }
+.bg-cotel-secondary { background-color: var(--cotel-secondary-500); }
+.bg-cotel-accent { background-color: var(--cotel-accent-500); }
+.bg-cotel-background { background-color: var(--cotel-background); }
+
+/* Text */
+.text-cotel-primary { color: var(--cotel-primary-500); }
+.text-cotel-secondary { color: var(--cotel-secondary-500); }
+.text-cotel-accent { color: var(--cotel-accent-500); }
+.text-cotel-foreground { color: var(--cotel-foreground); }
+
+/* Borders */
+.border-cotel-primary { border-color: var(--cotel-primary-500); }
+.border-cotel-secondary { border-color: var(--cotel-secondary-500); }
+.border-cotel-accent { border-color: var(--cotel-accent-500); }
+.border-cotel-border { border-color: var(--cotel-border); }
+
+/* Focus rings */
+.focus-ring-cotel {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--cotel-primary-500), 0 0 0 6px rgba(234, 88, 12, 0.1);
+}
+
+/* Gradientes Siemens */
+.gradient-siemens {
+  background: linear-gradient(135deg, 
+    var(--cotel-primary-500) 0%, 
+    var(--cotel-background) 50%, 
+    var(--cotel-accent-500) 100%
+  );
+}
+
+.gradient-industrial-dark {
+  background: linear-gradient(135deg, 
+    #0F172A 0%, 
+    #1E293B 50%, 
+    #334155 100%
+  );
+}
+
+/* Estados interactivos */
+.hover-lift {
+  transition: transform var(--cotel-transition), box-shadow var(--cotel-transition);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cotel-shadow-md);
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --cotel-border: rgba(255, 255, 255, 0.3);
+    --cotel-border-emphasis: rgba(255, 255, 255, 0.6);
+  }
+}

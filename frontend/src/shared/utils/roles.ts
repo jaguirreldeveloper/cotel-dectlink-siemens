@@ -1,12 +1,20 @@
 import type { OperadorRole } from '@/features/auth/types';
 
 /**
- * Metadatos de los 5 roles jerárquicos de COTEL DECTlink.
+ * Metadatos de los 6 roles jerárquicos de COTEL DECTlink.
  *
  * Centraliza etiquetas, niveles y clases de color de Tailwind para que el
  * header, el modal de usuarios, el listado y la matriz de accesos usen una
  * única fuente de verdad. Las clases de color se escriben como literales
  * completos para que el scanner de Tailwind las incluya en el build.
+ * 
+ * Sistema de Diseño UI/UX Pro Max: Jerarquía industrial Siemens/DECTlink
+ * - SUPERADMIN: Nivel 1 · Acceso Total (amber)
+ * - ADMIN: Nivel 2 · Administración (rose)
+ * - SUPERVISOR: Nivel 3 · Ingeniería (violet)
+ * - DESPACHADOR: Nivel 4 · Operativo (indigo)
+ * - TECNICO: Nivel 5 · Campo (sky)
+ * - AUDITOR: Nivel 6 · Consulta (slate)
  */
 
 export const OPERADOR_ROLES: OperadorRole[] = [
@@ -52,7 +60,7 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
     titulo: 'Ingeniero de Red DECTlink & Regulación ATT',
     descripcion:
       'Ingeniería de red: calibración GPS, estados de servicio, despacho de OTs y auditoría técnica de planta externa.',
-    nivel: 'Nivel 2 · Ingeniería',
+    nivel: 'Nivel 3 · Ingeniería',
     color: 'violet',
   },
   DESPACHADOR: {
@@ -61,7 +69,7 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
     titulo: 'Coordinador de Cuadrillas & Despacho de OTs',
     descripcion:
       'Despacho operativo: creación y seguimiento de órdenes de trabajo, gestión de cuadrillas y materiales.',
-    nivel: 'Nivel 3 · Operativo',
+    nivel: 'Nivel 4 · Operativo',
     color: 'indigo',
   },
   TECNICO: {
@@ -70,7 +78,7 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
     titulo: 'Técnico de Planta Externa & Instalador FAU',
     descripcion:
       'Acceso operativo y de consulta: mapas GIS, simulación de enlaces RF, visualización del padrón y fichas ATT.',
-    nivel: 'Nivel 4 · Campo',
+    nivel: 'Nivel 5 · Campo',
     color: 'sky',
   },
   AUDITOR: {
@@ -79,7 +87,7 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
     titulo: 'Auditor Regulatorio ATT & Consulta Comercial',
     descripcion:
       'Consulta regulatoria y comercial: padrón, fichas oficiales, mapas GIS y reportes para la ATT.',
-    nivel: 'Nivel 5 · Consulta',
+    nivel: 'Nivel 6 · Consulta',
     color: 'slate',
   },
 };

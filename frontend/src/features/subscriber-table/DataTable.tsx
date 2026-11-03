@@ -609,18 +609,19 @@ export const DataTable: React.FC<DataTableProps> = ({
         <div className="flex items-center gap-2">
           <span>Mostrando página {currentPage} de {totalPages}</span>
           <span>·</span>
-          <select
+          <Select
+            size="sm"
             value={pageSize}
             onChange={e => {
               setPageSize(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="px-2 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300"
+            aria-label="Registros por página"
           >
             <option value={15}>15 por página</option>
             <option value={25}>25 por página</option>
             <option value={60}>Ver todos</option>
-          </select>
+          </Select>
         </div>
 
         <div className="flex items-center space-x-1">
