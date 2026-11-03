@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { downloadTextFile } from '@/shared/utils/downloadTextFile';
 import { Modal } from '@/shared/ui/Modal';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 
 interface SupabaseMigrationModalProps {
   isOpen: boolean;
@@ -584,16 +586,18 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                 {connectionMode === 'pooler' && (
                   <div className="flex items-center gap-3 text-xs bg-black/40 p-2.5 rounded-lg border border-slate-800/80">
                     <span className="text-slate-400 font-semibold">Región del Connection Pooler:</span>
-                    <select
+                    <Select
+                      dark
+                      size="sm"
                       value={poolerRegion}
                       onChange={(e) => setPoolerRegion(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 text-emerald-300 text-xs rounded px-2.5 py-1 focus:outline-hidden"
+                      aria-label="Región del connection pooler"
                     >
                       <option value="sa-east-1">South America (São Paulo) - sa-east-1 (Recomendado)</option>
                       <option value="us-west-1">US West (N. California) - us-west-1</option>
                       <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
                       <option value="eu-west-1">EU (Ireland) - eu-west-1</option>
-                    </select>
+                    </Select>
                   </div>
                 )}
 
@@ -610,21 +614,26 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                   </div>
 
                   <div className="relative">
-                    <input
+                    <Input
+                      dark
+                      size="sm"
                       type={showPassword ? 'text' : 'password'}
                       value={passwordInput}
                       onChange={(e) => setPasswordInput(e.target.value)}
                       placeholder="Escribe aquí tu contraseña de PostgreSQL de Supabase"
-                      className="w-full pl-3 pr-10 py-2 rounded-lg bg-black/70 border border-slate-700 text-xs text-white placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-hidden"
+                      aria-label="Contraseña de la base de datos"
+                      trailing={
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-slate-400 hover:text-white transition cursor-pointer"
+                          title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                          aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      }
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white transition cursor-pointer"
-                      title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
                   </div>
                 </div>
 
@@ -643,11 +652,14 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
                       <span>{copiedType === 'conn' ? '¡Copiado!' : 'Copiar URI'}</span>
                     </button>
                   </div>
-                  <input
+                  <Input
+                    dark
+                    size="sm"
                     type="text"
                     value={connectionString}
                     onChange={(e) => setConnectionString(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-slate-800 text-xs text-emerald-300 font-mono focus:border-emerald-500 focus:outline-hidden"
+                    aria-label="Cadena de conexión URI"
+                    className="font-mono"
                   />
                 </div>
 

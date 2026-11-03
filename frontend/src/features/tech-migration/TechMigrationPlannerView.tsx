@@ -10,6 +10,8 @@ import {
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 import { evaluateSubscribersMigration } from './data/fieldOperationsData';
 import { downloadTextFile } from '@/shared/utils/downloadTextFile';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 
 interface TechMigrationPlannerViewProps {
   records: EnrichedSubscriberRecord[];
@@ -263,40 +265,43 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
       {/* Filterable Migration Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-            <input
+          <div className="w-full sm:w-72">
+            <Input
+              size="sm"
               type="text"
+              icon={Search}
               placeholder="Buscar abonado, teléfono, zona..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full text-xs pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
+              aria-label="Buscar plan de migración"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
+            <Select
+              size="sm"
               value={filterTech}
               onChange={e => setFilterTech(e.target.value)}
-              className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-300"
+              aria-label="Filtrar por tecnología"
             >
               <option value="ALL">Todas las tecnologías</option>
               <option value="FTTH_GPON">FTTH GPON</option>
               <option value="FWA_LTE">FWA LTE</option>
               <option value="DECT_LEGACY">DECT Legacy</option>
-            </select>
+            </Select>
 
-            <select
+            <Select
+              size="sm"
               value={filterPriority}
               onChange={e => setFilterPriority(e.target.value)}
-              className="text-xs px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-300"
+              aria-label="Filtrar por prioridad de migración"
             >
               <option value="ALL">Todas las prioridades</option>
               <option value="INMEDIATA">Inmediata (Falla DECT)</option>
               <option value="CORTO_PLAZO">Corto Plazo</option>
               <option value="MEDIANO_PLAZO">Mediano Plazo</option>
               <option value="CONSERVAR">Conservar</option>
-            </select>
+            </Select>
           </div>
         </div>
 

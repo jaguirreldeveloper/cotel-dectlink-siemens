@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/shared/utils/apiFetch';
 import { Modal } from '@/shared/ui/Modal';
+import { Input } from '@/shared/ui/Input';
 import {
   X,
   GitBranch,
@@ -339,12 +340,15 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
                 URL de tu repositorio en GitHub:
               </label>
               <div className="flex gap-2">
-                <input
+                <Input
+                  dark
+                  size="sm"
                   type="text"
                   value={remoteUrlInput}
                   onChange={(e) => setRemoteUrlInput(e.target.value)}
                   placeholder="https://github.com/tu-usuario/cotel-dectlink.git"
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-xs text-indigo-300 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  aria-label="URL del repositorio GitHub"
+                  className="flex-1 font-mono"
                 />
                 <button
                   onClick={handleSaveRemote}

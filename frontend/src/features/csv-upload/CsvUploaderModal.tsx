@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, RotateCcw, AlertCircle, FileText } from 'lucide-react';
 import { RAW_CSV_DATA } from '@/demo/initialData';
 import { Modal } from '@/shared/ui/Modal';
+import { Textarea } from '@/shared/ui/Textarea';
 
 interface CsvUploaderModalProps {
   isOpen: boolean;
@@ -87,15 +88,16 @@ export const CsvUploaderModal: React.FC<CsvUploaderModalProps> = ({
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
               Pegar Texto CSV
             </label>
-            <textarea
+            <Textarea
               value={text}
               onChange={e => {
                 setText(e.target.value);
                 setError(null);
               }}
               rows={6}
-              placeholder="NRO,NUMERO,AREA,CTO,NOMBRE,DIRECCION,FECH_SERV,ESTADO,CELDA,ZONA&#10;1,2341669,EAI,..."
-              className="w-full p-2.5 font-mono text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              placeholder={'NRO,NUMERO,AREA,CTO,NOMBRE,DIRECCION,FECH_SERV,ESTADO,CELDA,ZONA\n1,2341669,EAI,...'}
+              aria-label="Pegar texto CSV"
+              className="font-mono"
             />
           </div>
 

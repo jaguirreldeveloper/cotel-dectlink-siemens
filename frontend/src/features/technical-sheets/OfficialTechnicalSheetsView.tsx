@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { filterRecords } from '@/shared/utils/recordFilters';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 import {
   Printer,
   FileText,
@@ -121,30 +123,33 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
       {/* Selector Toolbar (Hidden in Print) */}
       {activeSubTab === 'individual' && (
         <div className="print:hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-            <input
+          <div className="w-full sm:w-80">
+            <Input
+              size="sm"
               type="text"
+              icon={Search}
               placeholder="Buscar abonado, teléfono, zona..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full text-xs pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md"
+              aria-label="Buscar abonado para ficha"
             />
           </div>
 
           <div className="w-full sm:w-auto flex items-center gap-2">
             <label className="text-xs text-slate-500">Seleccionar:</label>
-            <select
+            <Select
+              size="sm"
               value={selectedSubNro}
               onChange={e => setSelectedSubNro(parseInt(e.target.value, 10))}
-              className="text-xs px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md font-semibold text-slate-800 dark:text-slate-200 max-w-xs"
+              aria-label="Seleccionar abonado"
+              className="max-w-xs font-semibold"
             >
               {filteredSubscribers.map(r => (
                 <option key={r.nro} value={r.nro}>
                   #{r.nro} - {r.nombre} (Tel: {r.numero})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
       )}

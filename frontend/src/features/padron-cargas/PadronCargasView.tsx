@@ -8,6 +8,8 @@ import {
   Play,
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
+import { Textarea } from '@/shared/ui/Textarea';
 import type { PadronCargaResumen, PadronCargaDetalleResponse } from './types';
 import * as api from './api';
 
@@ -142,10 +144,10 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
       </div>
 
       {error && (
-        <div className='rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300'>{error}</div>
+        <div className='rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-300'>{error}</div>
       )}
       {actionMsg && (
-        <div className='rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-300'>{actionMsg}</div>
+        <div className='rounded-lg border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm text-brand-300'>{actionMsg}</div>
       )}
 
       {isAdmin && (
@@ -154,20 +156,22 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
             <Upload className='w-4 h-4' /> Subir nuevo lote (CSV)
           </h3>
           <div className='flex gap-2'>
-            <input
-              type='text'
+            <Input
+              dark
               value={archivo}
               onChange={e => setArchivo(e.target.value)}
               placeholder='nombre-archivo.csv'
-              className='flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200'
+              aria-label='Nombre del archivo del lote'
             />
           </div>
-          <textarea
+          <Textarea
+            dark
             value={csvText}
             onChange={e => setCsvText(e.target.value)}
             placeholder='Pega aquí el contenido del CSV del padrón…'
+            aria-label='Contenido CSV del lote'
             rows={6}
-            className='w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 font-mono'
+            className='font-mono'
           />
           {uploadMsg && <p className='text-xs text-slate-400'>{uploadMsg}</p>}
           <Button variant='primary' size='sm' icon={Upload} onClick={handleUpload} disabled={uploading || !csvText.trim()}>

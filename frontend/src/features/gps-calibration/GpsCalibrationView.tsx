@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { filterRecords } from '@/shared/utils/recordFilters';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 import L from 'leaflet';
 import {
   Crosshair,
@@ -443,7 +445,8 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
                   <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                     Latitud (Sur)
                   </label>
-                  <input
+                  <Input
+                    size="sm"
                     type="number"
                     step="0.000001"
                     value={currentLat}
@@ -451,14 +454,16 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
                       setCurrentLat(parseFloat(e.target.value) || currentLat);
                       setCurrentPrecision('CALIBRADO_MAPA');
                     }}
-                    className="w-full font-mono text-xs px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded focus:ring-1 focus:ring-emerald-500"
+                    aria-label="Latitud sur"
+                    className="font-mono"
                   />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                     Longitud (Oeste)
                   </label>
-                  <input
+                  <Input
+                    size="sm"
                     type="number"
                     step="0.000001"
                     value={currentLng}
@@ -466,7 +471,8 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
                       setCurrentLng(parseFloat(e.target.value) || currentLng);
                       setCurrentPrecision('CALIBRADO_MAPA');
                     }}
-                    className="w-full font-mono text-xs px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded focus:ring-1 focus:ring-emerald-500"
+                    aria-label="Longitud oeste"
+                    className="font-mono"
                   />
                 </div>
               </div>
@@ -552,34 +558,35 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-card p-4 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5 text-indigo-500" />
+                <Filter className="w-3.5 h-3.5 text-brand-500" />
                 <span>Padrón de Abonados ({filteredRecords.length})</span>
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Buscar abonado, teléfono, zona..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full text-xs pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
+              <Input
+                size="sm"
+                type="text"
+                icon={Search}
+                placeholder="Buscar abonado, teléfono, zona..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                aria-label="Buscar abonado a calibrar"
+                className="flex-1"
+              />
 
-              <select
+              <Select
+                size="sm"
                 value={filterPrecision}
                 onChange={e => setFilterPrecision(e.target.value)}
-                className="text-xs px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-300"
+                aria-label="Filtrar por precisión"
               >
                 <option value="ALL">Todas las precisiones</option>
                 <option value="GPS_CAMPO_ALTA">GPS Alta (Campo)</option>
                 <option value="CALIBRADO_MAPA">Calibrado Mapa</option>
                 <option value="CATASTRO_ESTIMADO">Catastro Estimado</option>
                 <option value="CENTROIDE_ZONA">Centroide de Zona</option>
-              </select>
+              </Select>
             </div>
 
             {/* Scrollable list */}

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { filterRecords } from '@/shared/utils/recordFilters';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 import L from 'leaflet';
 import {
   Radio,
@@ -409,39 +411,42 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
         {/* Filter controls row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
           {/* Search */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar abonado, teléfono o calle..."
-              className="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
-            />
-          </div>
+          <Input
+            size="sm"
+            type="text"
+            icon={Search}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Buscar abonado, teléfono o calle..."
+            aria-label="Buscar en el mapa"
+          />
 
           {/* Status filter */}
-          <select
+          <Select
+            size="sm"
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none font-medium"
+            aria-label="Filtrar por estado"
+            className="font-medium"
           >
             <option value="">Todos los Estados ({records.length})</option>
-            <option value="C/SERV.">🟢 Activos Con Servicio</option>
-            <option value="EN DEPOSITO">🔵 En Depósito (Custodia)</option>
-            <option value="CORTE X MORA">🟡 Corte por Falta de Pago</option>
-            <option value="FALLA TECNICA">🔴 Falla Técnica de Radio DECT</option>
-            <option value="S/SERV.">⚪ Sin Servicio / Baja</option>
-          </select>
+            <option value="C/SERV.">Activos Con Servicio</option>
+            <option value="EN DEPOSITO">En Depósito (Custodia)</option>
+            <option value="CORTE X MORA">Corte por Falta de Pago</option>
+            <option value="FALLA TECNICA">Falla Técnica de Radio DECT</option>
+            <option value="S/SERV.">Sin Servicio / Baja</option>
+          </Select>
 
           {/* Cell filter */}
-          <select
+          <Select
+            size="sm"
             value={filterCelda}
             onChange={e => {
               setFilterCelda(e.target.value);
               if (e.target.value) handleFocusStation(e.target.value);
             }}
-            className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none font-medium"
+            aria-label="Filtrar por celda"
+            className="font-medium"
           >
             <option value="">Todas las Celdas Siemens</option>
             {Object.entries(SIEMENS_DECT_CELLS).map(([id, cell]) => (
@@ -449,7 +454,7 @@ export const GisCoverageMapView: React.FC<GisCoverageMapViewProps> = ({
                 Celda {id} - {cell.name}
               </option>
             ))}
-          </select>
+          </Select>
 
           {/* Toggle Cell Radii */}
           <button
