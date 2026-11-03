@@ -7,6 +7,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
+import { Textarea } from '@/shared/ui/Textarea';
 import {
   ArmarioDTO,
   CentralDTO,
@@ -48,9 +51,6 @@ interface InfraModalProps {
   onSave: (nivel: NivelInfra, idEditar: number | null, input: InfraInput) => Promise<void>;
   rowFor: RowFor;
 }
-
-const inputCls =
-  'w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50';
 
 export function InfraModal({
   isOpen,
@@ -184,7 +184,7 @@ export function InfraModal({
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4' role='dialog' aria-modal='true' aria-label={label}>
-      <div className='w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl max-h-[90vh] overflow-y-auto'>
+      <div className='w-full max-w-lg rounded-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-panel max-h-[90vh] overflow-y-auto'>
         <div className='flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800'>
           <h2 className='text-sm font-bold text-slate-900 dark:text-white'>{label}</h2>
           <button type='button' onClick={onClose} className='p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500' aria-label='Cerrar'>
@@ -196,44 +196,44 @@ export function InfraModal({
           <div className='grid grid-cols-2 gap-3'>
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Código *</span>
-              <input className={inputCls} value={form.codigo ?? ''} onChange={e => set('codigo', e.target.value)} placeholder='CEN-EAI' />
+              <Input value={form.codigo ?? ''} onChange={e => set('codigo', e.target.value)} placeholder='CEN-EAI' aria-label='Código' />
             </label>
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Nombre *</span>
-              <input className={inputCls} value={form.nombre ?? ''} onChange={e => set('nombre', e.target.value)} placeholder='Central EAI' />
+              <Input value={form.nombre ?? ''} onChange={e => set('nombre', e.target.value)} placeholder='Central EAI' aria-label='Nombre' />
             </label>
           </div>
 
           {nivel === 'subcentral' && (
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Central madre *</span>
-              <select className={inputCls} value={form.id_central ?? ''} onChange={e => set('id_central', e.target.value)}>
+              <Select className='w-full' value={form.id_central ?? ''} onChange={e => set('id_central', e.target.value)} aria-label='Central madre'>
                 <option value=''>— Seleccionar —</option>
                 {centrales.filter(c => c.activo).map(c => (
                   <option key={c.id} value={c.id}>{c.codigo} — {c.nombre}</option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
 
           {nivel === 'subcentral' && (
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Modo de enlace</span>
-              <select className={inputCls} value={form.modo_enlace ?? 'FIBRA'} onChange={e => set('modo_enlace', e.target.value)}>
+              <Select className='w-full' value={form.modo_enlace ?? 'FIBRA'} onChange={e => set('modo_enlace', e.target.value)} aria-label='Modo de enlace'>
                 {MODOS_ENLACE.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+              </Select>
             </label>
           )}
 
           {nivel === 'shelter' && (
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Subcentral *</span>
-              <select className={inputCls} value={form.id_subcentral ?? ''} onChange={e => set('id_subcentral', e.target.value)}>
+              <Select className='w-full' value={form.id_subcentral ?? ''} onChange={e => set('id_subcentral', e.target.value)} aria-label='Subcentral'>
                 <option value=''>— Seleccionar —</option>
                 {subcentrales.filter(s => s.activo).map(s => (
                   <option key={s.id} value={s.id}>{s.codigo} — {s.nombre}</option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
 
@@ -241,17 +241,17 @@ export function InfraModal({
             <div className='grid grid-cols-3 gap-3'>
               <label className='space-y-1'>
                 <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>kVA rectificador</span>
-                <input className={inputCls} type='number' step='0.1' value={form.kva_rectificador ?? ''} onChange={e => set('kva_rectificador', e.target.value)} />
+                <Input type='number' step='0.1' value={form.kva_rectificador ?? ''} onChange={e => set('kva_rectificador', e.target.value)} aria-label='kVA rectificador' />
               </label>
               <label className='space-y-1'>
                 <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Autonomía bats. (h)</span>
-                <input className={inputCls} type='number' value={form.autonomia_baterias_horas ?? ''} onChange={e => set('autonomia_baterias_horas', e.target.value)} />
+                <Input type='number' value={form.autonomia_baterias_horas ?? ''} onChange={e => set('autonomia_baterias_horas', e.target.value)} aria-label='Autonomía de baterías en horas' />
               </label>
               <label className='space-y-1'>
                 <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Estado clima</span>
-                <select className={inputCls} value={form.estado_clima ?? 'AIRE'} onChange={e => set('estado_clima', e.target.value)}>
+                <Select className='w-full' value={form.estado_clima ?? 'AIRE'} onChange={e => set('estado_clima', e.target.value)} aria-label='Estado del clima'>
                   {ESTADOS_CLIMA.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                </Select>
               </label>
             </div>
           )}
@@ -260,18 +260,18 @@ export function InfraModal({
             <div className='grid grid-cols-2 gap-3'>
               <label className='space-y-1'>
                 <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Shelter *</span>
-                <select className={inputCls} value={form.id_shelter ?? ''} onChange={e => set('id_shelter', e.target.value)}>
+                <Select className='w-full' value={form.id_shelter ?? ''} onChange={e => set('id_shelter', e.target.value)} aria-label='Shelter'>
                   <option value=''>— Seleccionar —</option>
                   {shelters.filter(s => s.activo).map(s => (
                     <option key={s.id} value={s.id}>{s.codigo} — {s.nombre}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label className='space-y-1'>
                 <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Tipo</span>
-                <select className={inputCls} value={form.tipo ?? 'RFP'} onChange={e => set('tipo', e.target.value)}>
+                <Select className='w-full' value={form.tipo ?? 'RFP'} onChange={e => set('tipo', e.target.value)} aria-label='Tipo de armario'>
                   {TIPOS_ARMARIO.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                </Select>
               </label>
             </div>
           )}
@@ -279,29 +279,29 @@ export function InfraModal({
           {nivel === 'armario' && (
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Ubicación (dentro del shelter)</span>
-              <input className={inputCls} value={form.ubicacion ?? ''} onChange={e => set('ubicacion', e.target.value)} placeholder='Rack inferior' />
+              <Input value={form.ubicacion ?? ''} onChange={e => set('ubicacion', e.target.value)} placeholder='Rack inferior' aria-label='Ubicación dentro del shelter' />
             </label>
           )}
 
           <label className='space-y-1'>
             <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Dirección</span>
-            <input className={inputCls} value={form.direccion ?? ''} onChange={e => set('direccion', e.target.value)} />
+            <Input value={form.direccion ?? ''} onChange={e => set('direccion', e.target.value)} aria-label='Dirección' />
           </label>
 
           <div className='grid grid-cols-2 gap-3'>
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Latitud (WGS84)</span>
-              <input className={inputCls} type='number' step='0.000001' value={form.lat ?? ''} onChange={e => set('lat', e.target.value)} placeholder='-16.500000' />
+              <Input type='number' step='0.000001' value={form.lat ?? ''} onChange={e => set('lat', e.target.value)} placeholder='-16.500000' aria-label='Latitud WGS84' />
             </label>
             <label className='space-y-1'>
               <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Longitud (WGS84)</span>
-              <input className={inputCls} type='number' step='0.000001' value={form.lng ?? ''} onChange={e => set('lng', e.target.value)} placeholder='-68.150000' />
+              <Input type='number' step='0.000001' value={form.lng ?? ''} onChange={e => set('lng', e.target.value)} placeholder='-68.150000' aria-label='Longitud WGS84' />
             </label>
           </div>
 
           <label className='space-y-1'>
             <span className='text-xs font-medium text-slate-600 dark:text-slate-400'>Observación</span>
-            <textarea className={inputCls} rows={2} value={form.observacion ?? ''} onChange={e => set('observacion', e.target.value)} />
+            <Textarea rows={2} value={form.observacion ?? ''} onChange={e => set('observacion', e.target.value)} aria-label='Observación' />
           </label>
 
           {formError && <p className='text-xs text-rose-500'>{formError}</p>}
