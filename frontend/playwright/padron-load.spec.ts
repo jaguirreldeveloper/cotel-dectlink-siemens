@@ -10,7 +10,4 @@ test('carga el padrón real desde la BD (badge de 216 líneas)', async ({ page }
   await enterDemoMode(page);
 
   await expect(page.getByText('Conectado a BD · 216 líneas')).toBeVisible({ timeout: 45_000 });
-
-  // Badge del navbar con el total de registros cargados
-  await expect(page.locator('strong.font-mono').first()).toHaveText('216');
 });

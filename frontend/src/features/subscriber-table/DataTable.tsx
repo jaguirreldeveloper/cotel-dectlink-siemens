@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
 
 interface DataTableProps {
   records: EnrichedSubscriberRecord[];
@@ -189,25 +191,19 @@ export const DataTable: React.FC<DataTableProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search bar */}
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+            <Input
               type="text"
+              size="md"
+              icon={Search}
               value={search}
               onChange={e => {
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
+              onClear={search ? () => { setSearch(''); setCurrentPage(1); } : undefined}
               placeholder="Buscar por abonado, número, contrato CTO, dirección o zona..."
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100 placeholder-slate-400"
+              aria-label="Buscar en el padrón"
             />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
 
           {/* Quick toggle for Normalization & Filter stats */}
@@ -243,13 +239,14 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
 
           {/* Zone filter */}
-          <select
+          <Select
+            size="sm"
             value={activeZone}
             onChange={e => {
               setSelectedZone(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none"
+            aria-label="Filtrar por zona"
           >
             <option value="">Todas las Zonas ({uniqueZones.length})</option>
             {uniqueZones.map(z => (
@@ -257,16 +254,17 @@ export const DataTable: React.FC<DataTableProps> = ({
                 {z}
               </option>
             ))}
-          </select>
+          </Select>
 
           {/* Celda filter */}
-          <select
+          <Select
+            size="sm"
             value={activeCelda}
             onChange={e => {
               setSelectedCelda(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none"
+            aria-label="Filtrar por celda"
           >
             <option value="">Todas las Celdas</option>
             {uniqueCeldas.map(c => (
@@ -274,31 +272,34 @@ export const DataTable: React.FC<DataTableProps> = ({
                 Celda {c}
               </option>
             ))}
-          </select>
+          </Select>
 
           {/* Client Type */}
-          <select
+          <Select
+            size="sm"
             value={selectedClientType}
             onChange={e => {
               setSelectedClientType(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none"
+            aria-label="Filtrar por tipo de cliente"
           >
             <option value="">Todos los Tipos</option>
             <option value="RESIDENCIAL">Residencial</option>
             <option value="INSTITUCIONAL">Institucional</option>
             <option value="COMERCIAL">Comercial</option>
-          </select>
+          </Select>
 
           {/* Operational Status Siemens DECTlink */}
-          <select
+          <Select
+            size="sm"
             value={selectedStatus}
             onChange={e => {
               setSelectedStatus(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none font-medium"
+            aria-label="Filtrar por estado operativo"
+            className="font-medium"
           >
             <option value="">Todos los Estados</option>
             <option value="C/SERV.">Activo (C/SERV.)</option>
@@ -306,7 +307,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value="CORTE X MORA">Corte x Mora</option>
             <option value="FALLA TECNICA">Falla Técnica DECT</option>
             <option value="S/SERV.">Sin Servicio / Baja</option>
-          </select>
+          </Select>
 
           {/* Quick toggle chips */}
           <button
@@ -316,7 +317,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             }}
             className={`px-2.5 py-1 text-xs rounded transition border ${
               onlyMultiLine
-                ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-medium'
+                ? 'bg-brand-50 dark:bg-brand-950/40 border-brand-300 dark:border-brand-800 text-brand-700 dark:text-brand-300 font-medium'
                 : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
             }`}
           >

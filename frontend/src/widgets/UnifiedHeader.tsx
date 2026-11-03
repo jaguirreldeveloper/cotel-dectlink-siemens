@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, FileSpreadsheet, RefreshCw, Printer, Cloud, Menu, X, ShieldAlert, LogOut } from 'lucide-react';
+import { Database, FileSpreadsheet, RefreshCw, Printer, Cloud, Menu, X, ShieldAlert, LogOut, Upload } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Operador } from '@/features/auth';
 import { roleBadgeClasses, roleLabel } from '@/shared/utils/roles';
@@ -101,10 +101,10 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
               </div>
 
               <div className='hidden md:flex items-center gap-2 ml-4 pl-4 border-l border-slate-800'>
-                <span className={'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition ' + (
+                <span className={'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition shrink-0 whitespace-nowrap ' + (
                   dataSource === 'loading' ? 'bg-yellow-50 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800' :
                   dataSource === 'db' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900' :
-                  dataSource === 'csv' ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900' :
+                  dataSource === 'csv' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900' :
                   dataSource === 'demo' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900' :
                   'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 )}>
@@ -117,7 +117,7 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
                 </span>
                 <button
                   onClick={props.onReload}
-                  className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition'
+                  className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:border-slate-500 border border-slate-700 transition shrink-0 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer'
                   title='Volver a consultar el padrón real en la base de datos'
                 >
                   <RefreshCw className='w-3 h-3' />
@@ -127,21 +127,14 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
             </div>
 
             <div className='flex items-center gap-2 sm:gap-3 shrink-0'>
-              <div className='hidden xl:flex items-center space-x-4 text-xs text-slate-300 pr-3 border-r border-slate-800'>
-                <div>
-                  <span className='text-slate-400'>Líneas:</span>{' '}
-                  <strong className='text-white font-mono'>{rawCount}</strong>
-                </div>
-              </div>
-
               <Button variant='soft' size='md' icon={Cloud} onClick={props.onOpenSupabaseMigration} aria-label='Migrar o conectar a Supabase' title='Asistente guiado para migración o conexión con Supabase PostgreSQL' className='!px-2' />
-              <Button variant='soft' size='md' icon={RefreshCw} onClick={props.onOpenUploader} aria-label='Cargar datos CSV' title='Cargar o cambiar datos CSV' className='!px-2' />
+              <Button variant='soft' size='md' icon={Upload} onClick={props.onOpenUploader} aria-label='Cargar datos CSV' title='Cargar o cambiar datos CSV' className='!px-2' />
 
-              <Button variant='secondary' size='md' icon={Database} onClick={props.onOpenDatabase} className='hidden sm:inline-flex' title='Abrir explorador de tablas y consola SQL de PostgreSQL'>
-                <span className='hidden lg:inline'>Base de Datos</span>
+              <Button variant='secondary' size='md' icon={Database} onClick={props.onOpenDatabase} className='hidden sm:inline-flex' title='Explorador de tablas y consola SQL de PostgreSQL'>
+                <span className='hidden 2xl:inline'>Base de Datos</span>
               </Button>
-              <Button variant='soft' size='md' icon={FileSpreadsheet} iconClassName='text-brand-400' onClick={props.onExportCsv} title='Exportar archivo CSV con normalización'>
-                <span className='hidden md:inline'>Exportar CSV</span>
+              <Button variant='soft' size='md' icon={FileSpreadsheet} iconClassName='text-brand-400' onClick={props.onExportCsv} title='Exportar archivo CSV con normalización' aria-label='Exportar CSV'>
+                <span className='hidden 2xl:inline'>Exportar CSV</span>
               </Button>
               <Button variant='primary' size='md' icon={Printer} onClick={props.onPrint} title='Generar informe para impresión / PDF'>
                 Informe PDF
@@ -154,7 +147,7 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
                     <span className='text-xs font-medium text-white max-w-[120px] truncate' title={props.operador.email}>
                       {props.operador.nombre || props.operador.email.split('@')[0]}
                     </span>
-                    <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.2 rounded ${roleBadgeClasses(props.operador.role)}`}>
+                    <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded ${roleBadgeClasses(props.operador.role)}`}>
                       {props.operador.role} · {roleLabel(props.operador.role)}
                     </span>
                   </div>
@@ -162,7 +155,7 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
                   <button
                     onClick={props.onLogout}
                     title='Cerrar sesión'
-                    className='p-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-300 transition-colors border border-slate-700/80 hover:border-red-500/30'
+                    className='p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 transition-colors border border-slate-700/80 hover:border-rose-500/30 cursor-pointer'
                   >
                     <LogOut className='w-4 h-4' />
                   </button>
@@ -174,7 +167,7 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
                   </span>
                   <button
                     onClick={props.onOpenLogin}
-                    className='px-2.5 py-1 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition'
+                    className='px-2.5 py-1 text-xs font-medium rounded-lg bg-brand-600 hover:bg-brand-500 text-white transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500'
                   >
                     Iniciar Sesión
                   </button>
