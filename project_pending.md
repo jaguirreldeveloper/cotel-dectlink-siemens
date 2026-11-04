@@ -11,6 +11,8 @@
 - [x] Activar `RequireRoleTest` (3 tests) y corregir `OperatorToken::create()` → `generate()`.
 - [x] Eliminar componente `AppTabs` no utilizado (conservar tipo `AppTabId`).
 - [x] Corregir conteo de tests en README (116).
+- [x] Proteger las lecturas de la API con el middleware `operator` (401 sin sesión) y limitar el login a 6 intentos/minuto.
+- [x] Reutilizar `OperatorToken::resolveToken()` para autenticar el stream SSE por query param (`EventSource` no admite cabeceras).
 
 ### Base de datos
 - [x] Añadir `ACTIVO` al `CHECK (estado_servicio)` (migración de pruebas + producción).
@@ -25,29 +27,32 @@
 - [x] UI de gestión de cargas por lote (`PadronCargasView`): subir CSV (ADMIN+), listar/detalle, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
 - [x] Corrección de codificación del badge "Conectado a BD" (punto medio `·`) en `UnifiedHeader`.
 - [x] Compilación exitosa del frontend (`pnpm run build`) y sincronización de assets a `backend/public/`.
+- [x] Mostrar el nombre real de la celda (`celdaNombre`) en tabla, ficha, GPS, fichas técnicas, operaciones y gráficos.
+- [x] Mapa GIS con celdas reales de `/api/cells`, etiquetas permanentes, enlaces celda ↔ abonado e inspector de celda.
+- [x] Tokens de sesión en `sessionStorage` por defecto (`localStorage` solo con «Recordarme») y sin `VITE_ADMIN_TOKEN` en el bundle.
 
 ### Tests
 - [x] 14 tests Vitest para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
-- [x] 116 tests PHPUnit (backend) — todos verdes (446 assertions).
+- [x] 119 tests PHPUnit (backend) — todos verdes (450 assertions).
 - [x] Tests e2e Playwright (5/5).
 
 ## 📊 Línea base de verificación (todo verde)
 - `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
 - `pnpm run lint` ✅ (0 errores, 0 warnings)
 - Vitest: 14 tests ✅
-- Pest / PHPUnit: 116 tests, 446 assertions ✅
+- Pest / PHPUnit: 119 tests, 450 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Frontend build: ✅ Generado y copiado a `backend/public`
 - Servidores activos: Backend `:8010` ✅ | Frontend `:5173` ✅
 - Vitest: 14 tests ✅
-- PHPUnit: 116 tests, 446 assertions ✅
+- PHPUnit: 119 tests, 450 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Playwright e2e: 5/5 ✅
 
 ## 🗂️ Estado del repositorio
-- Rama: `main`. Todos los commits son locales (no se han hecho push a origin).
-- Working tree limpio.
-- Último commit: `1b4a5e2 docs: actualizar README con e2e Playwright en verde`.
+- Rama: `feat/celdas-enlaces-mapa`. Todos los commits son locales (no se han hecho push a origin).
+- `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
+- Último commit: `a1021f5 chore: consolidar trabajo pendiente antes de enlaces GIS y nombres de celdas`.
 
 ## 🖥️ Entorno
 - Windows / PowerShell. Disco C con ~700 MB libres tras limpieza.

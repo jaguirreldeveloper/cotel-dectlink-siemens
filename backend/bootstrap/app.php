@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureOperator;
 use App\Http\Middleware\RequireRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //   ->middleware('role:superadmin,supervisor,despachador')
         $middleware->alias([
             'role' => RequireRole::class,
+            'operator' => EnsureOperator::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

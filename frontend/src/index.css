@@ -236,3 +236,104 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   }
 }
+
+/* ====== GIS: marcadores de celda/abonado y enlaces ====== */
+.cotel-cell-marker,
+.cotel-sub-marker {
+  background: transparent;
+  border: 0;
+}
+
+.cell-marker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  background: #1e1b4b;
+  color: #e0e7ff;
+  border: 2px solid #6366f1;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  max-width: 220px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cell-marker:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.cell-marker.is-reference {
+  border-style: dashed;
+}
+
+.cell-marker.is-selected {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.cell-marker-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.cell-marker-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  overflow: hidden;
+}
+
+.cell-marker-label {
+  font-size: 10px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cell-marker-rfp {
+  font-size: 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #a5b4fc;
+  letter-spacing: 0.02em;
+}
+
+.sub-marker {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--pin-color, #10b981);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sub-marker.is-selected {
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.35), 0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.cell-link {
+  animation: cell-link-draw 0.45s ease-out;
+}
+
+@keyframes cell-link-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-marker,
+  .sub-marker,
+  .cell-link {
+    transition: none;
+    animation: none;
+  }
+}

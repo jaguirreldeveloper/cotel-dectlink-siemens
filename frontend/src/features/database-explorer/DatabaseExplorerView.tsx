@@ -236,8 +236,8 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
     setIsLoadingStatus(true);
     try {
       const [resStatus, resSchema] = await Promise.all([
-        fetch('/api/database/status'),
-        fetch('/api/database/schema'),
+        apiFetch('/api/database/status'),
+        apiFetch('/api/database/schema'),
       ]);
 
       if (resStatus.ok) {
@@ -275,7 +275,7 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
       if (search.trim()) {
         params.append('search', search.trim());
       }
-      const res = await fetch(`/api/database/tables/${targetTable}/data?${params.toString()}`, {
+      const res = await apiFetch(`/api/database/tables/${targetTable}/data?${params.toString()}`, {
         signal: controller.signal,
       });
       if (res.ok) {

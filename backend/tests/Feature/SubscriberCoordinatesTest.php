@@ -56,6 +56,8 @@ class SubscriberCoordinatesTest extends TestCase
 
     public function test_requires_admin_token(): void
     {
+        $this->flushHeaders();
+
         $nro = $this->seedAbonado();
 
         $this->patchJson("/api/subscribers/{$nro}/coordinates", ['lat' => -16.5, 'lng' => -68.1])

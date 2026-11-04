@@ -12,6 +12,7 @@ import type { Operador, OperadorRole } from '@/features/auth/types';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
+import { invalidateCellsCache } from '@/entities/cell/useCells';
 import * as api from './api';
 import type { CeldaCrud, CeldaFormData } from './types';
 
@@ -137,6 +138,7 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
         setNotice(r.message);
       }
       setModalOpen(false);
+      invalidateCellsCache();
       await loadCeldas();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Error al guardar');
@@ -150,6 +152,7 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
     try {
       const r = await api.deleteCelda(c.id);
       setNotice(r.message);
+      invalidateCellsCache();
       await loadCeldas();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al eliminar');

@@ -410,6 +410,7 @@ export function computeCeldaStatistics(records: EnrichedSubscriberRecord[]): Cel
   const map: {
     [celda: string]: {
       count: number;
+      nombre?: string;
       zonas: Set<string>;
       statusCounts: { [status in OperationalStatus]?: number };
     };
@@ -419,6 +420,9 @@ export function computeCeldaStatistics(records: EnrichedSubscriberRecord[]): Cel
     const c = r.celda || 'N/A';
     if (!map[c]) {
       map[c] = { count: 0, zonas: new Set(), statusCounts: {} };
+    }
+    if (!map[c].nombre && r.celdaNombre) {
+      map[c].nombre = r.celdaNombre;
     }
     map[c].count += 1;
     map[c].zonas.add(r.normalizedZona);
@@ -437,7 +441,7 @@ export function computeCeldaStatistics(records: EnrichedSubscriberRecord[]): Cel
 
       return {
         celda,
-        nombreEstacion: cellInfo.name,
+        nombreEstacion: data.nombre || cellInfo.name,
         count: data.count,
         percentage: Number(((data.count / total) * 100).toFixed(1)),
         capacidadCanalesRf: cellInfo.capacidad,

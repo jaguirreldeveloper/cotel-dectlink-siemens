@@ -5,7 +5,9 @@ namespace App\Support;
 use App\Models\Cell;
 use App\Models\Client;
 use App\Models\PadronCarga;
+use App\Models\Subcentral;
 use App\Models\Subscriber;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Procesador de cargas del padrón por lote (dry-run sugerencial).
@@ -68,18 +70,21 @@ class PadronBatchLoader
         ];
 
         $filas = self::parsear($csv);
+        // Claves ya presentes en el lote: número telefónico y nro de origen.
+        // Se rechaza la segunda ocurrencia de cualquiera de las dos.
         $vistos = [];
+        $nrosVistos = [];
 
         $numerosEnCsv = array_filter(array_map(fn ($f) => $f['numero'] ?? $f['numero_telefono'] ?? null, $filas));
         $nrosEnCsv = array_filter(array_map(fn ($f) => $f['nro'] ?? null, $filas));
 
-        /** @var \Illuminate\Database\Eloquent\Collection<string, Subscriber> $existentesPorNumero */
+        /** @var Collection<string, Subscriber> $existentesPorNumero */
         $existentesPorNumero = $numerosEnCsv !== [] ? Subscriber::query()
             ->whereIn('numero_telefono', $numerosEnCsv)
             ->get()
             ->keyBy('numero_telefono') : collect();
 
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Subscriber> $existentesPorNro */
+        /** @var Collection<int, Subscriber> $existentesPorNro */
         $existentesPorNro = $nrosEnCsv !== [] ? Subscriber::query()
             ->whereIn('nro', $nrosEnCsv)
             ->get()
@@ -98,11 +103,10 @@ class PadronBatchLoader
         foreach ($filas as $f) {
             $info = self::fila($f);
 
-            $rechazo = self::motivoDeRechazo($info, $vistos, $celdasPorNombre);
+            $rechazo = self::motivoDeRechazo($info, $vistos, $nrosVistos, $celdasPorNombre);
             if ($rechazo !== null) {
                 $sugerencias[] = self::emplear($info, $rechazo['accion'], $rechazo['motivo'], PadronCarga::CIUDAD_SIN);
-                $claveVista = $info['numero'] !== '' ? $info['numero'] : (string) ($info['nro'] ?? -1);
-                $vistos[$claveVista] = true;
+                self::marcarVistos($info, $vistos, $nrosVistos);
                 $conteo[PadronCarga::ACCION_RECHAZADO]++;
                 $conteo[PadronCarga::CIUDAD_SIN]++;
 
@@ -113,8 +117,6 @@ class PadronBatchLoader
             $ciudad = self::ciudadDeFila($info, $celda, $ciudadPorSubcentral);
             $conteo[$ciudad]++;
 
-            $claveVista = $info['numero'] !== '' ? $info['numero'] : (string) ($info['nro'] ?? -1);
-
             // Coincidencia prioritaria por número telefónico; si el CSV trae nro explícito, por nro
             $existente = ($info['numero'] !== '' ? $existentesPorNumero->get($info['numero']) : null)
                 ?? (isset($f['nro']) && $info['nro'] !== null ? $existentesPorNro->get($info['nro']) : null);
@@ -123,7 +125,7 @@ class PadronBatchLoader
                 if ($info['nombre'] === null) {
                     $conteo[PadronCarga::ACCION_RECHAZADO]++;
                     $sugerencias[] = self::emplear($info, PadronCarga::ACCION_RECHAZADO, 'titular (nombre) requerido para alta', PadronCarga::CIUDAD_SIN);
-                    $vistos[$claveVista] = true;
+                    self::marcarVistos($info, $vistos, $nrosVistos);
 
                     continue;
                 }
@@ -140,7 +142,7 @@ class PadronBatchLoader
 
                 $conteo[PadronCarga::ACCION_NUEVO]++;
                 $sugerencias[] = self::emplear($info, PadronCarga::ACCION_NUEVO, 'No existe en el padrón', $ciudad, $datosAlta);
-                $vistos[$claveVista] = true;
+                self::marcarVistos($info, $vistos, $nrosVistos);
 
                 continue;
             }
@@ -149,14 +151,14 @@ class PadronBatchLoader
             if ($cambios === []) {
                 $conteo[PadronCarga::ACCION_SIN_CAMBIOS]++;
                 $sugerencias[] = self::emplear($info, PadronCarga::ACCION_SIN_CAMBIOS, 'Coincide con el padrón vigente', $ciudad);
-                $vistos[$claveVista] = true;
+                self::marcarVistos($info, $vistos, $nrosVistos);
 
                 continue;
             }
 
             $conteo[PadronCarga::ACCION_ACTUALIZAR]++;
             $sugerencias[] = self::emplear($info, PadronCarga::ACCION_ACTUALIZAR, 'Cambios detectados', $ciudad, $cambios);
-            $vistos[$claveVista] = true;
+            self::marcarVistos($info, $vistos, $nrosVistos);
         }
 
         return [
@@ -197,19 +199,39 @@ class PadronBatchLoader
     }
 
     /**
+     * Marca el número telefónico y el nro de origen de una fila como vistos.
+     *
      * @param  array<string, mixed>  $info
      * @param  array<string, bool>  $vistos
+     * @param  array<int, bool>  $nrosVistos
+     */
+    private static function marcarVistos(array $info, array &$vistos, array &$nrosVistos): void
+    {
+        if ($info['numero'] !== '') {
+            $vistos[$info['numero']] = true;
+        }
+        if ($info['nro'] !== null) {
+            $nrosVistos[$info['nro']] = true;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $info
+     * @param  array<string, bool>  $vistos
+     * @param  array<int, bool>  $nrosVistos
      * @param  array<string, Cell>  $celdas
      * @return array{accion: string, motivo: string}|null
      */
-    private static function motivoDeRechazo(array $info, array $vistos, array $celdas): ?array
+    private static function motivoDeRechazo(array $info, array $vistos, array $nrosVistos, array $celdas): ?array
     {
         if ($info['numero'] === '') {
             return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'número telefónico requerido'];
         }
-        $claveVista = $info['numero'];
-        if (isset($vistos[$claveVista])) {
+        if (isset($vistos[$info['numero']])) {
             return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'registro duplicado en el lote (se conserva la primera ocurrencia)'];
+        }
+        if ($info['nro'] !== null && isset($nrosVistos[$info['nro']])) {
+            return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'nro duplicado en el lote (se conserva la primera ocurrencia)'];
         }
         if ($info['celda'] !== null && ! isset($celdas[$info['celda']])) {
             return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => "celda desconocida: {$info['celda']}"];
@@ -286,7 +308,7 @@ class PadronBatchLoader
     private static function ciudadPorSubcentral(): array
     {
         $mapa = [];
-        foreach (\App\Models\Subcentral::query()->get() as $sub) {
+        foreach (Subcentral::query()->get() as $sub) {
             $direccion = strtoupper((string) $sub->direccion);
             if (str_contains($direccion, 'EL ALTO')) {
                 $mapa[$sub->id] = PadronCarga::CIUDAD_EL_ALTO;
@@ -300,7 +322,6 @@ class PadronBatchLoader
 
     /**
      * @param  array<string, mixed>  $info
-     * @return string
      */
     private static function ciudadDeFila(array $info, ?Cell $celda, array $ciudadPorSubcentral): string
     {

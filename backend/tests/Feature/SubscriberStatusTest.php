@@ -117,6 +117,8 @@ class SubscriberStatusTest extends TestCase
 
     public function test_requires_admin_token(): void
     {
+        $this->flushHeaders();
+
         $nro = $this->seedAbonado();
 
         $this->patchJson("/api/subscribers/{$nro}/status", ['status' => 'CORTE X MORA'])

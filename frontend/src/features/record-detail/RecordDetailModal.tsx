@@ -8,7 +8,7 @@ import {
   Check,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
-import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
+import { resolveCellName, useCells } from '@/entities/cell/useCells';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
 import { Modal } from '@/shared/ui/Modal';
 import { Input } from '@/shared/ui/Input';
@@ -39,13 +39,12 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
   const [fallaText, setFallaText] = useState('');
   const [deudaInput, setDeudaInput] = useState<number>(3);
   const [depositoInput, setDepositoInput] = useState<number>(6);
+  const { byId: cellsById } = useCells();
 
   if (!record) return null;
 
-  const cellInfo = SIEMENS_DECT_CELLS[record.celda] || {
-    name: `Estación Base Celda ${record.celda}`,
-    rfpBase: 'Siemens RFP Estándar',
-  };
+  const cellInfo = cellsById.get(Number(record.celda));
+  const cellName = resolveCellName(record.celda, record.celdaNombre, cellsById);
 
   const relatedRecords = allRecords.filter(
     r =>
@@ -118,7 +117,7 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
                 {record.numero}
               </div>
               <div className="text-[11px] text-slate-500 mt-1">
-                Central EAI · Nodo {cellInfo.name}
+                Central EAI · Nodo {cellName}
               </div>
             </div>
             <button
@@ -306,10 +305,13 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
 
             <div className="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
               <span className="text-[11px] text-slate-400 block mb-0.5">Celda Técnica / Estación Base</span>
-              <div className="font-mono font-bold text-violet-600 dark:text-violet-400">
-                Celda {record.celda}
+              <div className="font-bold text-violet-600 dark:text-violet-400 truncate" title={cellName}>
+                {cellName}
               </div>
-              <div className="text-[11px] text-slate-500 mt-0.5 truncate">{cellInfo.name}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                RFP {record.celda}
+                {cellInfo ? ` · ${cellInfo.capacidad} canales` : ''}
+              </div>
             </div>
 
             <div className="col-span-2 p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -384,7 +386,9 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
                       <span className="text-slate-400">·</span>
                       <span className="text-slate-500 text-[11px]">{rel.fechServ}</span>
                       <span className="text-slate-400">·</span>
-                      <span className="text-violet-600 text-[11px]">Celda {rel.celda}</span>
+                      <span className="text-violet-600 text-[11px]">
+                        {resolveCellName(rel.celda, rel.celdaNombre, cellsById)}
+                      </span>
                     </div>
                     <span className="text-emerald-600 text-[11px] font-medium">Ver →</span>
                   </div>

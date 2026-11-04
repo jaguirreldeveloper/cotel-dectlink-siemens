@@ -26,6 +26,7 @@ export function mapSubscriberDto(d: any): RawSubscriberRecord {
     estado: d.estado,
     estadoOperativo: d.estadoOperativo as OperationalStatus,
     celda: d.celdaId,
+    celdaNombre: d.celdaNombre ?? undefined,
     zona: d.zona,
     fauModel: d.fauModel ?? undefined,
     signalDect: d.signalDect ?? undefined,
@@ -48,7 +49,7 @@ export async function fetchSubscriberList(timeoutMs: number): Promise<RawSubscri
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch('/api/subscribers', { signal: controller.signal });
+    const res = await apiFetch('/api/subscribers', { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!Array.isArray(data)) {
@@ -60,7 +61,7 @@ export async function fetchSubscriberList(timeoutMs: number): Promise<RawSubscri
   }
 }
 
-/** Persiste el cambio de estado operativo de una línea (requiere x-admin-token). */
+/** Persiste el cambio de estado operativo de una línea (requiere sesión de operador). */
 export async function updateSubscriberStatus(
   nro: number,
   status: OperationalStatus,
@@ -97,6 +98,6 @@ export async function updateSubscriberCoordinates(
 
 /** Proveedor activo de la BD (PostgreSQL/Supabase) para el encabezado. */
 export async function fetchDatabaseConnectionInfo(): Promise<{ provider?: string }> {
-  const res = await fetch('/api/database/connection-info');
+  const res = await apiFetch('/api/database/connection-info');
   return res.json();
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EXPANDED_DECT_RECORDS, parseCSV } from '@/demo/initialData';
 import { detectAuditIssues, enrichRecords, ZONE_NORMALIZATION } from '../analysis';
+import { eventsUrl } from '@/shared/utils/apiFetch';
 import {
   fetchDatabaseConnectionInfo,
   fetchSubscriberList,
@@ -87,12 +88,22 @@ function applyCoordinatesUpdate<T extends RawSubscriberRecord>(
   };
 }
 
+export interface UseSubscriberDataOptions {
+  /** `false` en la pantalla de login: no consulta la API hasta autenticarse. */
+  enabled?: boolean;
+  /** `true` en modo demo: datos locales, sin llamadas a la API. */
+  demo?: boolean;
+}
+
 /**
  * Estado de datos del padrón para toda la app: carga con reintentos desde la
  * BD, fallback demo etiquetado, stream SSE en vivo, enriquecimiento/auditoría
  * y mutaciones optimistas con rollback vía recarga ante fallo de persistencia.
+ *
+ * La carga y el SSE solo se activan con una sesión iniciada (`enabled`); en
+ * modo demo (`demo`) se usan los datos locales sin tocar la API.
  */
-export function useSubscriberData() {
+export function useSubscriberData({ enabled = true, demo = false }: UseSubscriberDataOptions = {}) {
   // Estado inicial vacío: el padrón REAL se carga desde la BD; los datos demo
   // solo aparecen (etiquetados) si el backend no responde.
   const [rawRecords, setRawRecords] = useState<RawSubscriberRecord[]>([]);
@@ -108,6 +119,13 @@ export function useSubscriberData() {
   // cuando el usuario pulsa «Recargar», carga un CSV o llega un evento SSE.
   const loadTokenRef = useRef(0);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Modo efectivo para las funciones que se invocan desde la UI (recargar,
+  // guardar estado/coordenadas): 'api' persiste, 'demo' solo actualiza memoria.
+  const modeRef = useRef<'idle' | 'demo' | 'api'>('idle');
+
+  useEffect(() => {
+    modeRef.current = !enabled ? 'idle' : demo ? 'demo' : 'api';
+  }, [enabled, demo]);
 
   const stopLoadRetries = () => {
     loadTokenRef.current += 1;
@@ -124,6 +142,17 @@ export function useSubscriberData() {
   // - Si falla, reintenta con backoff (1s/3s/6s/12s); el modo demo solo se
   //   activa al agotar los intentos, y siempre con la causa visible en el banner.
   const loadSubscribersFromDb = () => {
+    if (modeRef.current === 'idle') {
+      return;
+    }
+    if (modeRef.current === 'demo') {
+      stopLoadRetries();
+      setRawRecords(EXPANDED_DECT_RECORDS);
+      setDataSource('demo');
+      setBackendError(null);
+      return;
+    }
+
     const token = ++loadTokenRef.current;
     if (loadTimerRef.current) {
       clearTimeout(loadTimerRef.current);
@@ -178,8 +207,23 @@ export function useSubscriberData() {
     void attempt(1);
   };
 
-  // Hydrate from PostgreSQL and connect to real-time SSE stream
+  // Hydrate from PostgreSQL and connect to real-time SSE stream.
+  // Sin sesión (pantalla de login) no se llama a la API; en modo demo se
+  // muestran los datos locales sin peticiones ni stream.
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    if (demo) {
+      stopLoadRetries();
+      setRawRecords(EXPANDED_DECT_RECORDS);
+      setDataSource('demo');
+      setLoadAttempt(0);
+      setBackendError(null);
+      return;
+    }
+
     let isMounted = true;
 
     // 1. Fetch live data from PostgreSQL database
@@ -256,7 +300,7 @@ export function useSubscriberData() {
     const connect = () => {
       if (disposed) return;
       eventSource?.close();
-      eventSource = new EventSource('/api/events');
+      eventSource = new EventSource(eventsUrl());
       attachHandlers(eventSource);
     };
 
@@ -267,8 +311,16 @@ export function useSubscriberData() {
       isMounted = false;
       if (retryTimer) clearTimeout(retryTimer);
       eventSource?.close();
+      // Invalidar reintentos pendientes al cerrar sesión o desmontar.
+      loadTokenRef.current += 1;
+      if (loadTimerRef.current) {
+        clearTimeout(loadTimerRef.current);
+        loadTimerRef.current = null;
+      }
+      setLoadAttempt(0);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, demo]);
 
   // Auto-recuperación de la carga del padrón: si la app quedó en modo demo (o
   // con error de backend pendiente) y vuelve la red o la pestaña recupera el
@@ -280,6 +332,7 @@ export function useSubscriberData() {
 
   useEffect(() => {
     const reload = () => {
+      if (modeRef.current !== 'api') return;
       const { dataSource: ds, backendError: err } = statusRef.current;
       if (ds === 'demo' || (err !== null && ds === 'loading')) {
         console.info('Reconexión detectada: se reintenta la carga del padrón real.');
@@ -295,6 +348,9 @@ export function useSubscriberData() {
       window.removeEventListener('online', reload);
       document.removeEventListener('visibilitychange', onVisibility);
     };
+    // `loadSubscribersFromDb` opera sobre refs y setters estables; incluirlo
+    // como dependencia volvería a registrar los listeners en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Enriched records
@@ -339,7 +395,12 @@ export function useSubscriberData() {
     setRawRecords(prev => prev.map(r => (r.nro === nro ? applyStatusUpdate(r, newStatus, details) : r)));
     setSelectedRecord(prev => (prev && prev.nro === nro ? applyStatusUpdate(prev, newStatus, details) : prev));
 
-    // 2. Persist to PostgreSQL via backend API (con rollback vía recarga ante fallo)
+    // 2. En modo demo el cambio es solo en memoria; sin sesión no se persiste.
+    if (modeRef.current !== 'api') {
+      return;
+    }
+
+    // 3. Persist to PostgreSQL via backend API (con rollback vía recarga ante fallo)
     updateSubscriberStatus(nro, newStatus, details).catch(err => {
       console.error('Error persisting status update to PostgreSQL:', err);
       setBackendError(
@@ -363,6 +424,11 @@ export function useSubscriberData() {
     setSelectedRecord(prev =>
       prev && prev.nro === nro ? applyCoordinatesUpdate(prev, lat, lng, precision, tecnico) : prev
     );
+
+    // En modo demo el cambio es solo en memoria; sin sesión no se persiste.
+    if (modeRef.current !== 'api') {
+      return;
+    }
 
     // Persist to PostgreSQL via backend API (con rollback vía recarga ante fallo)
     updateSubscriberCoordinates(nro, lat, lng, precision, tecnico).catch(err => {

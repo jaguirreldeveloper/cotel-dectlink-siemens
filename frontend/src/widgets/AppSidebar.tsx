@@ -99,6 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'database', label: 'Base de Datos', icon: Database, badgeColor: 'bg-brand-500', roles: ['SUPERADMIN'] },
       { id: 'official-sheets', label: 'Fichas Oficiales', icon: FileText, badgeColor: 'bg-brand-500' },
       { id: 'infraestructura', label: 'Infraestructura', icon: Building2, badgeColor: 'bg-rose-500' },
+      { id: 'celdas-crud', label: 'Celdas (RFP)', icon: Radio, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN', 'ADMIN'] },
       { id: 'padron-cargas', label: 'Carga de Padrón', icon: FileText, badgeColor: 'bg-teal-500', roles: ['SUPERADMIN', 'ADMIN'] },
       { id: 'users', label: 'Usuarios & Roles', icon: Users, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN'] },
       { id: 'qa', label: 'Consultas', icon: HelpCircle, badgeColor: 'bg-slate-500', roles: ['SUPERADMIN'] },

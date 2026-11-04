@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\OperatorToken;
 use App\Support\SseHub;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -25,8 +27,19 @@ class EventsController extends Controller
      * Sin Redis configurado (dev local), degrada a solo heartbeat para que
      * el EventSource del frontend conecte sin errores.
      */
-    public function stream(Request $request): StreamedResponse
+    public function stream(Request $request): StreamedResponse|JsonResponse
     {
+        // EventSource no permite cabeceras: el token viaja por query param.
+        $operador = $request->query('token')
+            ? OperatorToken::resolveToken((string) $request->query('token'))
+            : OperatorToken::resolve($request);
+
+        if ($operador === null) {
+            return response()->json([
+                'error' => 'Sesión de operador requerida para el stream de eventos.',
+            ], 401);
+        }
+
         $canal = SseHub::CHANNEL;
 
         $headers = [

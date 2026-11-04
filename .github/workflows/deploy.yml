@@ -45,7 +45,7 @@ jobs:
         run: pnpm --filter frontend build
         env:
           VITE_API_TARGET: ${{ secrets.VITE_API_TARGET }}
-          VITE_ADMIN_TOKEN: ${{ secrets.VITE_ADMIN_TOKEN }}
+          # VITE_ADMIN_TOKEN eliminado: los secretos no se empaquetan en el bundle.
 
       - name: Build scripts
         run: pnpm --filter scripts build

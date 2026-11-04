@@ -19,7 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, GpsPrecisionLevel } from '@/entities/subscriber/types';
-import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
+import { resolveCellName, useCells } from '@/entities/cell/useCells';
 import { calculateDistanceKm, calculateAzimuthDegrees } from '@/entities/subscriber/analysis';
 
 interface GpsCalibrationViewProps {
@@ -67,20 +67,25 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
     }
   }, [selectedRecord]);
 
-  // Base station for this subscriber
+  const { mapCells, byId: cellsById } = useCells();
+
+  // Base station for this subscriber (coordenada de BD o referencia etiquetada)
   const cellInfo = useMemo(() => {
-    if (!selectedRecord) return SIEMENS_DECT_CELLS['17'];
-    return SIEMENS_DECT_CELLS[selectedRecord.celda] || SIEMENS_DECT_CELLS['17'];
-  }, [selectedRecord]);
+    const own = selectedRecord ? cellsById.get(Number(selectedRecord.celda)) : undefined;
+    if (own && own.lat !== null && own.lng !== null) return own;
+    return mapCells.find(cell => cell.lat !== null && cell.lng !== null) ?? null;
+  }, [selectedRecord, cellsById, mapCells]);
+
+  const cellName = resolveCellName(selectedRecord?.celda, selectedRecord?.celdaNombre, cellsById);
 
   // Dynamic geodetic recalculations
   const newDistanceKm = useMemo(() => {
-    if (!cellInfo) return 0;
+    if (!cellInfo || cellInfo.lat === null || cellInfo.lng === null) return 0;
     return calculateDistanceKm(cellInfo.lat, cellInfo.lng, currentLat, currentLng);
   }, [cellInfo, currentLat, currentLng]);
 
   const newAzimuthDeg = useMemo(() => {
-    if (!cellInfo) return 0;
+    if (!cellInfo || cellInfo.lat === null || cellInfo.lng === null) return 0;
     return calculateAzimuthDegrees(cellInfo.lat, cellInfo.lng, currentLat, currentLng);
   }, [cellInfo, currentLat, currentLng]);
 
@@ -151,6 +156,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
+    if (!cellInfo || cellInfo.lat === null || cellInfo.lng === null) return;
 
     // Remove existing markers & line
     if (draggableMarkerRef.current) map.removeLayer(draggableMarkerRef.current);
@@ -177,7 +183,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
 
     towerMarkerRef.current = L.marker([cellInfo.lat, cellInfo.lng], { icon: towerIcon })
       .addTo(map)
-      .bindPopup(`<b>${cellInfo.name}</b><br/>Celda ${selectedRecord?.celda} | ${cellInfo.rfpBase}`);
+      .bindPopup(`<b>${cellInfo.displayName}</b><br/>RFP ${selectedRecord?.celda} | ${cellInfo.rfpModelo ?? 'Siemens RFP'}`);
 
     // 2. Subscriber Draggable Marker
     const subIcon = L.divIcon({
@@ -417,7 +423,7 @@ export const GpsCalibrationView: React.FC<GpsCalibrationViewProps> = ({
               <div>
                 <span className="text-slate-400 block text-[11px]">Estación Base:</span>
                 <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                  Celda {selectedRecord.celda} ({cellInfo.name.split('-')[0]})
+                  {cellName} (RFP {selectedRecord.celda})
                 </span>
               </div>
               <div>

@@ -17,4 +17,5 @@ export type AppTabId =
   | 'padron-cargas'
   | 'cell-users'
   | 'cell-detail'
+  | 'celdas-crud'
   | 'qa';

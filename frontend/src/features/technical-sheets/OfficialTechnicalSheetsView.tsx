@@ -8,7 +8,7 @@ import {
   Search,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
-import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
+import { resolveCellName, useCells } from '@/entities/cell/useCells';
 
 interface OfficialTechnicalSheetsViewProps {
   records: EnrichedSubscriberRecord[];
@@ -25,10 +25,14 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
     return records.find(r => r.nro === selectedSubNro) || records[0];
   }, [records, selectedSubNro]);
 
+  const { mapCells, byId: cellsById } = useCells();
+
   const cellInfo = useMemo(() => {
-    if (!selectedSub) return SIEMENS_DECT_CELLS['17'];
-    return SIEMENS_DECT_CELLS[selectedSub.celda] || SIEMENS_DECT_CELLS['17'];
-  }, [selectedSub]);
+    const own = selectedSub ? cellsById.get(Number(selectedSub.celda)) : undefined;
+    return own ?? mapCells[0] ?? null;
+  }, [selectedSub, cellsById, mapCells]);
+
+  const cellName = resolveCellName(selectedSub?.celda, selectedSub?.celdaNombre, cellsById);
 
   // Filtered subscribers list
   const filteredSubscribers = useMemo(() => {
@@ -264,11 +268,11 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded border border-slate-200">
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase font-bold">Estación Base Servidora</span>
-                <span className="font-bold text-slate-900">{cellInfo.name}</span>
+                <span className="font-bold text-slate-900">{cellName}</span>
               </div>
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase font-bold">Celda / RFP</span>
-                <span className="font-mono text-slate-900">Celda {selectedSub.celda} ({cellInfo.rfpBase})</span>
+                <span className="font-mono text-slate-900">RFP {selectedSub.celda} ({cellInfo?.rfpModelo ?? 'Siemens RFP'})</span>
               </div>
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase font-bold">Banda de Frecuencia</span>
@@ -426,13 +430,15 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
-                {Object.entries(SIEMENS_DECT_CELLS).map(([id, cell]) => (
-                  <tr key={id}>
-                    <td className="p-2 font-bold">{id}</td>
-                    <td className="p-2 font-sans font-medium">{cell.name}</td>
-                    <td className="p-2">{cell.rfpBase}</td>
+                {mapCells.map(cell => (
+                  <tr key={cell.id}>
+                    <td className="p-2 font-bold">{cell.id}</td>
+                    <td className="p-2 font-sans font-medium">{cell.displayName}</td>
+                    <td className="p-2">{cell.rfpModelo ?? 'Siemens RFP'}</td>
                     <td className="p-2">{cell.freqBand}</td>
-                    <td className="p-2">{cell.lat}, {cell.lng}</td>
+                    <td className="p-2">
+                      {cell.lat !== null && cell.lng !== null ? `${cell.lat}, ${cell.lng}` : 'Sin calibrar'}
+                    </td>
                     <td className="p-2">{cell.radioCoberturaKm} km</td>
                     <td className="p-2">{cell.capacidad}</td>
                   </tr>

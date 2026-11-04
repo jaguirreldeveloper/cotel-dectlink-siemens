@@ -4,7 +4,7 @@
  * Envía automáticamente los tokens de autenticación disponibles:
  *  - Authorization: Bearer <token_operador>
  *  - x-operator-token: <token_operador>
- *  - x-admin-token: <token_servidor> (si está configurado)
+ *  - x-admin-token: token de servidor guardado en la sesión (nunca en el bundle)
  */
 
 const STORAGE_ADMIN_KEY = 'cotel_admin_token';
@@ -102,13 +102,31 @@ export function setStoredOperatorUser(user: unknown, persist = true): void {
   }
 }
 
-/** Token efectivo de administración: sesión > variable de entorno de build. */
+/**
+ * Token efectivo de administración: solo el de la sesión actual.
+ * Nunca se lee de `import.meta.env`: los secretos no deben viajar en el bundle.
+ */
 export function resolveAdminToken(): string | null {
-  const stored = getStoredAdminToken();
-  if (stored) return stored;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fromEnv = (import.meta as any).env?.VITE_ADMIN_TOKEN as string | undefined;
-  return fromEnv && fromEnv.trim() ? fromEnv.trim() : null;
+  return getStoredAdminToken();
+}
+
+/** `true` si el token de operador está persistido en localStorage (Recordarme). */
+export function isStoredOperatorTokenPersisted(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(STORAGE_OPERATOR_TOKEN_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * URL del stream SSE. `EventSource` no admite cabeceras, así que el token
+ * viaja como query param (solo para este endpoint).
+ */
+export function eventsUrl(): string {
+  const token = getStoredOperatorToken();
+  return token ? `/api/events?token=${encodeURIComponent(token)}` : '/api/events';
 }
 
 /**
