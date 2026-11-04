@@ -9,8 +9,10 @@ use App\Models\Operador;
 use App\Models\PadronCarga;
 use App\Models\PadronCargaDetalle;
 use App\Models\Subscriber;
+use App\Models\Zone;
 use App\Support\OperatorToken;
 use App\Support\PadronBatchLoader;
+use App\Support\SseHub;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -178,6 +180,13 @@ class PadronCargasController extends Controller
             ])->save();
         });
 
+        SseHub::emit('subscriber_updated', [
+            'tipo' => 'lote_aplicado',
+            'loteId' => $lote->id,
+            'altas' => $altas,
+            'actualizados' => $actualizados,
+        ]);
+
         return response()->json([
             'message' => "Lote aplicado: {$altas} altas, {$actualizados} actualizaciones.",
             'lote' => $this->serializarCarga($lote->fresh()),
@@ -216,31 +225,68 @@ class PadronCargasController extends Controller
      */
     private function alta(?Operador $operador, PadronCargaDetalle $detalle): void
     {
-        $celda = $detalle->celda !== null ? Cell::query()->where('nombre', $detalle->celda)->first() : null;
+        $celda = null;
+        if ($detalle->celda !== null) {
+            $celda = is_numeric($detalle->celda)
+                ? Cell::query()->find((int) $detalle->celda)
+                : Cell::query()->where('nombre', $detalle->celda)->first();
+        }
+
+        if ($celda === null && isset($detalle->campos_cambiados['id_celda'])) {
+            $celda = Cell::query()->find((int) $detalle->campos_cambiados['id_celda']);
+        }
+
+        if ($celda === null) {
+            throw new \RuntimeException("No se encontró la celda para el abonado: {$detalle->celda}");
+        }
+
+        $zonaNombre = $detalle->campos_cambiados['zona'] ?? null;
+        $idZona = null;
+        if ($zonaNombre) {
+            $zona = Zone::query()->firstOrCreate(['nombre' => mb_strtoupper((string) $zonaNombre)]);
+            $idZona = $zona->id;
+        }
+
         $titular = Client::query()->firstOrCreate(
             ['nombre_completo' => (string) $detalle->nombre],
-            ['direccion' => $detalle->direccion],
+            ['direccion' => $detalle->direccion, 'id_zona' => $idZona],
         );
+        if ($idZona && ! $titular->id_zona) {
+            $titular->id_zona = $idZona;
+            $titular->save();
+        }
+
+        $nroNuevo = (int) (Subscriber::query()->max('nro') ?? 0) + 1;
+
+        $estadoServicio = $detalle->campos_cambiados['estado_servicio'] ?? 'C/SERV.';
+        if ($estadoServicio === 'C/SERV') {
+            $estadoServicio = 'C/SERV.';
+        } elseif ($estadoServicio === 'S/SERV') {
+            $estadoServicio = 'S/SERV.';
+        }
 
         $linea = Subscriber::create([
-            'nro' => (int) $detalle->nro,
+            'nro' => $nroNuevo,
             'numero_telefono' => $detalle->numero,
-            'codigo_area' => '',
-            'contrato' => null,
+            'codigo_area' => $detalle->campos_cambiados['codigo_area'] ?? 'EAI',
+            'contrato' => $detalle->campos_cambiados['contrato'] ?? null,
             'id_cliente' => $titular->id,
-            'id_celda' => $celda?->id,
-            'estado_servicio' => 'ACTIVO',
-            'estado_operativo' => 'SIN DATO',
+            'id_celda' => $celda->id,
+            'estado_servicio' => $estadoServicio,
+            'estado_operativo' => 'C/SERV.',
+            'fecha_servicio' => $detalle->campos_cambiados['fecha_servicio'] ?? null,
             'lat' => $this->coordenadaDeCambios($detalle, 'lat'),
             'lng' => $this->coordenadaDeCambios($detalle, 'lng'),
-            'archivo_origen' => $detalle->carga->archivo,
+            'nro_registro_origen' => $detalle->nro,
+            'archivo_origen' => $detalle->carga?->archivo,
+            'zona_origen' => $zonaNombre,
         ]);
 
         DB::table('bitacora')->insert([
             'abonado_nro' => $linea->nro,
             'estado_anterior' => null,
-            'nuevo_estado' => 'ACTIVO',
-            'detalle' => sprintf('Carga por lote #%d: alta desde padrón', $detalle->id_carga),
+            'nuevo_estado' => $linea->estado_servicio,
+            'detalle' => sprintf('Carga por lote #%d: alta desde padrón (%s)', $detalle->id_carga, $detalle->carga?->archivo),
             'tecnico' => $operador instanceof Operador ? $operador->nombre : 'sistema',
             'timestamp' => now(),
         ]);

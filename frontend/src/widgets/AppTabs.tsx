@@ -15,4 +15,6 @@ export type AppTabId =
   | 'users'
   | 'infraestructura'
   | 'padron-cargas'
+  | 'cell-users'
+  | 'cell-detail'
   | 'qa';

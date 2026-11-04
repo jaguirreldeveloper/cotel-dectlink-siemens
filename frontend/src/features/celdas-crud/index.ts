@@ -1,0 +1,1 @@
+export { CeldasCrudView } from './CeldasCrudView';

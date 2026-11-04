@@ -122,6 +122,10 @@ Route::middleware('role:superadmin,admin')->group(function (): void {
 
     // Asignación de la subcentral de servicio de una celda (RFP)
     Route::patch('cells/{id}/subcentral', [CellsController::class, 'asignarSubcentral']);
+
+    // CRUD de celdas (RFP): crear y editar (ADMIN+)
+    Route::post('cells', [CellsController::class, 'store']);
+    Route::patch('cells/{id}', [CellsController::class, 'update']);
 });
 
 // Borrado físico de infraestructura: exclusivo de SUPERADMIN (jamás ADMIN).
@@ -130,6 +134,7 @@ Route::middleware('role:superadmin')->group(function (): void {
     Route::delete('subcentrales/{subcentral}', [SubcentralesController::class, 'destroy']);
     Route::delete('shelters/{shelter}', [SheltersController::class, 'destroy']);
     Route::delete('armarios/{armario}', [ArmariosController::class, 'destroy']);
+    Route::delete('cells/{id}', [CellsController::class, 'destroy']);
 });
 
 // Catálogos de infraestructura (lectura pública)

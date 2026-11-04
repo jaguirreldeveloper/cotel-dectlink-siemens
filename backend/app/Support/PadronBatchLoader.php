@@ -26,23 +26,27 @@ class PadronBatchLoader
      * Informa una fila ya resuelta antes de crear modelos.
      *
      * @return array{nro: ?int, numero: string, nombre: ?string, direccion: ?string, celda: ?string,
-     *               estado: ?string, contrato: ?int, lat: ?float, lng: ?float, fechaServicio: ?string}
+     *               estado: ?string, contrato: ?int, lat: ?float, lng: ?float, fechaServicio: ?string,
+     *               zona: ?string, codigoArea: string}
      */
     private static function fila(array $f): array
     {
         $texto = static fn (string $k): ?string => isset($f[$k]) && $f[$k] !== '' ? trim((string) $f[$k]) : null;
+        $nroRaw = $texto('nro') ?? $texto('nro_registro');
 
         return [
-            'nro' => ctype_digit($texto('nro') ?? '') ? (int) $f['nro'] : null,
+            'nro' => ctype_digit($nroRaw ?? '') ? (int) $nroRaw : null,
             'numero' => $texto('numero') ?? $texto('numero_telefono') ?? '',
-            'nombre' => $texto('nombre') ?? $texto('nombre_completo'),
+            'nombre' => $texto('nombre') ?? $texto('nombre_completo') ?? $texto('nombre_cliente'),
             'direccion' => $texto('direccion'),
-            'celda' => $texto('celda'),
+            'celda' => $texto('celda') ?? $texto('id_celda'),
             'estado' => $texto('estado') ?? $texto('estado_servicio'),
             'contrato' => ctype_digit($texto('contrato') ?? '') ? (int) $f['contrato'] : null,
             'lat' => is_numeric($texto('lat') ?? '') ? (float) $f['lat'] : null,
             'lng' => is_numeric($texto('lng') ?? '') ? (float) $f['lng'] : null,
             'fechaServicio' => $texto('fecha_servicio') ?? $texto('fechaServ'),
+            'zona' => $texto('zona'),
+            'codigoArea' => $texto('codigo_area') ?? $texto('area') ?? 'EAI',
         ];
     }
 
@@ -66,16 +70,26 @@ class PadronBatchLoader
         $filas = self::parsear($csv);
         $vistos = [];
 
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Subscriber> $existentes Indexed por nro */
-        $existentes = Subscriber::query()
-            ->whereIn('nro', array_filter(array_column($filas, 'nro'), fn ($n): bool => $n !== null))
-            ->get()
-            ->keyBy('nro');
+        $numerosEnCsv = array_filter(array_map(fn ($f) => $f['numero'] ?? $f['numero_telefono'] ?? null, $filas));
+        $nrosEnCsv = array_filter(array_map(fn ($f) => $f['nro'] ?? null, $filas));
 
-        /** @var array<int, Cell> $celdasPorNombre */
+        /** @var \Illuminate\Database\Eloquent\Collection<string, Subscriber> $existentesPorNumero */
+        $existentesPorNumero = $numerosEnCsv !== [] ? Subscriber::query()
+            ->whereIn('numero_telefono', $numerosEnCsv)
+            ->get()
+            ->keyBy('numero_telefono') : collect();
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Subscriber> $existentesPorNro */
+        $existentesPorNro = $nrosEnCsv !== [] ? Subscriber::query()
+            ->whereIn('nro', $nrosEnCsv)
+            ->get()
+            ->keyBy('nro') : collect();
+
+        /** @var array<string, Cell> $celdasPorNombre */
         $celdasPorNombre = [];
         foreach (Cell::query()->get() as $cell) {
             $celdasPorNombre[$cell->nombre] = $cell;
+            $celdasPorNombre[(string) $cell->id] = $cell;
         }
 
         $ciudadPorSubcentral = self::ciudadPorSubcentral();
@@ -87,30 +101,46 @@ class PadronBatchLoader
             $rechazo = self::motivoDeRechazo($info, $vistos, $celdasPorNombre);
             if ($rechazo !== null) {
                 $sugerencias[] = self::emplear($info, $rechazo['accion'], $rechazo['motivo'], PadronCarga::CIUDAD_SIN);
-                $vistos[(int) ($info['nro'] ?? -1)] = true;
+                $claveVista = $info['numero'] !== '' ? $info['numero'] : (string) ($info['nro'] ?? -1);
+                $vistos[$claveVista] = true;
                 $conteo[PadronCarga::ACCION_RECHAZADO]++;
                 $conteo[PadronCarga::CIUDAD_SIN]++;
 
                 continue;
             }
 
-            $nro = (int) $info['nro'];
             $celda = $info['celda'] !== null ? ($celdasPorNombre[$info['celda']] ?? null) : null;
             $ciudad = self::ciudadDeFila($info, $celda, $ciudadPorSubcentral);
             $conteo[$ciudad]++;
 
-            $existente = $existentes->get($nro);
+            $claveVista = $info['numero'] !== '' ? $info['numero'] : (string) ($info['nro'] ?? -1);
+
+            // Coincidencia prioritaria por número telefónico; si el CSV trae nro explícito, por nro
+            $existente = ($info['numero'] !== '' ? $existentesPorNumero->get($info['numero']) : null)
+                ?? (isset($f['nro']) && $info['nro'] !== null ? $existentesPorNro->get($info['nro']) : null);
+
             if ($existente === null) {
                 if ($info['nombre'] === null) {
                     $conteo[PadronCarga::ACCION_RECHAZADO]++;
                     $sugerencias[] = self::emplear($info, PadronCarga::ACCION_RECHAZADO, 'titular (nombre) requerido para alta', PadronCarga::CIUDAD_SIN);
-                    $vistos[$nro] = true;
+                    $vistos[$claveVista] = true;
 
                     continue;
                 }
+                $datosAlta = array_filter([
+                    'zona' => $info['zona'],
+                    'contrato' => $info['contrato'],
+                    'codigo_area' => $info['codigoArea'],
+                    'fecha_servicio' => $info['fechaServicio'],
+                    'estado_servicio' => $info['estado'] ?? 'C/SERV.',
+                    'lat' => $info['lat'],
+                    'lng' => $info['lng'],
+                    'id_celda' => $celda?->id,
+                ], fn ($v): bool => $v !== null);
+
                 $conteo[PadronCarga::ACCION_NUEVO]++;
-                $sugerencias[] = self::emplear($info, PadronCarga::ACCION_NUEVO, 'No existe en el padrón', $ciudad);
-                $vistos[$nro] = true;
+                $sugerencias[] = self::emplear($info, PadronCarga::ACCION_NUEVO, 'No existe en el padrón', $ciudad, $datosAlta);
+                $vistos[$claveVista] = true;
 
                 continue;
             }
@@ -119,14 +149,14 @@ class PadronBatchLoader
             if ($cambios === []) {
                 $conteo[PadronCarga::ACCION_SIN_CAMBIOS]++;
                 $sugerencias[] = self::emplear($info, PadronCarga::ACCION_SIN_CAMBIOS, 'Coincide con el padrón vigente', $ciudad);
-                $vistos[$nro] = true;
+                $vistos[$claveVista] = true;
 
                 continue;
             }
 
             $conteo[PadronCarga::ACCION_ACTUALIZAR]++;
             $sugerencias[] = self::emplear($info, PadronCarga::ACCION_ACTUALIZAR, 'Cambios detectados', $ciudad, $cambios);
-            $vistos[$nro] = true;
+            $vistos[$claveVista] = true;
         }
 
         return [
@@ -168,20 +198,18 @@ class PadronBatchLoader
 
     /**
      * @param  array<string, mixed>  $info
-     * @param  array<int, bool>  $vistos
+     * @param  array<string, bool>  $vistos
      * @param  array<string, Cell>  $celdas
      * @return array{accion: string, motivo: string}|null
      */
     private static function motivoDeRechazo(array $info, array $vistos, array $celdas): ?array
     {
-        if ($info['nro'] === null) {
-            return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'nro inválido o ausente'];
-        }
         if ($info['numero'] === '') {
             return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'número telefónico requerido'];
         }
-        if (isset($vistos[(int) $info['nro']])) {
-            return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'nro duplicado en el lote (se conserva la primera ocurrencia)'];
+        $claveVista = $info['numero'];
+        if (isset($vistos[$claveVista])) {
+            return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => 'registro duplicado en el lote (se conserva la primera ocurrencia)'];
         }
         if ($info['celda'] !== null && ! isset($celdas[$info['celda']])) {
             return ['accion' => PadronCarga::ACCION_RECHAZADO, 'motivo' => "celda desconocida: {$info['celda']}"];

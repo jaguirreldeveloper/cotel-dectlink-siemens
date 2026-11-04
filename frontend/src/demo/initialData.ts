@@ -61,42 +61,59 @@ export const RAW_CSV_DATA = `NRO,NUMERO,AREA,CTO,NOMBRE,DIRECCION,FECH_SERV,ESTA
 58,2883110,EAI,71066354,RIVERA JEREZ RAMIRO,C 6 Nro.542,2012-05-18,C/SERV.,17,MARISCAL SANTA CRUZ
 59,2808233,EAI,72014216,EMPRESA PUBLICA SOCIAL DE AGUA Y SANEA.,AV EVO MORALES S/N,2021-10-25,C/SERV.,17,PUCHOCOLLO`;
 
+function parseCsvLine(line: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let c = 0; c < line.length; c++) {
+    const char = line[c];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      parts.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  parts.push(current.trim());
+  return parts;
+}
+
 export function parseCSV(csvText: string): RawSubscriberRecord[] {
   const lines = csvText.trim().split(/\r?\n/).filter(line => line.trim().length > 0);
   if (lines.length <= 1) return [];
 
+  const headerParts = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/["\uFEFF]/g, ''));
+  const getIdx = (keys: string[]): number => headerParts.findIndex(h => keys.includes(h));
+
+  const nroIdx = getIdx(['nro', 'nro_registro']);
+  const numIdx = getIdx(['numero', 'numero_telefono']);
+  const areaIdx = getIdx(['area', 'codigo_area']);
+  const ctoIdx = getIdx(['cto', 'contrato']);
+  const nomIdx = getIdx(['nombre', 'nombre_cliente', 'nombre_completo']);
+  const dirIdx = getIdx(['direccion']);
+  const fechIdx = getIdx(['fech_serv', 'fecha_servicio', 'fechserv']);
+  const estIdx = getIdx(['estado', 'estado_servicio']);
+  const celdaIdx = getIdx(['celda', 'id_celda']);
+  const zonaIdx = getIdx(['zona']);
+
   const records: RawSubscriberRecord[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    const parts: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let c = 0; c < line.length; c++) {
-      const char = line[c];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        parts.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    parts.push(current.trim());
-
-    if (parts.length >= 10) {
+    const parts = parseCsvLine(lines[i]);
+    if (parts.length >= 8) {
       records.push({
-        nro: parseInt(parts[0], 10) || i,
-        numero: parts[1],
-        area: parts[2],
-        cto: parts[3],
-        nombre: parts[4],
-        direccion: parts[5],
-        fechServ: parts[6],
-        estado: parts[7],
-        celda: parts[8],
-        zona: parts[9],
+        nro: (nroIdx >= 0 ? parseInt(parts[nroIdx], 10) : parseInt(parts[0], 10)) || i,
+        numero: numIdx >= 0 ? parts[numIdx] : parts[1] ?? '',
+        area: areaIdx >= 0 ? parts[areaIdx] : parts[2] ?? 'EAI',
+        cto: ctoIdx >= 0 ? parts[ctoIdx] : parts[3] ?? '',
+        nombre: nomIdx >= 0 ? parts[nomIdx] : parts[4] ?? '',
+        direccion: dirIdx >= 0 ? parts[dirIdx] : parts[5] ?? '',
+        fechServ: fechIdx >= 0 ? parts[fechIdx] : parts[6] ?? '',
+        estado: estIdx >= 0 ? parts[estIdx] : parts[7] ?? 'C/SERV.',
+        celda: celdaIdx >= 0 ? parts[celdaIdx] : (parts[8] ?? ''),
+        zona: zonaIdx >= 0 ? parts[zonaIdx] : (parts[9] ?? ''),
       });
     }
   }
@@ -121,6 +138,15 @@ export const SIEMENS_DECT_CELLS: {
     radioCoberturaKm: number;
   };
 } = {
+  '4': {
+    name: 'CELDA A-04 MERCURIO / INGAVI',
+    rfpBase: 'Siemens DECTlink RFP (A-04 Mercurio)',
+    capacidad: 120,
+    freqBand: '1880 - 1900 MHz (DECT GAP)',
+    lat: -16.515,
+    lng: -68.205,
+    radioCoberturaKm: 4.0,
+  },
   '5': {
     name: 'CELDA A-05 MERCEDARIO',
     rfpBase: 'Siemens DECTlink RFP (A-05 Mercedario)',
@@ -213,6 +239,13 @@ export const ZONE_COORDINATES: { [zona: string]: { lat: number; lng: number } } 
   'CHIJINI ALTO': { lat: -16.524, lng: -68.211 },
   '6 DE AGOSTO': { lat: -16.53, lng: -68.215 },
   'URB. JARDIN': { lat: -16.579, lng: -68.228 },
+  'ALTO LIMA': { lat: -16.485, lng: -68.180 },
+  'GERMAN BUSCH': { lat: -16.512, lng: -68.190 },
+  'URB MERCURIO': { lat: -16.556, lng: -68.232 },
+  'VILLA REMEDIOS': { lat: -16.525, lng: -68.195 },
+  'EL KENKO': { lat: -16.535, lng: -68.175 },
+  'VILLA ADELA': { lat: -16.540, lng: -68.185 },
+  'INST.S.TORIBIO': { lat: -16.542, lng: -68.188 },
 };
 
 // Expanded Siemens DECTlink dataset covering real-world operational states:

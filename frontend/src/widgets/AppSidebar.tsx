@@ -22,6 +22,8 @@ import {
   MapPin,
   BarChart2,
   Search,
+  Grid3x3,
+  Focus,
 } from 'lucide-react';
 import { AppTabId } from './AppTabs';
 
@@ -73,6 +75,8 @@ const NAV_GROUPS: NavGroup[] = [
     color: 'text-amber-500',
     tabs: [
       { id: 'table', label: 'Padrón', icon: TableIcon, badgeColor: 'bg-blue-600' },
+      { id: 'cell-users', label: 'Abonados por Celda', icon: Grid3x3, badgeColor: 'bg-teal-500' },
+      { id: 'cell-detail', label: 'Detalle por Celda', icon: Focus, badgeColor: 'bg-cyan-500' },
       { id: 'audit', label: 'Auditoría', icon: ShieldAlert, badgeColor: 'bg-amber-500' },
       { id: 'institutional', label: 'Cuentas Clave', icon: Building2, badgeColor: 'bg-indigo-600' },
     ],
