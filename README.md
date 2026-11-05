@@ -307,7 +307,7 @@ Hay dos entornos con sus propios `.env`:
 - Se añadió el valor **`SIN DATO`** al `CHECK` de `estado_operativo` para cubrir casos de datos ausentes en la carga del padrón.
 - La migración `20261031100000_sin_dato_estado_operativo.sql` (con su envoltura Laravel `2026_10_31_100000_sql_sin_dato_estado_operativo.php`) alinea ambos CHECK en `abonados_lineas` (y en la tabla legacy `abonados_dect`). Es idempotente; el esquema de Supabase ya acepta ambos valores.
 - `PadronCargasController::store` ahora omite las filas `RECHAZADO` al persistir detalles del lote (solo afectan conteos del resumen).
-- Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **119 tests, 0 fallos**.
+- Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos**.
 - Nueva pestaña **Carga de Padrón** (`PadronCargasView`) en el frontend: subir CSV (ADMIN+), listar lotes, ver detalle por fila, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
 - Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
 - Tests e2e Playwright reparados y en verde (5/5): se liberó disco, se instaló Chromium 1248, se corrigieron los specs (entrada a modo consulta, selectores de sidebar, ruta de `backend/.env` en helpers) y el badge "Conectado a BD" (punto medio) en `UnifiedHeader`.
