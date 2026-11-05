@@ -50,7 +50,7 @@
 - Playwright e2e: 5/5 ✅
 
 ## 🗂️ Estado del repositorio
-- Ramas publicadas en `origin`: `main` (con el trabajo de `feat/celdas-enlaces-mapa` ya fusionado) y la rama de feature como respaldo.
+- Ramas publicadas en `origin`: `main` (con el trabajo de `feat/celdas-enlaces-mapa` ya fusionado) y `feat/celdas-enlaces-mapa` (`cdfbc48`) conservada como respaldo.
 - `main` incluye el merge de `origin/main` y el fix de la migración `SIN DATO`.
 - `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
 - Working tree limpio.
@@ -61,10 +61,16 @@
 - BD local PostgreSQL `cotel_dectlink` (216 líneas / 212 clientes / 41 zonas / 4 celdas).
 - Backend Laravel en `:8010`, frontend Vite en `:5173`.
 
+## ⏳ Pendientes
+- [ ] Regenerar `backend/public` (`pnpm run build` o `pnpm --filter scripts run copy:dist`): tras el merge no están `index.html` ni `assets/` en disco, y el backend devuelve 500 en `/` hasta generarlos.
+- [ ] Re-ejecutar Playwright e2e (5/5) sobre `main` fusionado.
+- [ ] Revisar el CI de GitHub Actions disparado por el push a `main`.
+- [x] Conservar `feat/celdas-enlaces-mapa` como respaldo en `origin` (`cdfbc48`).
+
 ## 🚀 Para continuar mañana
 1. `git log --oneline -10` para ver los últimos commits.
 2. `pnpm run typecheck && pnpm run lint:check` para confirmar baseline.
-3. Elegir siguiente tarea de la lista de pendientes (Supabase y push ya están al día; GIS/seguridad integrados en `main`).
+3. Atacar la lista de **Pendientes** (primero regenerar `backend/public`).
 4. Recordar: una tarea = un commit, verificar antes de commitear.
 
 ## 📝 Cuentas / credenciales útiles
