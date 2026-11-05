@@ -22,6 +22,7 @@
 - [x] Aplicar migraciones pendientes `padron_cargas` y `sync_estado_checks` en base de datos PostgreSQL local (`cotel_dectlink`).
 - [x] Corregir declaración `DECLARE t text;` en `backend/database/sql/20261027300000_padron_cargas.sql`.
 - [x] Omitir filas `RECHAZADO` del detalle del lote en `PadronCargasController::store`.
+- [x] Verificar en Supabase que las 12 migraciones están registradas en `supabase_migrations.schema_migrations` (incluida `20261029100000_sync_estado_checks`) y que los CHECK ya aceptan `ACTIVO` y `SIN DATO`.
 
 ### Frontend
 - [x] Vistas de gestión de celdas implementadas: `celdas-crud`, `cell-detail`, `cell-users` integradas en `App.tsx` y navegación.
@@ -62,7 +63,7 @@
 ## 🚀 Para continuar mañana
 1. `git log --oneline -10` para ver los últimos commits.
 2. `pnpm run typecheck && pnpm run lint:check` para confirmar baseline.
-3. Elegir siguiente tarea de la lista de pendientes (recomendado: aplicar migración en Supabase).
+3. Elegir siguiente tarea de la lista de pendientes (Supabase ya está al día; siguiente foco: push de la rama).
 4. Recordar: una tarea = un commit, verificar antes de commitear.
 
 ## 📝 Cuentas / credenciales útiles
