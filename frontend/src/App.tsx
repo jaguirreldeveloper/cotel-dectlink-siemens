@@ -28,6 +28,9 @@ import { QaView } from '@/features/qa/QaView';
 import { UserManagementView } from '@/features/users';
 import { InfraestructuraView } from '@/features/infraestructura';
 import { PadronCargasView } from '@/features/padron-cargas';
+import { CellUsersView } from '@/features/cell-users';
+import { CellDetailView } from '@/features/cell-detail';
+import { CeldasCrudView } from '@/features/celdas-crud';
 import { ExecutiveReport } from '@/widgets/ExecutiveReport';
 import { VisualCharts } from '@/widgets/VisualCharts';
 import { buildSubscribersCsv, subscribersCsvFilename } from '@/entities/subscriber/exportCsv';
@@ -38,7 +41,12 @@ import { Radio } from 'lucide-react';
 
 export default function App() {
   const auth = useAuth();
-  const data = useSubscriberData();
+  // La carga del padrón y el SSE solo arrancan con sesión iniciada; en modo
+  // demo se usan los datos locales sin llamar a la API.
+  const data = useSubscriberData({
+    enabled: auth.isAuthenticated || auth.isDemoMode,
+    demo: auth.isDemoMode,
+  });
 
   const [activeTab, setActiveTab] = useState<AppTabId>('gps-calibration');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -192,6 +200,22 @@ export default function App() {
         return <InfraestructuraView operador={auth.operador} />;
       case 'padron-cargas':
         return <PadronCargasView currentOperador={auth.operador} />;
+      case 'cell-users':
+        return (
+          <CellUsersView
+            records={data.records}
+            onSelectRecord={data.selectRecord}
+          />
+        );
+      case 'cell-detail':
+        return (
+          <CellDetailView
+            records={data.records}
+            onSelectRecord={data.selectRecord}
+          />
+        );
+      case 'celdas-crud':
+        return <CeldasCrudView operador={auth.operador} records={data.records} />;
       case 'qa':
         return <QaView />;
       default:

@@ -21,6 +21,8 @@ export interface RawSubscriberRecord {
   fechServ: string;
   estado: string; // Original text from CSV or updated status
   celda: string;
+  /** Nombre legible de la celda (lo entrega /api/subscribers como celdaNombre). */
+  celdaNombre?: string;
   zona: string;
   // DECT Link technical extensions
   estadoOperativo?: OperationalStatus;

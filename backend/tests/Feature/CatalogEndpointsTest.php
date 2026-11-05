@@ -104,6 +104,8 @@ class CatalogEndpointsTest extends TestCase
 
     public function test_catalog_writes_require_admin_token(): void
     {
+        $this->flushHeaders();
+
         $this->postJson('/api/cuadrillas', ['nombre' => 'Nueva'])->assertStatus(401);
         $this->postJson('/api/materiales', ['nombre' => 'Nuevo'])->assertStatus(401);
 

@@ -24,44 +24,65 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | server.ts (Express) → este archivo. Los payloads son de paridad exacta:
 | el frontend React no requiere cambios.
+|
+| Seguridad: el login está limitado a 6 intentos/minuto. Todas las lecturas
+| exigen sesión de operador (`operator`); las escrituras siguen protegidas
+| por rol (RBAC).
 */
 
 // Autenticación de Operadores
-Route::post('auth/login', [AuthController::class, 'login']);
+Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 Route::get('auth/me', [AuthController::class, 'me']);
 Route::post('auth/logout', [AuthController::class, 'logout']);
 
-// Gestión de Operadores y Matriz de Roles (lectura)
-Route::get('operadores/permissions', [OperadoresController::class, 'permissions']);
-Route::get('operadores', [OperadoresController::class, 'index']);
-
-// Tiempo real (SSE)
+// Tiempo real (SSE): `EventSource` no admite cabeceras, así que el token viaja
+// como query param (?token=...). El controlador valida ese token o las
+// cabeceras habituales y responde 401 si no hay sesión válida.
 Route::get('events', [EventsController::class, 'stream']);
 
-// Padrón y celdas (lectura pública)
-Route::get('subscribers', [SubscribersController::class, 'index']);
-Route::get('cells', [CellsController::class, 'index']);
+// ===========================================================================
+// LECTURAS AUTENTICADAS
+// El middleware `operator` acepta el token de sesión o, para CLI, el
+// x-admin-token de servidor. Sin credenciales válidas responde 401.
+// ===========================================================================
+Route::middleware('operator')->group(function (): void {
+    // Gestión de Operadores y Matriz de Roles (lectura)
+    Route::get('operadores/permissions', [OperadoresController::class, 'permissions']);
+    Route::get('operadores', [OperadoresController::class, 'index']);
 
-// Órdenes de trabajo (lectura pública)
-Route::get('work-orders', [WorkOrdersController::class, 'index']);
-Route::get('cuadrillas', [CuadrillasController::class, 'index']);
-Route::get('materiales', [MaterialesController::class, 'index']);
+    // Padrón y celdas
+    Route::get('subscribers', [SubscribersController::class, 'index']);
+    Route::get('cells', [CellsController::class, 'index']);
 
-// Bitácora (lectura pública)
-Route::get('logs', [LogsController::class, 'index']);
+    // Órdenes de trabajo, cuadrillas y materiales
+    Route::get('work-orders', [WorkOrdersController::class, 'index']);
+    Route::get('cuadrillas', [CuadrillasController::class, 'index']);
+    Route::get('materiales', [MaterialesController::class, 'index']);
 
-// Metadatos de base de datos (lectura pública)
-Route::get('database/status', [DatabaseController::class, 'status']);
-Route::get('database/schema', [DatabaseController::class, 'schema']);
-Route::get('database/connection-info', [DatabaseController::class, 'connectionInfo']);
-Route::get('database/export-sql', [DatabaseController::class, 'exportSql']);
-Route::get('database/tables/{table}/data', [DatabaseController::class, 'tableData']);
+    // Bitácora
+    Route::get('logs', [LogsController::class, 'index']);
 
-// Estado Git (stub no administrativo: solo informa que no está disponible)
-Route::get('git/status', [GitController::class, 'status']);
+    // Metadatos de base de datos
+    Route::get('database/status', [DatabaseController::class, 'status']);
+    Route::get('database/schema', [DatabaseController::class, 'schema']);
+    Route::get('database/connection-info', [DatabaseController::class, 'connectionInfo']);
+    Route::get('database/export-sql', [DatabaseController::class, 'exportSql']);
+    Route::get('database/tables/{table}/data', [DatabaseController::class, 'tableData']);
 
-// Escrituras y herramientas administrativas — control de acceso por rol (RBAC).
+    // Estado Git (stub no administrativo: solo informa que no está disponible)
+    Route::get('git/status', [GitController::class, 'status']);
+
+    // Catálogos de infraestructura
+    Route::get('centrales', [CentralesController::class, 'index']);
+    Route::get('subcentrales', [SubcentralesController::class, 'index']);
+    Route::get('shelters', [SheltersController::class, 'index']);
+    Route::get('armarios', [ArmariosController::class, 'index']);
+});
+
+// ===========================================================================
+// ESCRITURAS Y HERRAMIENTAS ADMINISTRATIVAS — RBAC
 // El header x-admin-token (token de servidor) conserva acceso total para CLI.
+// ===========================================================================
 
 // Calibración GPS y estados de servicio: Jefatura / Administración Operativa / Ingeniería.
 Route::middleware('role:superadmin,admin,supervisor')->group(function (): void {
@@ -100,8 +121,8 @@ Route::middleware('role:superadmin')->group(function (): void {
 
 // ===========================================================================
 // INFRAESTRUCTURA JERÁRQUICA (centrales → subcentrales → shelters → armarios)
-// Lectura pública; escritura SUPERADMIN/ADMIN (crear/editar/desactivar) y
-// borrado físico exclusivo de SUPERADMIN. Celdas ← asignar subcentral: ADMIN+.
+// Escritura SUPERADMIN/ADMIN (crear/editar/desactivar) y borrado físico
+// exclusivo de SUPERADMIN. Celdas ← asignar subcentral: ADMIN+.
 // ===========================================================================
 Route::middleware('role:superadmin,admin')->group(function (): void {
     Route::post('centrales', [CentralesController::class, 'store']);
@@ -122,6 +143,10 @@ Route::middleware('role:superadmin,admin')->group(function (): void {
 
     // Asignación de la subcentral de servicio de una celda (RFP)
     Route::patch('cells/{id}/subcentral', [CellsController::class, 'asignarSubcentral']);
+
+    // CRUD de celdas (RFP): crear y editar (ADMIN+)
+    Route::post('cells', [CellsController::class, 'store']);
+    Route::patch('cells/{id}', [CellsController::class, 'update']);
 });
 
 // Borrado físico de infraestructura: exclusivo de SUPERADMIN (jamás ADMIN).
@@ -130,13 +155,8 @@ Route::middleware('role:superadmin')->group(function (): void {
     Route::delete('subcentrales/{subcentral}', [SubcentralesController::class, 'destroy']);
     Route::delete('shelters/{shelter}', [SheltersController::class, 'destroy']);
     Route::delete('armarios/{armario}', [ArmariosController::class, 'destroy']);
+    Route::delete('cells/{id}', [CellsController::class, 'destroy']);
 });
-
-// Catálogos de infraestructura (lectura pública)
-Route::get('centrales', [CentralesController::class, 'index']);
-Route::get('subcentrales', [SubcentralesController::class, 'index']);
-Route::get('shelters', [SheltersController::class, 'index']);
-Route::get('armarios', [ArmariosController::class, 'index']);
 
 // ===========================================================================
 // CARGA DEL PADRÓN POR LOTE (dry-run + aplicación)

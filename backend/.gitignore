@@ -14,6 +14,9 @@
 /.zed
 /auth.json
 /node_modules
+# Build del SPA copiado desde frontend/dist (scripts/copy-dist-to-backend.mjs)
+/public/assets
+/public/index.html
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot

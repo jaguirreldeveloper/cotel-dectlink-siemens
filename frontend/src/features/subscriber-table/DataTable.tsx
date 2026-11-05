@@ -68,6 +68,17 @@ export const DataTable: React.FC<DataTableProps> = ({
     return Array.from(set).sort();
   }, [records]);
 
+  // Nombre legible por celda para las etiquetas de filtro (sin API extra).
+  const celdaNombreById = useMemo(() => {
+    const map = new Map<string, string>();
+    records.forEach(r => {
+      if (r.celdaNombre && !map.has(r.celda)) {
+        map.set(r.celda, r.celdaNombre);
+      }
+    });
+    return map;
+  }, [records]);
+
   // Filtering
   const filteredRecords = useMemo(() => {
     // Búsqueda unificada con filterRecords (superconjunto: nombre, número, CTO,
@@ -269,7 +280,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value="">Todas las Celdas</option>
             {uniqueCeldas.map(c => (
               <option key={c} value={c}>
-                Celda {c}
+                {celdaNombreById.get(c) ?? `Celda ${c}`}
               </option>
             ))}
           </Select>
@@ -557,9 +568,19 @@ export const DataTable: React.FC<DataTableProps> = ({
                     </td>
 
                     {/* CELDA */}
-                    <td className="py-2.5 px-2 text-center font-mono font-semibold">
-                      <span className={record.celda === '17' ? 'text-violet-600' : 'text-blue-600'}>
-                        {record.celda}
+                    <td
+                      className="py-2.5 px-2 text-center font-mono font-semibold max-w-[160px]"
+                      title={record.celdaNombre ?? `Celda ${record.celda}`}
+                    >
+                      <span
+                        className={`block truncate text-[11px] ${
+                          record.celda === '17' ? 'text-violet-600' : 'text-blue-600'
+                        }`}
+                      >
+                        {record.celdaNombre ?? `Celda ${record.celda}`}
+                      </span>
+                      <span className="block text-[10px] font-normal text-slate-400">
+                        RFP {record.celda}
                       </span>
                     </td>
 

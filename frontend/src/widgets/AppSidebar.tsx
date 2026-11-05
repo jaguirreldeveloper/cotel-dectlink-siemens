@@ -22,6 +22,8 @@ import {
   MapPin,
   BarChart2,
   Search,
+  Grid3x3,
+  Focus,
 } from 'lucide-react';
 import { AppTabId } from './AppTabs';
 
@@ -73,6 +75,8 @@ const NAV_GROUPS: NavGroup[] = [
     color: 'text-amber-500',
     tabs: [
       { id: 'table', label: 'Padrón', icon: TableIcon, badgeColor: 'bg-blue-600' },
+      { id: 'cell-users', label: 'Abonados por Celda', icon: Grid3x3, badgeColor: 'bg-teal-500' },
+      { id: 'cell-detail', label: 'Detalle por Celda', icon: Focus, badgeColor: 'bg-cyan-500' },
       { id: 'audit', label: 'Auditoría', icon: ShieldAlert, badgeColor: 'bg-amber-500' },
       { id: 'institutional', label: 'Cuentas Clave', icon: Building2, badgeColor: 'bg-indigo-600' },
     ],
@@ -95,6 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'database', label: 'Base de Datos', icon: Database, badgeColor: 'bg-brand-500', roles: ['SUPERADMIN'] },
       { id: 'official-sheets', label: 'Fichas Oficiales', icon: FileText, badgeColor: 'bg-brand-500' },
       { id: 'infraestructura', label: 'Infraestructura', icon: Building2, badgeColor: 'bg-rose-500' },
+      { id: 'celdas-crud', label: 'Celdas (RFP)', icon: Radio, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN', 'ADMIN'] },
       { id: 'padron-cargas', label: 'Carga de Padrón', icon: FileText, badgeColor: 'bg-teal-500', roles: ['SUPERADMIN', 'ADMIN'] },
       { id: 'users', label: 'Usuarios & Roles', icon: Users, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN'] },
       { id: 'qa', label: 'Consultas', icon: HelpCircle, badgeColor: 'bg-slate-500', roles: ['SUPERADMIN'] },

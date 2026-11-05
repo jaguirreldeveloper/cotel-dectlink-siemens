@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\Cell;
 use App\Models\Operador;
 use App\Models\PadronCarga;
-use App\Models\Subscriber;
 use App\Models\Subcentral;
+use App\Models\Subscriber;
 use App\Support\OperatorToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +36,7 @@ class PadronCargasTest extends TestCase
     private function subcentralConCelda(string $codigo, string $direccion): array
     {
         $sub = Subcentral::factory()->create(['codigo' => $codigo, 'direccion' => strtoupper($direccion)]);
-        ++$this->secuenciaCeldas;
+        $this->secuenciaCeldas++;
         $celda = Cell::factory()->create(['id' => $this->secuenciaCeldas, 'nombre' => "CELDA RFP {$this->secuenciaCeldas}", 'id_subcentral' => $sub->id]);
 
         return ['sub' => $sub, 'nombreCelda' => $celda->nombre];
@@ -140,7 +140,8 @@ class PadronCargasTest extends TestCase
         $this->assertSame(1, $aplicado->json('actualizados'));
         $this->assertSame(PadronCarga::ESTADO_APLICADO, $aplicado->json('lote.estado'));
 
-        $alta = Subscriber::query()->where('nro', 9301)->sole();
+        // El alta recibe el siguiente nro del padrón y conserva el nro de origen.
+        $alta = Subscriber::query()->where('nro_registro_origen', 9301)->sole();
         $this->assertSame('28803001', $alta->numero_telefono);
         $this->assertSame('Alta Nueva', $alta->cliente->nombre_completo);
 

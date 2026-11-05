@@ -20,7 +20,8 @@ import {
 } from '@/entities/workOrder/types';
 import { FieldCrew } from '@/entities/crew/types';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
-import { apiFetch } from '@/shared/utils/apiFetch';
+import { useCells } from '@/entities/cell/useCells';
+import { apiFetch, eventsUrl } from '@/shared/utils/apiFetch';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import { Textarea } from '@/shared/ui/Textarea';
@@ -104,6 +105,7 @@ function mapRowToWorkOrder(row: WorkOrderRow, records: EnrichedSubscriberRecord[
 }
 
 export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ records }) => {
+  const { byId: cellsById } = useCells();
   const [rows, setRows] = useState<WorkOrderRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -127,7 +129,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
 
   const loadCrews = useCallback(async () => {
     try {
-      const res = await fetch('/api/cuadrillas');
+      const res = await apiFetch('/api/cuadrillas');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: CrewRow[] = await res.json();
       setCrews(
@@ -150,7 +152,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
 
   const loadOrders = useCallback(async () => {
     try {
-      const res = await fetch('/api/work-orders');
+      const res = await apiFetch('/api/work-orders');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: WorkOrderRow[] = await res.json();
       setRows(Array.isArray(data) ? data : []);
@@ -172,7 +174,7 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
 
   // Realtime: cualquier operador ve cambios de OT al instante
   useEffect(() => {
-    const eventSource = new EventSource('/api/events');
+    const eventSource = new EventSource(eventsUrl());
     eventSource.addEventListener('work_order_updated', () => {
       loadOrders();
       loadCrews();
@@ -808,7 +810,10 @@ export const WorkOrdersKanbanView: React.FC<WorkOrdersKanbanViewProps> = ({ reco
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[11px]">Zona / Celda DECT:</span>
-                  <span className="text-slate-200">{selectedOrder.zona} (Celda {selectedOrder.celda})</span>
+                  <span className="text-slate-200">
+                    {selectedOrder.zona} ·{' '}
+                    {cellsById.get(Number(selectedOrder.celda))?.displayName ?? `Celda ${selectedOrder.celda}`}
+                  </span>
                 </div>
               </div>
 

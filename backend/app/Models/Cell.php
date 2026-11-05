@@ -16,6 +16,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property string $nombre
  * @property string $tecnologia
+ * @property string|null $descripcion
+ * @property string|null $rfp_modelo
+ * @property string|null $banda_frecuencia
+ * @property int|null $capacidad_canales
+ * @property float|null $radio_cobertura_km
  * @property float|null $latitud
  * @property float|null $longitud
  * @property int|null $id_subcentral

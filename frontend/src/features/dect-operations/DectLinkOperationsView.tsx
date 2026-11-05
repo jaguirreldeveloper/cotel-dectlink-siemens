@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { computeCeldaStatistics } from '@/entities/subscriber/analysis';
-import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
+import { useCells } from '@/entities/cell/useCells';
 
 interface DectLinkOperationsViewProps {
   records: EnrichedSubscriberRecord[];
@@ -28,6 +28,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
 
   const [activeSubTab, setActiveSubTab] = useState<'fallas' | 'mora' | 'deposito' | 'celdas'>('fallas');
 
+  const { byId: cellsById } = useCells();
   const celdaStats = computeCeldaStatistics(records);
 
   const total = records.length || 1;
@@ -225,7 +226,9 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
                       <span className="text-slate-400">·</span>
                       <span className="font-mono text-slate-500">CTO {rec.cto}</span>
                       <span className="text-slate-400">·</span>
-                      <span className="font-mono text-violet-600 font-semibold">Celda {rec.celda}</span>
+                      <span className="text-violet-600 font-semibold">
+                        {rec.celdaNombre ?? cellsById.get(Number(rec.celda))?.displayName ?? `Celda ${rec.celda}`}
+                      </span>
                       <span className="text-slate-400">·</span>
                       <span className="text-slate-600 dark:text-slate-300 font-medium">{rec.zona}</span>
                     </div>
@@ -379,7 +382,9 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
                       <span className="text-slate-400">·</span>
                       <span className="font-mono text-slate-500">CTO {rec.cto}</span>
                       <span className="text-slate-400">·</span>
-                      <span className="font-mono text-violet-600 font-semibold">Celda {rec.celda}</span>
+                      <span className="text-violet-600 font-semibold">
+                        {rec.celdaNombre ?? cellsById.get(Number(rec.celda))?.displayName ?? `Celda ${rec.celda}`}
+                      </span>
                       <span className="text-slate-400">·</span>
                       <span className="text-slate-600 dark:text-slate-300 font-medium">{rec.zona}</span>
                     </div>
@@ -437,11 +442,12 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {celdaStats.map(stat => {
-              const cellDetails = SIEMENS_DECT_CELLS[stat.celda] || {
-                name: `Estación Celda ${stat.celda}`,
-                rfpBase: 'Siemens RFP Estándar',
-                capacidad: 100,
-                freqBand: '1880 - 1900 MHz',
+              const catalogCell = cellsById.get(Number(stat.celda));
+              const cellDetails = {
+                name: stat.nombreEstacion,
+                rfpBase: catalogCell?.rfpModelo ?? 'Siemens RFP Estándar',
+                capacidad: stat.capacidadCanalesRf,
+                freqBand: catalogCell?.freqBand ?? '1880 - 1900 MHz',
               };
 
               const cServ = stat.statusCounts['C/SERV.'] || 0;
@@ -457,7 +463,7 @@ export const DectLinkOperationsView: React.FC<DectLinkOperationsViewProps> = ({
                   <div className="flex items-start justify-between">
                     <div>
                       <span className="font-mono text-xs font-bold text-violet-600 dark:text-violet-400">
-                        CELDA {stat.celda}
+                        RFP {stat.celda}
                       </span>
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                         {cellDetails.name}

@@ -50,7 +50,7 @@ export const GitMigrationModal: React.FC<GitMigrationModalProps> = ({
   const fetchGitStatus = async () => {
     setIsLoadingStatus(true);
     try {
-      const res = await fetch('/api/git/status');
+      const res = await apiFetch('/api/git/status');
       if (res.ok) {
         const data = await res.json();
         setGitStatus(data);

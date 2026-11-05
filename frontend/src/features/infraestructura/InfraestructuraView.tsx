@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { Operador, OperadorRole } from '@/features/auth/types';
 import { Button } from '@/shared/ui/Button';
+import { apiFetch } from '@/shared/utils/apiFetch';
 import { infraApi } from './api';
 import {
   ArmarioDTO,
@@ -97,7 +98,7 @@ export function InfraestructuraView({ operador }: InfraestructuraViewProps) {
         infraApi.fetchSubcentrales(),
         infraApi.fetchShelters(),
         infraApi.fetchArmarios(),
-        fetch('/api/cells').then(r => (r.ok ? r.json() : [])) as Promise<Array<Record<string, unknown>>>,
+        apiFetch('/api/cells').then(r => (r.ok ? r.json() : [])) as Promise<Array<Record<string, unknown>>>,
       ]);
       setCentrales(cen);
       setSubcentrales(sub);

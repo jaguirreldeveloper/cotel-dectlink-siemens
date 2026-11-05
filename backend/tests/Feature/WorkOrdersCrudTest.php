@@ -122,6 +122,8 @@ class WorkOrdersCrudTest extends TestCase
 
     public function test_store_requires_admin_token(): void
     {
+        $this->flushHeaders();
+
         $this->postJson('/api/work-orders', ['titulo' => 'Sin token'])->assertStatus(401);
 
         $this->assertSame(0, DB::table('work_orders')->count());
@@ -217,6 +219,8 @@ class WorkOrdersCrudTest extends TestCase
 
     public function test_update_and_delete_require_admin_token(): void
     {
+        $this->flushHeaders();
+
         $id = $this->crearOrden();
 
         $this->patchJson("/api/work-orders/{$id}", ['titulo' => 'Bloqueado'])->assertStatus(401);

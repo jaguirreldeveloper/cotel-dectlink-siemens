@@ -102,13 +102,13 @@ export const SupabaseMigrationModal: React.FC<SupabaseMigrationModalProps> = ({
   // Fetch current database status and SQL scripts on mount
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/database/connection-info')
+      apiFetch('/api/database/connection-info')
         .then((res) => res.json())
         .then((data) => setCurrentDbInfo(data))
         .catch((err) => console.error('Failed to get connection info:', err));
 
       // Los scripts SQL se generan en el backend (fuente única: supabase/migrations)
-      fetch('/api/database/export-sql')
+      apiFetch('/api/database/export-sql')
         .then((res) => res.json())
         .then((data: SqlScripts) => setSqlScripts(data))
         .catch((err) => console.error('Failed to load SQL scripts:', err));

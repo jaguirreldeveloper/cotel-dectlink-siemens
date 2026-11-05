@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cell;
 use App\Models\InfraestructuraBitacora;
-use App\Models\Operador;
 use App\Support\OperatorToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -86,5 +85,173 @@ class CellsController extends Controller
         } catch (\Throwable) {
             return response()->json(['error' => 'Error al consultar celdas en PostgreSQL'], 500);
         }
+    }
+
+    /**
+     * POST /api/cells — crear celda (RFP). El id es el número de RFP (no auto).
+     */
+    #[OA\Post(path: '/api/cells', tags: ['Infraestructura'], summary: 'Crear celda RFP (SUPERADMIN/ADMIN)')]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(required: ['id', 'nombre'], properties: [
+        new OA\Property(property: 'id', type: 'integer', description: 'Número de RFP (clave)'),
+        new OA\Property(property: 'nombre', type: 'string'),
+        new OA\Property(property: 'tecnologia', type: 'string', nullable: true),
+        new OA\Property(property: 'descripcion', type: 'string', nullable: true),
+        new OA\Property(property: 'rfp_modelo', type: 'string', nullable: true),
+        new OA\Property(property: 'banda_frecuencia', type: 'string', nullable: true),
+        new OA\Property(property: 'capacidad_canales', type: 'integer', nullable: true),
+        new OA\Property(property: 'radio_cobertura_km', type: 'number', nullable: true),
+        new OA\Property(property: 'latitud', type: 'number', nullable: true),
+        new OA\Property(property: 'longitud', type: 'number', nullable: true),
+    ]))]
+    #[OA\Response(response: 201, description: 'Celda creada')]
+    #[OA\Response(response: 422, description: 'Validación fallida')]
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', Rule::unique('celdas', 'id')],
+            'nombre' => ['required', 'string', 'max:255'],
+            'tecnologia' => ['nullable', 'string', 'max:100'],
+            'descripcion' => ['nullable', 'string'],
+            'rfp_modelo' => ['nullable', 'string', 'max:255'],
+            'banda_frecuencia' => ['nullable', 'string', 'max:100'],
+            'capacidad_canales' => ['nullable', 'integer'],
+            'radio_cobertura_km' => ['nullable', 'numeric'],
+            'latitud' => ['nullable', 'numeric'],
+            'longitud' => ['nullable', 'numeric'],
+        ]);
+
+        $cell = Cell::create([
+            'id' => $validated['id'],
+            'nombre' => $validated['nombre'],
+            'tecnologia' => $validated['tecnologia'] ?? 'DECT-Link',
+            'descripcion' => $validated['descripcion'] ?? null,
+            'rfp_modelo' => $validated['rfp_modelo'] ?? null,
+            'banda_frecuencia' => $validated['banda_frecuencia'] ?? '1880 - 1900 MHz (DECT GAP)',
+            'capacidad_canales' => $validated['capacidad_canales'] ?? null,
+            'radio_cobertura_km' => $validated['radio_cobertura_km'] ?? null,
+            'latitud' => $validated['latitud'] ?? null,
+            'longitud' => $validated['longitud'] ?? null,
+        ]);
+
+        $operador = OperatorToken::resolve($request);
+        InfraestructuraBitacora::create([
+            'tabla' => 'celdas',
+            'registro_id' => $cell->id,
+            'accion' => InfraestructuraBitacora::ACCION_CREAR,
+            'operador_id' => $operador?->id,
+            'payload' => $cell->toArray(),
+        ]);
+
+        return response()->json([
+            'message' => 'Celda creada exitosamente.',
+            'celda' => [
+                'id' => $cell->id,
+                'nombre' => $cell->nombre,
+                'tecnologia' => $cell->tecnologia,
+                'descripcion' => $cell->descripcion,
+                'rfpModelo' => $cell->rfp_modelo,
+                'bandaFrecuencia' => $cell->banda_frecuencia,
+                'capacidadCanales' => $cell->capacidad_canales,
+                'radioCoberturaKm' => $cell->radio_cobertura_km,
+                'latitud' => $cell->latitud,
+                'longitud' => $cell->longitud,
+            ],
+        ], 201);
+    }
+
+    /**
+     * PATCH /api/cells/{id} — actualizar celda existente.
+     */
+    #[OA\Patch(path: '/api/cells/{id}', tags: ['Infraestructura'], summary: 'Editar celda RFP (SUPERADMIN/ADMIN)')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'nombre', type: 'string'),
+        new OA\Property(property: 'tecnologia', type: 'string', nullable: true),
+        new OA\Property(property: 'descripcion', type: 'string', nullable: true),
+        new OA\Property(property: 'rfp_modelo', type: 'string', nullable: true),
+        new OA\Property(property: 'banda_frecuencia', type: 'string', nullable: true),
+        new OA\Property(property: 'capacidad_canales', type: 'integer', nullable: true),
+        new OA\Property(property: 'radio_cobertura_km', type: 'number', nullable: true),
+        new OA\Property(property: 'latitud', type: 'number', nullable: true),
+        new OA\Property(property: 'longitud', type: 'number', nullable: true),
+    ]))]
+    #[OA\Response(response: 200, description: 'Celda actualizada')]
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $cell = Cell::query()->findOrFail($id);
+        $antes = $cell->toArray();
+
+        $validated = $request->validate([
+            'nombre' => ['sometimes', 'string', 'max:255'],
+            'tecnologia' => ['nullable', 'string', 'max:100'],
+            'descripcion' => ['nullable', 'string'],
+            'rfp_modelo' => ['nullable', 'string', 'max:255'],
+            'banda_frecuencia' => ['nullable', 'string', 'max:100'],
+            'capacidad_canales' => ['nullable', 'integer'],
+            'radio_cobertura_km' => ['nullable', 'numeric'],
+            'latitud' => ['nullable', 'numeric'],
+            'longitud' => ['nullable', 'numeric'],
+        ]);
+
+        $cell->fill($validated);
+        $cell->save();
+
+        $operador = OperatorToken::resolve($request);
+        InfraestructuraBitacora::create([
+            'tabla' => 'celdas',
+            'registro_id' => $id,
+            'accion' => InfraestructuraBitacora::ACCION_MODIFICAR,
+            'operador_id' => $operador?->id,
+            'payload' => ['antes' => $antes, 'despues' => $cell->toArray()],
+        ]);
+
+        return response()->json([
+            'message' => 'Celda actualizada exitosamente.',
+            'celda' => [
+                'id' => $cell->id,
+                'nombre' => $cell->nombre,
+                'tecnologia' => $cell->tecnologia,
+                'descripcion' => $cell->descripcion,
+                'rfpModelo' => $cell->rfp_modelo,
+                'bandaFrecuencia' => $cell->banda_frecuencia,
+                'capacidadCanales' => $cell->capacidad_canales,
+                'radioCoberturaKm' => $cell->radio_cobertura_km,
+                'latitud' => $cell->latitud,
+                'longitud' => $cell->longitud,
+            ],
+        ]);
+    }
+
+    /**
+     * DELETE /api/cells/{id} — borrado físico (solo SUPERADMIN).
+     * Falla si la celda tiene abonados asignados (FK RESTRICT).
+     */
+    #[OA\Delete(path: '/api/cells/{id}', tags: ['Infraestructura'], summary: 'Eliminar celda RFP (solo SUPERADMIN)')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Celda eliminada')]
+    #[OA\Response(response: 403, description: 'Rol sin permiso')]
+    #[OA\Response(response: 409, description: 'Celda con abonados asignados')]
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $cell = Cell::query()->findOrFail($id);
+
+        if ($cell->lineas()->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar la celda porque tiene abonados asignados. Reasigna o elimina primero los abonados.',
+            ], 409);
+        }
+
+        $operador = OperatorToken::resolve($request);
+        InfraestructuraBitacora::create([
+            'tabla' => 'celdas',
+            'registro_id' => $id,
+            'accion' => InfraestructuraBitacora::ACCION_ELIMINAR,
+            'operador_id' => $operador?->id,
+            'payload' => $cell->toArray(),
+        ]);
+
+        $cell->delete();
+
+        return response()->json(['message' => 'Celda eliminada exitosamente.']);
     }
 }

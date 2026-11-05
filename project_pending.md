@@ -5,61 +5,55 @@
 ## ✅ Completadas
 
 ### Backend / Calidad
-- [x] Adoptar `larastan/larastan` y llevar PHPStan a 0 errores (77 → 0).
-- [x] Limpiar 160 warnings de ESLint en frontend (0 warnings, 0 errores).
+- [x] Adoptar `larastan/larastan` y llevar PHPStan a 0 errores (resuelto acceso a propiedades dinámicas en `App\Models\Cell`).
+- [x] Limpiar 160 warnings de ESLint en frontend + 6 warnings en vistas recientes (`BrandedLoginView` y `CeldasCrudView`). 0 errores, 0 warnings.
+- [x] CRUD de celdas (RFP) implementado en `CellsController` (`POST /api/cells`, `PATCH /api/cells/{id}`, `DELETE /api/cells/{id}`) con bitácora de infraestructura y validaciones RBAC.
 - [x] Activar `RequireRoleTest` (3 tests) y corregir `OperatorToken::create()` → `generate()`.
 - [x] Eliminar componente `AppTabs` no utilizado (conservar tipo `AppTabId`).
 - [x] Corregir conteo de tests en README (116).
+- [x] Proteger las lecturas de la API con el middleware `operator` (401 sin sesión) y limitar el login a 6 intentos/minuto.
+- [x] Reutilizar `OperatorToken::resolveToken()` para autenticar el stream SSE por query param (`EventSource` no admite cabeceras).
+- [x] Tipar las filas del padrón con `@phpstan-type FilaPadron` en `PadronBatchLoader` y recuperar PHPStan nivel 5 en 0 errores (regresión del commit de enlaces GIS).
 
 ### Base de datos
 - [x] Añadir `ACTIVO` al `CHECK (estado_servicio)` (migración de pruebas + producción).
 - [x] Añadir `SIN DATO` al `CHECK (estado_operativo)`.
-- [x] Crear migración de producción `supabase/migrations/20261029100000_sync_estado_checks.sql` (ALTER TABLE, transacción) y aplicarla.
+- [x] Crear migración `supabase/migrations/20261029100000_sync_estado_checks.sql` y `backend/database/migrations/2026_10_29_100000_sql_sync_estado_checks.php`.
+- [x] Aplicar migraciones pendientes `padron_cargas` y `sync_estado_checks` en base de datos PostgreSQL local (`cotel_dectlink`).
+- [x] Corregir declaración `DECLARE t text;` en `backend/database/sql/20261027300000_padron_cargas.sql`.
 - [x] Fusionar `origin/main` (commits del bot qwen.ai) y corregir `20261031100000_sin_dato_estado_operativo.sql` para no referenciar la tabla inexistente `abonados_dect`; aplicada y registrada en Supabase.
-- [x] Verificar en Supabase las 13 migraciones de `supabase_migrations.schema_migrations`.
 - [x] Omitir filas `RECHAZADO` del detalle del lote en `PadronCargasController::store`.
+- [x] Verificar en Supabase las 13 migraciones de `supabase_migrations.schema_migrations` (incluidas `sync_estado_checks` y `sin_dato_estado_operativo`); los CHECK ya aceptan `ACTIVO` y `SIN DATO`.
 
 ### Frontend
+- [x] Vistas de gestión de celdas implementadas: `celdas-crud`, `cell-detail`, `cell-users` integradas en `App.tsx` y navegación.
 - [x] UI de gestión de cargas por lote (`PadronCargasView`): subir CSV (ADMIN+), listar/detalle, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
 - [x] Corrección de codificación del badge "Conectado a BD" (punto medio `·`) en `UnifiedHeader`.
+- [x] Compilación exitosa del frontend (`pnpm run build`) y sincronización de assets a `backend/public/`.
+- [x] Mostrar el nombre real de la celda (`celdaNombre`) en tabla, ficha, GPS, fichas técnicas, operaciones y gráficos.
+- [x] Mapa GIS con celdas reales de `/api/cells`, etiquetas permanentes, enlaces celda ↔ abonado e inspector de celda.
+- [x] Tokens de sesión en `sessionStorage` por defecto (`localStorage` solo con «Recordarme») y sin `VITE_ADMIN_TOKEN` en el bundle.
 
 ### Tests
 - [x] 14 tests Vitest para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
-- [x] 116 tests PHPUnit (backend) — todos verdes.
-- [x] Tests e2e Playwright reparados y en verde (5/5): demo-fallback, padron-load, search-filter, status-change, work-order-create.
-  - Liberado disco C (chromium-1228 → 1248), instalado Chromium 1248.
-  - Reparados specs: entrada a modo consulta, selectores de sidebar (`Padrón \d+`), ruta `../backend/.env` en helpers, `seedOperatorSession`.
-  - Cuenta de prueba `testadmin@cotel.bo` (ADMIN, password `TestPass123!`) creada para el spec de OT.
+- [x] 119 tests PHPUnit (backend) — todos verdes (450 assertions).
+- [x] Tests e2e Playwright (5/5).
 
-### Documentación
-- [x] README.md actualizado (tests, padrón, e2e, cambios recientes).
-- [x] `project_pending.md` mantenido al día.
-
-## ⏳ Pendientes (prioridad sugerida)
-
-### 1. Aplicar migración CHECK en Supabase (producción) — ALTA
-- Ejecutar `supabase db push` para aplicar `20261029100000_sync_estado_checks.sql` (ACTIVO + SIN DATO) en la BD real.
-- Requiere entorno con credenciales de Supabase configuradas.
-
-### 2. Skill UI/UX Pro Max — MEDIA
-- Crear skill personalizada (no existe en marketplace) con paletas, accesibilidad y directrices de diseño del proyecto.
-
-### 3. Verificar visibilidad de pestaña *Usuarios & Roles* por rol — BAJA
-- El sidebar ya filtra por `SUPERADMIN`; validar con un spec e2e cuando se desee (ahora la infraestructura e2e está lista).
-
-## 📊 Línea base de verificación (todo verde al cerrar sesión)
-- `pnpm run typecheck` ✅ (0 errores)
-- `pnpm run lint` / `lint:check` ✅ (0 warnings)
+## 📊 Línea base de verificación (todo verde)
+- `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
+- `pnpm run lint` ✅ (0 errores, 0 warnings)
 - Vitest: 14 tests ✅
-- PHPUnit: 116 tests, 448 assertions ✅
+- Pest / PHPUnit: 119 tests, 450 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
+- Frontend build: ✅ Generado y copiado a `backend/public`
+- Servidores activos: Backend `:8010` ✅ | Frontend `:5173` ✅
 - Playwright e2e: 5/5 ✅
 
 ## 🗂️ Estado del repositorio
-- Ramas publicadas en `origin`: `main` y `feat/celdas-enlaces-mapa`.
+- Ramas publicadas en `origin`: `main` (con el trabajo de `feat/celdas-enlaces-mapa` ya fusionado) y la rama de feature como respaldo.
 - `main` incluye el merge de `origin/main` y el fix de la migración `SIN DATO`.
-- Working tree limpio (salvo assets antiguos de `backend/public/assets`, sin trackear).
-- Último commit de `main`: `3fa4661 docs: corregir conteo de tests en main (116)`.
+- `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
+- Working tree limpio.
 
 ## 🖥️ Entorno
 - Windows / PowerShell. Disco C con ~700 MB libres tras limpieza.
@@ -70,7 +64,7 @@
 ## 🚀 Para continuar mañana
 1. `git log --oneline -10` para ver los últimos commits.
 2. `pnpm run typecheck && pnpm run lint:check` para confirmar baseline.
-3. Elegir siguiente tarea de la lista de pendientes (recomendado: aplicar migración en Supabase).
+3. Elegir siguiente tarea de la lista de pendientes (Supabase y push ya están al día; GIS/seguridad integrados en `main`).
 4. Recordar: una tarea = un commit, verificar antes de commitear.
 
 ## 📝 Cuentas / credenciales útiles

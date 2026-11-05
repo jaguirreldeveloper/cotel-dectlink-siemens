@@ -202,11 +202,11 @@ export const VisualCharts: React.FC<VisualChartsProps> = ({
               >
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900 dark:text-white font-mono">
-                      Celda {c.celda}
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">
+                      {c.nombreEstacion}
                     </span>
-                    <span className="text-[11px] text-slate-400">
-                      ({c.zonas.length} zonas conectadas)
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      RFP {c.celda} · {c.zonas.length} zonas
                     </span>
                   </div>
                   <div className="font-mono font-semibold text-violet-600 dark:text-violet-400">

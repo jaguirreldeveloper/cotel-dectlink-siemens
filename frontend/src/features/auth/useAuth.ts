@@ -6,6 +6,7 @@ import {
   clearStoredOperatorToken,
   getStoredOperatorUser,
   setStoredOperatorUser,
+  isStoredOperatorTokenPersisted,
   apiFetch
 } from '@/shared/utils/apiFetch';
 
@@ -33,7 +34,9 @@ export function useAuth() {
       const res = await apiFetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json() as { operador: Operador };
-        setStoredOperatorUser(data.operador, true);
+        // Conservar el almacenamiento elegido en el login (sessionStorage por
+        // defecto; localStorage solo si el operador marcó «Recordarme»).
+        setStoredOperatorUser(data.operador, isStoredOperatorTokenPersisted());
         setState({
           operador: data.operador,
           token,
@@ -77,7 +80,7 @@ export function useAuth() {
     };
   }, [verifySession]);
 
-  const login = async (email: string, password: string, rememberMe = true): Promise<{ success: boolean; message?: string }> => {
+  const login = async (email: string, password: string, rememberMe = false): Promise<{ success: boolean; message?: string }> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -115,8 +118,10 @@ export function useAuth() {
   };
 
   const logout = () => {
-    clearStoredOperatorToken();
+    // El servidor necesita el token para rotar el nonce: se invoca antes de
+    // borrarlo del almacenamiento.
     void apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    clearStoredOperatorToken();
     setState({
       operador: null,
       token: null,

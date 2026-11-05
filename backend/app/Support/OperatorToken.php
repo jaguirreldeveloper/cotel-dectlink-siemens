@@ -56,6 +56,16 @@ class OperatorToken
 
         // 2. Extraer token de encabezados
         $rawToken = $request->bearerToken() ?? $request->header('x-operator-token');
+
+        return self::resolveToken($rawToken);
+    }
+
+    /**
+     * Resuelve un operador a partir de un token crudo (header o query param
+     * del stream SSE). Devuelve null si el token falta, expiró o fue revocado.
+     */
+    public static function resolveToken(?string $rawToken): ?Operador
+    {
         if (! is_string($rawToken) || trim($rawToken) === '') {
             return null;
         }

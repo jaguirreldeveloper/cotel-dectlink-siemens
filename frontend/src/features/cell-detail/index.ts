@@ -1,0 +1,1 @@
+export { CellDetailView } from './CellDetailView';

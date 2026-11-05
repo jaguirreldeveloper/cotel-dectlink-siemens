@@ -17,6 +17,8 @@ class AdminTokenTest extends TestCase
 
     public function test_admin_endpoint_rejects_missing_token_with_401(): void
     {
+        $this->flushHeaders();
+
         $response = $this->postJson('/api/database/query', ['query' => 'SELECT 1']);
 
         $response->assertStatus(401);
@@ -54,8 +56,10 @@ class AdminTokenTest extends TestCase
         $this->assertStringContainsString('defina ADMIN_TOKEN', $response->json('error'));
     }
 
-    public function test_public_endpoint_is_reachable_without_token(): void
+    public function test_read_endpoint_requires_authentication(): void
     {
-        $this->getJson('/api/cells')->assertOk();
+        $this->flushHeaders();
+
+        $this->getJson('/api/cells')->assertStatus(401);
     }
 }
