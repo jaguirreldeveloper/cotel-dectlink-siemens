@@ -1,24 +1,30 @@
 /**
  * Estados de servicio del abonado (catálogo oficial)
- * Coincide con CHECK constraint en BD: estado_servicio_check
+ * Coincide con CHECK constraint chk_abonados_estado_servicio.
+ * Incluye 'ACTIVO': valor usado al dar de alta líneas desde el padrón
+ * de cargas (PadronCargasController::alta()).
  */
 export type SubscriberServiceStatus =
   | 'C/SERV.'
   | 'EN DEPOSITO'
   | 'CORTE X MORA'
   | 'FALLA TECNICA'
-  | 'S/SERV.';
+  | 'S/SERV.'
+  | 'ACTIVO';
 
 /**
  * Estados operativos del abonado (catálogo oficial)
- * Coincide con CHECK constraint en BD: estado_operativo_check
+ * Coincide con CHECK constraint chk_abonados_estado_operativo.
+ * Incluye 'SIN DATO': valor usado al dar de alta líneas desde el padrón
+ * de cargas cuando aún no se conoce su estado operativo real.
  */
 export type SubscriberOperationalStatus =
   | 'C/SERV.'
   | 'EN DEPOSITO'
   | 'CORTE X MORA'
   | 'FALLA TECNICA'
-  | 'S/SERV.';
+  | 'S/SERV.'
+  | 'SIN DATO';
 
 /**
  * Modelo de FAU (Unidad de Abonado)
@@ -98,7 +104,8 @@ export const SUBSCRIBER_SERVICE_STATUSES: SubscriberServiceStatus[] = [
   'EN DEPOSITO',
   'CORTE X MORA',
   'FALLA TECNICA',
-  'S/SERV.'
+  'S/SERV.',
+  'ACTIVO'
 ];
 
 export const SUBSCRIBER_OPERATIONAL_STATUSES: SubscriberOperationalStatus[] = [
@@ -106,7 +113,8 @@ export const SUBSCRIBER_OPERATIONAL_STATUSES: SubscriberOperationalStatus[] = [
   'EN DEPOSITO',
   'CORTE X MORA',
   'FALLA TECNICA',
-  'S/SERV.'
+  'S/SERV.',
+  'SIN DATO'
 ];
 
 export const WORK_ORDER_STATUSES: WorkOrderStatus[] = [

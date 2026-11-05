@@ -144,6 +144,13 @@ class PadronCargasTest extends TestCase
         $this->assertSame('28803001', $alta->numero_telefono);
         $this->assertSame('Alta Nueva', $alta->cliente->nombre_completo);
 
+        // Regresión: las altas del padrón usan 'SIN DATO' en estado_operativo.
+        // Debe estar permitido tanto en el CHECK de producción (migration
+        // 20261031100000_sin_dato_estado_operativo.sql) como en el esquema de
+        // pruebas sqlite; si se elimina del catálogo, esta inserción falla.
+        $this->assertSame('SIN DATO', $alta->estado_operativo);
+        $this->assertSame('ACTIVO', $alta->estado_servicio);
+
         $modificada = Subscriber::query()->where('nro', $existente->nro)->sole();
         $this->assertSame('28899999', $modificada->numero_telefono);
 
