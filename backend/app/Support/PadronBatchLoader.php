@@ -21,15 +21,17 @@ use Illuminate\Database\Eloquent\Collection;
  *
  * La clasificación por ciudad (LA_PAZ / EL_ALTO / SIN_CIUDAD) usa primero la
  * ciudad de la celda (ciudad de su subcentral) y como respaldo la dirección.
+ *
+ * @phpstan-type FilaPadron array{nro: ?int, numero: string, nombre: ?string, direccion: ?string,
+ *               celda: ?string, estado: ?string, contrato: ?int, lat: ?float, lng: ?float,
+ *               fechaServicio: ?string, zona: ?string, codigoArea: string}
  */
 class PadronBatchLoader
 {
     /**
      * Informa una fila ya resuelta antes de crear modelos.
      *
-     * @return array{nro: ?int, numero: string, nombre: ?string, direccion: ?string, celda: ?string,
-     *               estado: ?string, contrato: ?int, lat: ?float, lng: ?float, fechaServicio: ?string,
-     *               zona: ?string, codigoArea: string}
+     * @return FilaPadron
      */
     private static function fila(array $f): array
     {
@@ -72,7 +74,9 @@ class PadronBatchLoader
         $filas = self::parsear($csv);
         // Claves ya presentes en el lote: número telefónico y nro de origen.
         // Se rechaza la segunda ocurrencia de cualquiera de las dos.
+        /** @var array<string, bool> $vistos */
         $vistos = [];
+        /** @var array<int, bool> $nrosVistos */
         $nrosVistos = [];
 
         $numerosEnCsv = array_filter(array_map(fn ($f) => $f['numero'] ?? $f['numero_telefono'] ?? null, $filas));
@@ -201,7 +205,7 @@ class PadronBatchLoader
     /**
      * Marca el número telefónico y el nro de origen de una fila como vistos.
      *
-     * @param  array<string, mixed>  $info
+     * @param  FilaPadron  $info
      * @param  array<string, bool>  $vistos
      * @param  array<int, bool>  $nrosVistos
      */
@@ -216,7 +220,7 @@ class PadronBatchLoader
     }
 
     /**
-     * @param  array<string, mixed>  $info
+     * @param  FilaPadron  $info
      * @param  array<string, bool>  $vistos
      * @param  array<int, bool>  $nrosVistos
      * @param  array<string, Cell>  $celdas
@@ -259,7 +263,7 @@ class PadronBatchLoader
     }
 
     /**
-     * @param  array<string, mixed>  $info
+     * @param  FilaPadron  $info
      * @return array<string, array{antes: mixed, despues: mixed}>
      */
     private static function diferencias(Subscriber $existente, array $info, ?Cell $celda): array
@@ -321,7 +325,7 @@ class PadronBatchLoader
     }
 
     /**
-     * @param  array<string, mixed>  $info
+     * @param  FilaPadron  $info
      */
     private static function ciudadDeFila(array $info, ?Cell $celda, array $ciudadPorSubcentral): string
     {

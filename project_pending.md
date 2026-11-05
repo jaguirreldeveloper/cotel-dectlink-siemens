@@ -1,6 +1,6 @@
 # Tareas Pendientes — COTEL DECTlink Siemens
 
-> Última actualización: 2026-11-04
+> Última actualización: 2026-11-05
 
 ## ✅ Completadas
 
@@ -13,6 +13,7 @@
 - [x] Corregir conteo de tests en README (116).
 - [x] Proteger las lecturas de la API con el middleware `operator` (401 sin sesión) y limitar el login a 6 intentos/minuto.
 - [x] Reutilizar `OperatorToken::resolveToken()` para autenticar el stream SSE por query param (`EventSource` no admite cabeceras).
+- [x] Tipar las filas del padrón con `@phpstan-type FilaPadron` en `PadronBatchLoader` y recuperar PHPStan nivel 5 en 0 errores (regresión del commit de enlaces GIS).
 
 ### Base de datos
 - [x] Añadir `ACTIVO` al `CHECK (estado_servicio)` (migración de pruebas + producción).
@@ -44,15 +45,13 @@
 - PHPStan nivel 5: 0 errores ✅
 - Frontend build: ✅ Generado y copiado a `backend/public`
 - Servidores activos: Backend `:8010` ✅ | Frontend `:5173` ✅
-- Vitest: 14 tests ✅
-- PHPUnit: 119 tests, 450 assertions ✅
-- PHPStan nivel 5: 0 errores ✅
 - Playwright e2e: 5/5 ✅
 
 ## 🗂️ Estado del repositorio
 - Rama: `feat/celdas-enlaces-mapa`. Todos los commits son locales (no se han hecho push a origin).
 - `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
-- Último commit: `a1021f5 chore: consolidar trabajo pendiente antes de enlaces GIS y nombres de celdas`.
+- Último commit: `ad02ff5 feat(gis+seguridad): nombres reales de celdas, enlaces celda-abonado y lecturas protegidas`.
+- Pendiente local sin commitear: tipado de `PadronBatchLoader` (PHPStan en 0).
 
 ## 🖥️ Entorno
 - Windows / PowerShell. Disco C con ~700 MB libres tras limpieza.
