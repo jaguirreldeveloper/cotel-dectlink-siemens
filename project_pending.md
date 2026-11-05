@@ -36,14 +36,14 @@
 
 ### Tests
 - [x] 14 tests Vitest para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
-- [x] 119 tests PHPUnit (backend) — todos verdes (450 assertions).
+- [x] 119 tests PHPUnit (backend) — todos verdes (452 assertions).
 - [x] Tests e2e Playwright (5/5).
 
 ## 📊 Línea base de verificación (todo verde)
 - `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
 - `pnpm run lint` ✅ (0 errores, 0 warnings)
 - Vitest: 14 tests ✅
-- Pest / PHPUnit: 119 tests, 450 assertions ✅
+- Pest / PHPUnit: 119 tests, 452 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Frontend build: ✅ Generado y copiado a `backend/public`
 - Servidores activos: Backend `:8010` ✅ | Frontend `:5173` ✅
