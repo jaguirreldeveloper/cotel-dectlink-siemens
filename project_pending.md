@@ -1,6 +1,6 @@
 # Tareas Pendientes — COTEL DECTlink Siemens
 
-> Última actualización: 2026-10-29 (fin de sesión)
+> Última actualización: 2026-11-05
 
 ## ✅ Completadas
 
@@ -14,7 +14,9 @@
 ### Base de datos
 - [x] Añadir `ACTIVO` al `CHECK (estado_servicio)` (migración de pruebas + producción).
 - [x] Añadir `SIN DATO` al `CHECK (estado_operativo)`.
-- [x] Crear migración de producción `supabase/migrations/20261029100000_sync_estado_checks.sql` (ALTER TABLE, transacción). **Pendiente de aplicar con `supabase db push`.**
+- [x] Crear migración de producción `supabase/migrations/20261029100000_sync_estado_checks.sql` (ALTER TABLE, transacción) y aplicarla.
+- [x] Fusionar `origin/main` (commits del bot qwen.ai) y corregir `20261031100000_sin_dato_estado_operativo.sql` para no referenciar la tabla inexistente `abonados_dect`; aplicada y registrada en Supabase.
+- [x] Verificar en Supabase las 13 migraciones de `supabase_migrations.schema_migrations`.
 - [x] Omitir filas `RECHAZADO` del detalle del lote en `PadronCargasController::store`.
 
 ### Frontend
@@ -49,14 +51,15 @@
 - `pnpm run typecheck` ✅ (0 errores)
 - `pnpm run lint` / `lint:check` ✅ (0 warnings)
 - Vitest: 14 tests ✅
-- PHPUnit: 116 tests, 446 assertions ✅
+- PHPUnit: 116 tests, 448 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Playwright e2e: 5/5 ✅
 
 ## 🗂️ Estado del repositorio
-- Rama: `main`. Todos los commits son locales (no se han hecho push a origin).
-- Working tree limpio.
-- Último commit: `1b4a5e2 docs: actualizar README con e2e Playwright en verde`.
+- Ramas publicadas en `origin`: `main` y `feat/celdas-enlaces-mapa`.
+- `main` incluye el merge de `origin/main` y el fix de la migración `SIN DATO`.
+- Working tree limpio (salvo assets antiguos de `backend/public/assets`, sin trackear).
+- Último commit de `main`: `3fa4661 docs: corregir conteo de tests en main (116)`.
 
 ## 🖥️ Entorno
 - Windows / PowerShell. Disco C con ~700 MB libres tras limpieza.
