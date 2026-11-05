@@ -7,8 +7,6 @@
 -- El esquema de pruebas (sqlite, migration 2026_10_22_164813) ya contenía
 -- ambos valores; el de producción no, lo que rechazaba las inserciones en
 -- PostgreSQL. Idempotente: puede ejecutarse varias veces sin efecto extra.
--- Nota: se aplica también a la tabla legacy abonados_dect por coherencia
--- catalogaria (los CHECK heredados comparten lista de estados).
 -- =====================================================================
 
 ALTER TABLE public.abonados_lineas
@@ -24,11 +22,3 @@ ALTER TABLE public.abonados_lineas
 ALTER TABLE public.abonados_lineas
   ADD CONSTRAINT chk_abonados_estado_servicio
   CHECK (estado_servicio IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.','ACTIVO'));
-
--- Tabla legacy (pre-normalización): mismos valores para no divergir.
-ALTER TABLE public.abonados_dect
-  DROP CONSTRAINT IF EXISTS chk_abonados_estado_operativo;
-
-ALTER TABLE public.abonados_dect
-  ADD CONSTRAINT chk_abonados_estado_operativo
-  CHECK (estado_operativo IN ('C/SERV.','EN DEPOSITO','CORTE X MORA','FALLA TECNICA','S/SERV.','SIN DATO'));
