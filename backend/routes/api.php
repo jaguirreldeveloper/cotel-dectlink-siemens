@@ -31,9 +31,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Autenticación de Operadores
+// Rate limiting: login (6/min), logout (10/min)
 Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 Route::get('auth/me', [AuthController::class, 'me']);
-Route::post('auth/logout', [AuthController::class, 'logout']);
+Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('throttle:auth');
 
 // Tiempo real (SSE): `EventSource` no admite cabeceras, así que el token viaja
 // como query param (?token=...). El controlador valida ese token o las
@@ -85,17 +86,21 @@ Route::middleware('operator')->group(function (): void {
 // ===========================================================================
 
 // Calibración GPS y estados de servicio: Jefatura / Administración Operativa / Ingeniería.
-Route::middleware('role:superadmin,admin,supervisor')->group(function (): void {
+// Rate limiting: 10 solicitudes/minuto para cambios de estado y coordenadas
+Route::middleware(['role:superadmin,admin,supervisor', 'throttle:padron-write'])->group(function (): void {
     Route::patch('subscribers/{nro}/status', [SubscribersController::class, 'updateStatus']);
     Route::patch('subscribers/{nro}/coordinates', [SubscribersController::class, 'updateCoordinates']);
 });
 
 // Despacho de cuadrillas, órdenes de trabajo y materiales: Jefatura / Administración Operativa / Ingeniería / Despacho.
-Route::middleware('role:superadmin,admin,supervisor,despachador')->group(function (): void {
+// Rate limiting: 20 solicitudes/minuto para OTs, 30 para recursos
+Route::middleware(['role:superadmin,admin,supervisor,despachador', 'throttle:work-orders-write'])->group(function (): void {
     Route::post('work-orders', [WorkOrdersController::class, 'store']);
     Route::patch('work-orders/{id}', [WorkOrdersController::class, 'update']);
     Route::delete('work-orders/{id}', [WorkOrdersController::class, 'destroy']);
+});
 
+Route::middleware(['role:superadmin,admin,supervisor,despachador', 'throttle:resources-write'])->group(function (): void {
     Route::post('cuadrillas', [CuadrillasController::class, 'store']);
     Route::patch('cuadrillas/{id}', [CuadrillasController::class, 'update']);
     Route::delete('cuadrillas/{id}', [CuadrillasController::class, 'destroy']);
@@ -106,11 +111,14 @@ Route::middleware('role:superadmin,admin,supervisor,despachador')->group(functio
 });
 
 // Gestión de usuarios, consola SQL, conexión y Git: exclusivo de SUPERADMIN.
-Route::middleware('role:superadmin')->group(function (): void {
+// Rate limiting: 8/min para operadores, 5/min para consultas SQL
+Route::middleware(['role:superadmin', 'throttle:operadores-write'])->group(function (): void {
     Route::post('operadores', [OperadoresController::class, 'store']);
     Route::patch('operadores/{id}', [OperadoresController::class, 'update']);
     Route::delete('operadores/{id}', [OperadoresController::class, 'destroy']);
+});
 
+Route::middleware(['role:superadmin', 'throttle:database-query'])->group(function (): void {
     Route::post('database/query', [DatabaseController::class, 'query']);
     Route::post('database/test-connection', [DatabaseController::class, 'testConnection']);
     Route::post('database/apply-connection', [DatabaseController::class, 'applyConnection']);
@@ -123,8 +131,9 @@ Route::middleware('role:superadmin')->group(function (): void {
 // INFRAESTRUCTURA JERÁRQUICA (centrales → subcentrales → shelters → armarios)
 // Escritura SUPERADMIN/ADMIN (crear/editar/desactivar) y borrado físico
 // exclusivo de SUPERADMIN. Celdas ← asignar subcentral: ADMIN+.
+// Rate limiting: 15 solicitudes/minuto para operaciones de infraestructura
 // ===========================================================================
-Route::middleware('role:superadmin,admin')->group(function (): void {
+Route::middleware(['role:superadmin,admin', 'throttle:infraestructura-write'])->group(function (): void {
     Route::post('centrales', [CentralesController::class, 'store']);
     Route::patch('centrales/{central}', [CentralesController::class, 'update']);
     Route::post('centrales/{central}/deactivate', [CentralesController::class, 'deactivate']);
@@ -162,8 +171,9 @@ Route::middleware('role:superadmin')->group(function (): void {
 // CARGA DEL PADRÓN POR LOTE (dry-run + aplicación)
 // Lectura del lote, subida y anulación: SUPERADMIN/ADMIN. Aplicar el lote
 // sobre el padrón vigente: exclusivo de SUPERADMIN.
+// Rate limiting: 3 solicitudes/minuto para carga de padrón (operación pesada)
 // ===========================================================================
-Route::middleware('role:superadmin,admin')->group(function (): void {
+Route::middleware(['role:superadmin,admin', 'throttle:padron-cargas'])->group(function (): void {
     Route::get('padron/cargas', [PadronCargasController::class, 'index']);
     Route::post('padron/cargas', [PadronCargasController::class, 'store']);
     Route::get('padron/cargas/{id}', [PadronCargasController::class, 'show']);
@@ -171,6 +181,6 @@ Route::middleware('role:superadmin,admin')->group(function (): void {
 });
 
 // Aplicar el lote: exclusivo de SUPERADMIN.
-Route::middleware('role:superadmin')->group(function (): void {
+Route::middleware(['role:superadmin', 'throttle:padron-cargas'])->group(function (): void {
     Route::post('padron/cargas/{id}/apply', [PadronCargasController::class, 'apply']);
 });
