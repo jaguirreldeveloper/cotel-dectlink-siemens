@@ -257,8 +257,11 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: build-frontend
-    if: false  # Habilitar cuando haya infraestructura para levantar backend + frontend
+    needs: lint-and-typecheck
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/backend/database/ci.sqlite
+      ADMIN_TOKEN: ci-admin-token
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -274,20 +277,67 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_sqlite, sqlite3, mbstring, dom, curl
+          coverage: none
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Install Playwright
-        run: npx playwright install --with-deps chromium
+      - name: Prepare backend environment
+        working-directory: backend
+        run: |
+          cat > .env <<ENV
+          APP_NAME="COTEL DECTlink"
+          APP_ENV=local
+          APP_KEY=
+          APP_DEBUG=true
+          APP_URL=http://127.0.0.1:8010
+          APP_LOCALE=es
+          APP_FALLBACK_LOCALE=en
+          LOG_CHANNEL=stack
+          LOG_LEVEL=debug
+          DB_CONNECTION=${DB_CONNECTION}
+          DB_DATABASE=${DB_DATABASE}
+          SESSION_DRIVER=file
+          CACHE_STORE=file
+          QUEUE_CONNECTION=sync
+          ADMIN_TOKEN=${ADMIN_TOKEN}
+          ENV
+          php artisan key:generate --force --no-interaction
+
+      - name: Create SQLite database
+        working-directory: backend
+        run: touch database/ci.sqlite
+
+      - name: Migrate and seed e2e data
+        working-directory: backend
+        run: |
+          php artisan migrate:fresh --force --no-interaction
+          php artisan db:seed --class=E2eSeeder --force --no-interaction
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter frontend exec playwright install --with-deps chromium
 
       - name: Run E2E tests
+        env:
+          PW_CHANNEL: chromium
         run: pnpm --filter frontend test:e2e
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: frontend/test-results/
+          retention-days: 7
 
   deploy-check:
     name: Deploy Verification
