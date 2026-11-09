@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Page } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 
 function readBackendEnv(): Record<string, string> {
   const env: Record<string, string> = {};
@@ -64,8 +64,8 @@ export async function seedOperatorSession(
 
 /**
  * Entra en "Modo Consulta" (auditoría / solo lectura) para saltar la pantalla
- * de login y acceder a la app con el padrón real. Necesario porque los specs
- * de humo asumen la app ya autenticada.
+ * de login. Ojo: ese modo usa el padrón demo local (no consulta la API); para
+ * verificar datos reales usa `seedAdminSession`.
  */
 export async function enterDemoMode(page: Page): Promise<void> {
   const btn = page.getByRole('button', { name: /Acceder en Modo Consulta/i });
@@ -75,4 +75,56 @@ export async function enterDemoMode(page: Page): Promise<void> {
   } catch {
     // Ya autenticado o botón no presente: continuar.
   }
+}
+
+/** Operador ADMIN de pruebas (solo existe en la BD local). */
+export const testAdmin = { email: 'testadmin@cotel.bo', password: 'TestPass123!' } as const;
+
+type TestSession = { token: string; operador: unknown };
+
+// El login está limitado a 6 intentos/minuto en el backend; la suite e2e
+// reutiliza la misma sesión por cuenta para no agotar el throttle.
+const sessionCache = new Map<string, Promise<TestSession | null>>();
+
+/** Login por API cacheado por cuenta (una sola petición por worker/cuenta). */
+export async function loginTestSession(
+  request: APIRequestContext,
+  cuenta: { email: string; password: string } = testAdmin
+): Promise<TestSession | null> {
+  const key = cuenta.email;
+  let pending = sessionCache.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const res = await request.post('/api/auth/login', { data: cuenta });
+      if (!res.ok()) return null;
+      const data = (await res.json()) as { token?: string; operador?: unknown };
+      return data.token ? { token: data.token, operador: data.operador } : null;
+    })();
+    sessionCache.set(key, pending);
+    // Un fallo (red, throttle) no debe envenenar el resto de la suite.
+    pending.then(session => {
+      if (!session) sessionCache.delete(key);
+    });
+  }
+  return pending;
+}
+
+/**
+ * Inicia sesión real como ADMIN por API y siembra la sesión del operador y el
+ * token administrativo antes de que arranque la app. Es lo que necesitan los
+ * specs que esperan el padrón real: el «Modo Consulta» usa datos demo locales
+ * y nunca consulta la API.
+ *
+ * Devuelve la sesión, o `null` si el backend no acepta las credenciales de prueba.
+ */
+export async function seedAdminSession(
+  page: Page,
+  request: APIRequestContext
+): Promise<TestSession | null> {
+  const session = await loginTestSession(request);
+  if (!session) return null;
+
+  await seedOperatorSession(page, session.token, session.operador);
+  await seedAdminToken(page);
+  return session;
 }

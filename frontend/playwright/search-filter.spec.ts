@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterDemoMode } from './helpers';
+import { seedAdminSession } from './helpers';
 
 /**
  * Humo: filtro de búsqueda del padrón — una consulta concreta reduce las
@@ -9,12 +9,18 @@ test('filtra el padrón por búsqueda y muestra el estado vacío sin coincidenci
   page,
   request,
 }) => {
-  const subs = await (await request.get('/api/subscribers')).json();
+  const session = await seedAdminSession(page, request);
+  test.skip(!session, 'no se pudo autenticar al operador de prueba (BD local)');
+
+  const subs = await (
+    await request.get('/api/subscribers', {
+      headers: { Authorization: `Bearer ${session.token}` },
+    })
+  ).json();
   const numero = String(subs[0]?.numero ?? '');
   expect(numero.length, 'el padrón trae al menos un abonado').toBeGreaterThan(0);
 
   await page.goto('/');
-  await enterDemoMode(page);
   await expect(page.getByText(/Conectado a BD/)).toBeVisible({ timeout: 45_000 });
 
   await page.getByRole('button', { name: /Padrón \d+/ }).click();

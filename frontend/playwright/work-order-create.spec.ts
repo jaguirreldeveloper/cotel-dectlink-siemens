@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { adminToken, seedAdminToken, seedOperatorSession } from './helpers';
+import { adminToken, seedAdminSession } from './helpers';
 
 /**
  * Humo: creación de una Orden de Trabajo en el Kanban de cuadrillas.
@@ -9,17 +9,14 @@ import { adminToken, seedAdminToken, seedOperatorSession } from './helpers';
 test('crea una OT en el Kanban y la elimina al terminar', async ({ page, request }) => {
   test.skip(!adminToken, 'requiere ADMIN_TOKEN (backend/.env) para la limpieza de la OT');
 
-  const before = await (await request.get('/api/work-orders')).json();
+  const before = await (
+    await request.get('/api/work-orders', { headers: { 'x-admin-token': adminToken } })
+  ).json();
 
   // Autenticar como ADMIN real para tener acceso a la pestaña Cuadrillas
-  const loginRes = await request.post('/api/auth/login', {
-    data: { email: 'testadmin@cotel.bo', password: 'TestPass123!' },
-  });
-  test.skip(!loginRes.ok(), 'no se pudo autenticar al operador de prueba');
-  const loginData = await loginRes.json();
+  const session = await seedAdminSession(page, request);
+  test.skip(!session, 'no se pudo autenticar al operador de prueba');
 
-  await seedOperatorSession(page, loginData.token, loginData.operador);
-  await seedAdminToken(page);
   await page.goto('/');
   await expect(page.getByText(/Conectado a BD/)).toBeVisible({ timeout: 45_000 });
 
@@ -42,7 +39,9 @@ test('crea una OT en el Kanban y la elimina al terminar', async ({ page, request
 
   // Limpieza: elimina la OT creada (la que no existía antes del test)
   try {
-    const after = await (await request.get('/api/work-orders')).json();
+    const after = await (
+      await request.get('/api/work-orders', { headers: { 'x-admin-token': adminToken } })
+    ).json();
     const created = after.find((o: any) => !before.some((b: any) => b.id === o.id));
     if (created) {
       await request.delete(`/api/work-orders/${created.id}`, {

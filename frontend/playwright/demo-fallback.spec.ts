@@ -1,13 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { enterDemoMode } from './helpers';
+import { seedAdminSession } from './helpers';
 
 /**
  * Humo: mientras el backend responde, el fallback demo queda APAGADO
  * (sin banner «Sin conexión» ni chip «Modo demo») y el pie confirma BD en línea.
  */
-test('con el backend vivo el fallback demo queda apagado', async ({ page }) => {
+test('con el backend vivo el fallback demo queda apagado', async ({ page, request }) => {
+  const session = await seedAdminSession(page, request);
+  test.skip(!session, 'no se pudo autenticar al operador de prueba (BD local)');
+
   await page.goto('/');
-  await enterDemoMode(page);
 
   await expect(page.getByText(/Conectado a BD · \d+ líneas/)).toBeVisible({ timeout: 45_000 });
 

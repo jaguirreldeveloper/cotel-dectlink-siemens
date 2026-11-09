@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { adminToken, seedAdminToken, enterDemoMode } from './helpers';
+import { adminToken, seedAdminSession } from './helpers';
 
 /**
  * Humo: cambio de estado operativo desde la tabla con token admin.
@@ -13,13 +13,14 @@ test('cambia el estado operativo desde el padrón con token admin y lo restaura'
 }) => {
   test.skip(!adminToken, 'requiere ADMIN_TOKEN (backend/.env) para autenticar PATCH');
 
-  const subs = await (await request.get('/api/subscribers')).json();
+  const subs = await (
+    await request.get('/api/subscribers', { headers: { 'x-admin-token': adminToken } })
+  ).json();
   const target = subs.find((s: any) => s.estadoOperativo === 'C/SERV.');
   expect(target, 'hay al menos un abonado activo C/SERV. en el padrón').toBeTruthy();
 
-  await seedAdminToken(page);
+  await seedAdminSession(page, request);
   await page.goto('/');
-  await enterDemoMode(page);
   await expect(page.getByText(/Conectado a BD/)).toBeVisible({ timeout: 45_000 });
 
   await page.getByRole('button', { name: /Padrón \d+/ }).click();
@@ -37,7 +38,9 @@ test('cambia el estado operativo desde el padrón con token admin y lo restaura'
   await expect
     .poll(
       async () => {
-        const list = await (await request.get('/api/subscribers')).json();
+        const list = await (
+          await request.get('/api/subscribers', { headers: { 'x-admin-token': adminToken } })
+        ).json();
         return list.find((s: any) => s.nro === target.nro)?.estadoOperativo;
       },
       { timeout: 20_000 }
@@ -52,7 +55,9 @@ test('cambia el estado operativo desde el padrón con token admin y lo restaura'
   await expect
     .poll(
       async () => {
-        const list = await (await request.get('/api/subscribers')).json();
+        const list = await (
+          await request.get('/api/subscribers', { headers: { 'x-admin-token': adminToken } })
+        ).json();
         return list.find((s: any) => s.nro === target.nro)?.estadoOperativo;
       },
       { timeout: 20_000 }

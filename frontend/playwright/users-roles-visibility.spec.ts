@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
-import type { APIRequestContext } from '@playwright/test';
-import { enterDemoMode, seedOperatorSession } from './helpers';
+import { enterDemoMode, loginTestSession, seedOperatorSession } from './helpers';
 
 /**
  * Humo RBAC: la entrada «Usuarios & Roles» del sidebar solo es visible para
@@ -19,18 +18,6 @@ const SUPERADMIN = { email: 'testsuperadmin@cotel.bo', password: 'TestPass123!' 
 
 const USERS_ROLES_BUTTON = 'Usuarios & Roles';
 
-/** Login por API contra el backend real (proxy /api → :8010). */
-async function login(
-  request: APIRequestContext,
-  cuenta: { email: string; password: string }
-): Promise<{ token: string; operador: unknown } | null> {
-  const res = await request.post('/api/auth/login', { data: cuenta });
-  if (!res.ok()) return null;
-  const data = (await res.json()) as { token?: string; operador?: unknown };
-  if (!data.token) return null;
-  return { token: data.token, operador: data.operador };
-}
-
 test('el modo consulta (TECNICO) no ve la pestaña Usuarios & Roles', async ({ page }) => {
   await page.goto('/');
   await enterDemoMode(page);
@@ -47,7 +34,7 @@ test('el modo consulta (TECNICO) no ve la pestaña Usuarios & Roles', async ({ p
 });
 
 test('un ADMIN autenticado no ve la pestaña Usuarios & Roles', async ({ page, request }) => {
-  const session = await login(request, ADMIN);
+  const session = await loginTestSession(request, ADMIN);
   test.skip(!session, 'no se pudo autenticar al operador de prueba (BD local)');
 
   await seedOperatorSession(page, session.token, session.operador);
@@ -65,7 +52,7 @@ test('un SUPERADMIN autenticado ve y abre la pestaña Usuarios & Roles', async (
   page,
   request,
 }) => {
-  const session = await login(request, SUPERADMIN);
+  const session = await loginTestSession(request, SUPERADMIN);
   test.skip(!session, 'no se pudo autenticar al operador de prueba (BD local)');
 
   await seedOperatorSession(page, session.token, session.operador);
