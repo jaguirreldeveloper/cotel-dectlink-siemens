@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Upload,
   RefreshCw,
@@ -6,12 +6,17 @@ import {
   ChevronDown,
   ChevronUp,
   Play,
+  AlertCircle,
+  CheckCircle,
+  AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Textarea } from '@/shared/ui/Textarea';
 import type { PadronCargaResumen, PadronCargaDetalleResponse } from './types';
 import * as api from './api';
+import { validateCsvContent, formatValidationMessage, type ValidationResult } from './csvValidator';
 
 interface PadronCargasViewProps {
   currentOperador: { role: string } | null;
@@ -45,6 +50,10 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
   const [archivo, setArchivo] = useState('lote-mano.csv');
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+  
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [showValidationDetails, setShowValidationDetails] = useState(false);
+  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
@@ -64,6 +73,45 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
   useEffect(() => {
     loadLotes();
   }, [loadLotes]);
+
+  // Validar CSV automáticamente cuando cambia
+  useEffect(() => {
+    // Clear any existing timeout
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+    
+    // Skip validation if empty
+    if (!csvText.trim()) {
+      setValidationResult(null);
+      return;
+    }
+    
+    // Debounce validation (wait 500ms after user stops typing)
+    validationTimeoutRef.current = setTimeout(() => {
+      try {
+        const result = validateCsvContent(csvText);
+        setValidationResult(result);
+      } catch (e) {
+        // Error during validation
+        setValidationResult({
+          valid: false,
+          errors: ['Error al validar el CSV: ' + (e as Error).message],
+          warnings: [],
+          columnCount: 0,
+          rowCount: 0,
+          missingColumns: [],
+          extraColumns: [],
+        });
+      }
+    }, 500);
+    
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, [csvText]);
 
   const toggleDetalle = async (id: number) => {
     if (expandedId === id) {
@@ -88,12 +136,20 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
       setUploadMsg('Pega el contenido del CSV antes de enviar.');
       return;
     }
+    
+    // Validar antes de enviar
+    if (!validationResult?.valid) {
+      setUploadMsg('Corrige los errores de validación antes de enviar.');
+      return;
+    }
+    
     setUploading(true);
     setUploadMsg(null);
     try {
       const lote = await api.createPadronCarga(csvText, archivo);
       setUploadMsg(`Lote #${lote.id} creado: ${lote.nuevos} nuevos, ${lote.actualizar} a actualizar.`);
       setCsvText('');
+      setValidationResult(null);
       await loadLotes();
     } catch (e) {
       setUploadMsg((e as Error)?.message || 'Error al crear lote');
@@ -163,6 +219,36 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
               placeholder='nombre-archivo.csv'
               aria-label='Nombre del archivo del lote'
             />
+            <Button
+              variant='soft'
+              size='sm'
+              icon={Upload}
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.csv,text/csv';
+                input.onchange = async (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                      setUploadMsg('❌ El archivo es demasiado grande (máximo 5MB)');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const content = event.target?.result as string;
+                      setCsvText(content);
+                      setArchivo(file.name);
+                      setUploadMsg(`Archivo ${file.name} cargado (${(file.size / 1024).toFixed(1)} KB)`);
+                    };
+                    reader.readAsText(file);
+                  }
+                };
+                input.click();
+              }}
+            >
+              Cargar archivo
+            </Button>
           </div>
           <Textarea
             dark
@@ -173,8 +259,93 @@ export function PadronCargasView({ currentOperador }: PadronCargasViewProps) {
             rows={6}
             className='font-mono'
           />
-          {uploadMsg && <p className='text-xs text-slate-400'>{uploadMsg}</p>}
-          <Button variant='primary' size='sm' icon={Upload} onClick={handleUpload} disabled={uploading || !csvText.trim()}>
+          
+          {/* Indicador de validación */}
+          {validationResult && (
+            <div className='space-y-1'>
+              <div className='flex items-center gap-2 p-2 rounded border text-xs'>
+                {validationResult.valid ? (
+                  <>
+                    {validationResult.warnings.length > 0 ? (
+                      <AlertTriangle className='w-4 h-4 text-amber-400' />
+                    ) : (
+                      <CheckCircle className='w-4 h-4 text-emerald-400' />
+                    )}
+                    <span className={validationResult.warnings.length > 0 ? 'text-amber-300' : 'text-emerald-300'}>
+                      {formatValidationMessage(validationResult)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className='w-4 h-4 text-rose-400' />
+                    <span className='text-rose-300'>{validationResult.errors.length} error(es) de validación</span>
+                  </>
+                )}
+                <button
+                  onClick={() => setShowValidationDetails(!showValidationDetails)}
+                  className='text-slate-400 hover:text-slate-300 ml-auto flex items-center gap-1 text-xs'
+                >
+                  {showValidationDetails ? 'Ocultar' : 'Mostrar'} detalles
+                </button>
+              </div>
+              
+              {/* Detalles de validación (expandible) */}
+              {showValidationDetails && (
+                <div className='rounded-lg border border-slate-700 bg-slate-900/60 p-3 space-y-2'>
+                  <div className='grid grid-cols-2 gap-2 text-xs'>
+                    <div>
+                      <span className='text-slate-400'>Columnas:</span> {validationResult.columnCount}
+                    </div>
+                    <div>
+                      <span className='text-slate-400'>Filas:</span> {validationResult.rowCount}
+                    </div>
+                  </div>
+                  
+                  {validationResult.missingColumns.length > 0 && (
+                    <div className='text-rose-400 text-xs'>
+                      <span className='font-semibold'>Columnas faltantes:</span> {validationResult.missingColumns.join(', ')}
+                    </div>
+                  )}
+                  
+                  {validationResult.extraColumns.length > 0 && (
+                    <div className='text-amber-400 text-xs'>
+                      <span className='font-semibold'>Columnas adicionales:</span> {validationResult.extraColumns.join(', ')}
+                    </div>
+                  )}
+                  
+                  {validationResult.warnings.length > 0 && (
+                    <div className='text-amber-400 text-xs space-y-1'>
+                      <span className='font-semibold'>Advertencias:</span>
+                      <ul className='list-disc list-inside ml-2'>
+                        {validationResult.warnings.map((w, i) => (
+                          <li key={i}>{w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {uploadMsg && (
+            <p className='text-xs text-slate-400 flex items-center gap-1'>
+              {uploadMsg.includes('Error') ? (
+                <AlertCircle className='w-4 h-4 text-rose-400' />
+              ) : (
+                <FileText className='w-4 h-4 text-brand-400' />
+              )}
+              {uploadMsg}
+            </p>
+          )}
+          <Button 
+            variant='primary' 
+            size='sm' 
+            icon={Upload} 
+            onClick={handleUpload} 
+            disabled={uploading || !csvText.trim() || !validationResult?.valid}
+            title={!validationResult?.valid ? 'Corrige los errores de validación antes de enviar' : ''}
+          >
             {uploading ? 'Procesando…' : 'Crear lote (dry-run)'}
           </Button>
         </div>
