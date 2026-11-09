@@ -1,6 +1,6 @@
 # Tareas Pendientes — COTEL DECTlink Siemens
 
-> Última actualización: 2026-11-05
+> Última actualización: 2026-11-09
 
 ## ✅ Completadas
 
@@ -37,7 +37,10 @@
 ### Tests
 - [x] 14 tests Vitest para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
 - [x] 119 tests PHPUnit (backend) — todos verdes (452 assertions).
-- [x] Tests e2e Playwright (5/5).
+- [x] Specs e2e Playwright migrados de «Modo Consulta» (datos demo locales) a **sesión real de operador** para validar el padrón de la BD.
+- [x] Lecturas e2e autenticadas: `x-admin-token` en `/api/subscribers` y `/api/work-orders` (incluidos los `expect.poll` de `status-change`).
+- [x] `seedAdminSession`/`loginTestSession` en `frontend/playwright/helpers.ts`, con caché por cuenta para no agotar el throttle de login (6/min).
+- [x] Playwright e2e: **8/8 verdes** sobre `main` (con `PW_CHANNEL=chromium`).
 
 ## 📊 Línea base de verificación (todo verde)
 - `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
@@ -46,34 +49,34 @@
 - Pest / PHPUnit: 119 tests, 452 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Frontend build: ✅ Generado y copiado a `backend/public`
-- Servidores activos: Backend `:8010` ✅ | Frontend `:5173` ✅
-- Playwright e2e: 5/5 ✅
+- Playwright e2e: 8/8 ✅
+- Servidores: Backend `:8010` y Frontend `:5173` (levantados con `pnpm test:e2e` o `php artisan serve` + `pnpm dev`)
 
 ## 🗂️ Estado del repositorio
 - Ramas publicadas en `origin`: `main` (con el trabajo de `feat/celdas-enlaces-mapa` ya fusionado) y `feat/celdas-enlaces-mapa` (`cdfbc48`) conservada como respaldo.
-- `main` incluye el merge de `origin/main` y el fix de la migración `SIN DATO`.
+- `main` incluye el merge de `origin/main`, el fix de la migración `SIN DATO` y el fix de los e2e (`fix(e2e): usar sesión real de operador…`).
 - `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
-- Working tree limpio.
 
 ## 🖥️ Entorno
 - Windows / PowerShell. Disco C con ~700 MB libres tras limpieza.
-- Chromium 1248 instalado en `%LOCALAPPDATA%\ms-playwright`.
-- BD local PostgreSQL `cotel_dectlink` (216 líneas / 212 clientes / 41 zonas / 4 celdas).
+- Chromium 1248 instalado en `%LOCALAPPDATA%\ms-playwright`; **Chrome del sistema no está instalado**, por eso los e2e deben lanzarse con `PW_CHANNEL=chromium`.
+- BD local PostgreSQL `cotel_dectlink` (244 líneas en el padrón; el total puede variar según cargas).
 - Backend Laravel en `:8010`, frontend Vite en `:5173`.
 
 ## ⏳ Pendientes
-- [ ] Regenerar `backend/public` (`pnpm run build` o `pnpm --filter scripts run copy:dist`): tras el merge no están `index.html` ni `assets/` en disco, y el backend devuelve 500 en `/` hasta generarlos.
-- [ ] Re-ejecutar Playwright e2e (5/5) sobre `main` fusionado.
-- [ ] Revisar el CI de GitHub Actions disparado por el push a `main`.
-- [x] Conservar `feat/celdas-enlaces-mapa` como respaldo en `origin` (`cdfbc48`).
+- [ ] Revisar el CI de GitHub Actions del último push: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/actions (no verificable desde la CLI: `gh` no está instalado).
+- [ ] Decidir si se habilita el job `e2e` en `.github/workflows/ci.yml` (hoy tiene `if: false`): requiere infraestructura para levantar backend + frontend en CI.
+- [ ] Publicar en `origin` el commit del fix e2e (`9f29d8e`) y este documento.
 
-## 🚀 Para continuar mañana
+## 🚀 Para continuar
 1. `git log --oneline -10` para ver los últimos commits.
-2. `pnpm run typecheck && pnpm run lint:check` para confirmar baseline.
-3. Atacar la lista de **Pendientes** (primero regenerar `backend/public`).
-4. Recordar: una tarea = un commit, verificar antes de commitear.
+2. `pnpm run typecheck && pnpm run lint` para confirmar baseline.
+3. `$env:PW_CHANNEL='chromium'; pnpm test:e2e` para el humo completo (8 tests).
+4. Atacar los **Pendientes**.
+5. Recordar: una tarea = un commit, verificar antes de commitear.
 
 ## 📝 Cuentas / credenciales útiles
 - Operador de prueba e2e: `testadmin@cotel.bo` / `TestPass123!` (rol ADMIN).
+- Superadmin de prueba e2e: `testsuperadmin@cotel.bo` / `TestPass123!` (rol SUPERADMIN).
 - Admin token backend: ver `backend/.env` (`ADMIN_TOKEN`).
 - PostgreSQL local: user `cotel` / pass `cotel123` / db `cotel_dectlink`.
