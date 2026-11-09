@@ -29,14 +29,14 @@ backend/                      Backend Laravel 13 (runtime de producción)
   database/migrations/        6 migraciones que ejecutan el SQL histórico (ya aplicadas en la BD viva)
   database/sql/               SQL copiado de supabase/migrations/ (fuente de las migraciones)
   public/                     Build del frontend (index.html + assets con hash)
-  tests/                      Feature/Unit (Pest): 72 tests de paridad y seguridad
+  tests/                      Feature/Unit (Pest): 120 tests de paridad y seguridad
 frontend/                     SPA React 19 (FSD: entities/features/shared/widgets)
   src/entities/               cell, crew, subscriber, workOrder (tipos y lógica de dominio)
   src/features/               16 módulos (vistas y modales; ver «Módulos funcionales»)
   src/shared/                 ui/ (Modal, StatusBadge), utils/ (apiFetch, recordFilters, downloadTextFile)
   src/widgets/                Navbar, AppTabs, AppSidebar, DataSourceBar, ExecutiveReport, etc.
   src/demo/                   Datos demo de respaldo (fallback offline siempre etiquetado)
-  playwright/                 5 specs e2e de humo (requieren backend corriendo)
+  playwright/                 8 specs e2e de humo (backend real; CI con SQLite aislado)
 scripts/                      @cotel/scripts: ETL/verificación (CLI commander)
   src/cli.ts                  Entrada: pnpm --filter scripts db:load|db:check|db:verify|db:clean|smoke
   src/commands/               load-consolidado, db-check, db-verify, cleanup-pruebas, smoke
@@ -309,4 +309,5 @@ Hay dos entornos con sus propios `.env`:
 - Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos**.
 - Nueva pestaña **Carga de Padrón** (`PadronCargasView`) en el frontend: subir CSV (ADMIN+), listar lotes, ver detalle por fila, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
 - Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
-- Tests e2e Playwright reparados y en verde (5/5): se liberó disco, se instaló Chromium 1248, se corrigieron los specs (entrada a modo consulta, selectores de sidebar, ruta de `backend/.env` en helpers) y el badge "Conectado a BD" (punto medio) en `UnifiedHeader`.
+- Tests e2e Playwright reparados y en verde (8/8): se liberó disco, se instaló Chromium 1248, se corrigieron los specs (entrada a modo consulta, selectores de sidebar, ruta de `backend/.env` en helpers) y el badge "Conectado a BD" (punto medio) en `UnifiedHeader`.
+- Job `e2e` de GitHub Actions habilitado: backend SQLite aislado (`database/ci.sqlite`), `migrate:fresh` + `E2eSeeder`, Playwright Chromium y subida de trazas si falla. El seeder es idempotente y solo corre en SQLite, así que nunca toca la base PostgreSQL real.

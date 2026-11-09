@@ -36,25 +36,29 @@
 
 ### Tests
 - [x] 14 tests Vitest para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
-- [x] 119 tests PHPUnit (backend) — todos verdes (452 assertions).
+- [x] 120 tests PHPUnit (backend) — todos verdes (461 assertions).
 - [x] Specs e2e Playwright migrados de «Modo Consulta» (datos demo locales) a **sesión real de operador** para validar el padrón de la BD.
 - [x] Lecturas e2e autenticadas: `x-admin-token` en `/api/subscribers` y `/api/work-orders` (incluidos los `expect.poll` de `status-change`).
 - [x] `seedAdminSession`/`loginTestSession` en `frontend/playwright/helpers.ts`, con caché por cuenta para no agotar el throttle de login (6/min).
 - [x] Playwright e2e: **8/8 verdes** sobre `main` (con `PW_CHANNEL=chromium`).
+- [x] Job `e2e` de GitHub Actions habilitado (`.github/workflows/ci.yml`): backend SQLite aislado (`database/ci.sqlite`), `migrate:fresh` + `E2eSeeder`, Playwright Chromium y subida de trazas si falla.
+- [x] `E2eSeeder` idempotente y exclusivo de SQLite (`testadmin@cotel.bo`, `testsuperadmin@cotel.bo`, zona, cliente, celda, 2 abonados `C/SERV.` y cuadrilla), con guard para no tocar PostgreSQL.
+- [x] `E2eSeederTest` (Pest) valida contrato de datos e idempotencia del seeder.
+- [x] Simulación local del job CI completa (SQLite temporal + seeder): Playwright **8/8** con `CI=1 PW_CHANNEL=chromium ADMIN_TOKEN=ci-admin-token`.
 
 ## 📊 Línea base de verificación (todo verde)
 - `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
 - `pnpm run lint` ✅ (0 errores, 0 warnings)
 - Vitest: 14 tests ✅
-- Pest / PHPUnit: 119 tests, 452 assertions ✅
+- Pest / PHPUnit: 120 tests, 461 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Frontend build: ✅ Generado y copiado a `backend/public`
-- Playwright e2e: 8/8 ✅
+- Playwright e2e: 8/8 ✅ (PostgreSQL local y SQLite aislado, igual que CI)
 - Servidores: Backend `:8010` y Frontend `:5173` (levantados con `pnpm test:e2e` o `php artisan serve` + `pnpm dev`)
 
 ## 🗂️ Estado del repositorio
 - Ramas publicadas en `origin`: `main` (con el trabajo de `feat/celdas-enlaces-mapa` ya fusionado) y `feat/celdas-enlaces-mapa` (`cdfbc48`) conservada como respaldo.
-- `main` incluye el merge de `origin/main`, el fix de la migración `SIN DATO` y el fix de los e2e (`fix(e2e): usar sesión real de operador…`).
+- `main` incluye el merge de `origin/main`, el fix de la migración `SIN DATO`, el fix de los e2e (`fix(e2e): usar sesión real de operador…`) y el job `e2e` de CI habilitado.
 - `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
 
 ## 🖥️ Entorno
@@ -64,9 +68,7 @@
 - Backend Laravel en `:8010`, frontend Vite en `:5173`.
 
 ## ⏳ Pendientes
-- [ ] Revisar el CI de GitHub Actions del último push: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/actions (no verificable desde la CLI: `gh` no está instalado).
-- [ ] Decidir si se habilita el job `e2e` en `.github/workflows/ci.yml` (hoy tiene `if: false`): requiere infraestructura para levantar backend + frontend en CI.
-- [ ] Publicar en `origin` el commit del fix e2e (`9f29d8e`) y este documento.
+- [ ] Revisar en el navegador el resultado del workflow tras el push: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/actions (no verificable desde la CLI: `gh` no está instalado y el repo es privado).
 
 ## 🚀 Para continuar
 1. `git log --oneline -10` para ver los últimos commits.
