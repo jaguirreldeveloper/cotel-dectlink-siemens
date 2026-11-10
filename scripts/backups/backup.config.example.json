@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/backup-config.json",
+  "description": "Configuración de backups para COTEL DECTlink - Supabase",
+  
+  "supabase": {
+    "projectRef": "YOUR_SUPABASE_PROJECT_REF",
+    "databaseUrl": "postgresql://postgres.[YOUR_PROJECT_REF]:[YOUR_PASSWORD]@aws-0-us-west-2.pooler.supabase.com:5432/postgres",
+    "accessToken": "YOUR_SUPABASE_ACCESS_TOKEN"
+  },
+  
+  "backup": {
+    "directory": "backups",
+    "retainDays": 30,
+    "compress": true,
+    "encrypt": false,
+    "encryptionKey": ""
+  },
+  
+  "notifications": {
+    "email": {
+      "enabled": false,
+      "smtpHost": "smtp.gmail.com",
+      "smtpPort": 587,
+      "smtpUser": "your-email@gmail.com",
+      "smtpPass": "your-app-password",
+      "from": "backup@cotel.bo",
+      "to": ["admin@cotel.bo", "technical@cotel.bo"]
+    },
+    "slack": {
+      "enabled": false,
+      "webhookUrl": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+    },
+    "discord": {
+      "enabled": false,
+      "webhookUrl": "https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK"
+    }
+  },
+  
+  "storage": {
+    "local": {
+      "enabled": true,
+      "path": "backups"
+    },
+    "s3": {
+      "enabled": false,
+      "endpoint": "https://s3.amazonaws.com",
+      "bucket": "your-backup-bucket",
+      "accessKey": "YOUR_AWS_ACCESS_KEY",
+      "secretKey": "YOUR_AWS_SECRET_KEY",
+      "region": "us-west-2"
+    },
+    "gcs": {
+      "enabled": false,
+      "bucket": "your-backup-bucket",
+      "projectId": "your-gcp-project",
+      "keyFile": "path/to/service-account-key.json"
+    }
+  }
+}
