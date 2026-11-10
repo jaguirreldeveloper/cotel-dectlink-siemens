@@ -166,9 +166,9 @@ export const TechMigrationPlannerView: React.FC<TechMigrationPlannerViewProps> =
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Candidatos FWA LTE 4G/4.5G
             </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
           </div>
-          <div className="text-2xl font-extrabold font-mono text-indigo-600 dark:text-indigo-400 mt-1">
+          <div className="text-2xl font-extrabold font-mono text-brand-600 dark:text-brand-400 mt-1">
             {stats.lteCount}{' '}
             <span className="text-xs font-normal text-slate-400">({stats.ltePct}%)</span>
           </div>

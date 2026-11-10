@@ -19,35 +19,35 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  // Acción principal: verde de marca sólido.
+  // Acción principal corporativa
   primary:
-    'bg-brand-600 text-white hover:bg-brand-500 focus-visible:ring-brand-500 shadow-xs',
-  // Acento sutil sobre fondo claro (contorno + tinte).
+    'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 focus-visible:ring-brand-500 shadow-xs',
+  // Acento secundario sutil (contorno + tinte azul acero)
   secondary:
-    'bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/40 hover:bg-brand-500/20 focus-visible:ring-brand-500',
-  // Sin fondo hasta el hover.
+    'bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800/60 hover:bg-brand-100 dark:hover:bg-brand-900/40 focus-visible:ring-brand-500',
+  // Sin fondo hasta interacción
   ghost:
-    'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:ring-slate-400',
-  // Contorno neutro.
+    'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 focus-visible:ring-slate-400',
+  // Contorno neutro
   outline:
-    'border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:ring-slate-400',
-  // Acción destructiva.
+    'border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 focus-visible:ring-slate-400',
+  // Acción destructiva
   danger:
-    'bg-rose-600 text-white hover:bg-rose-500 focus-visible:ring-rose-500 shadow-xs',
-  // Relleno neutro (ej. acciones secundarias sobre navbar oscura).
-  soft: 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 focus-visible:ring-slate-400',
+    'bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500 shadow-xs',
+  // Relleno neutro para encabezados o barras oscuras
+  soft: 'bg-slate-800/90 text-slate-200 hover:bg-slate-700 border border-slate-700/80 focus-visible:ring-slate-400',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'px-2.5 py-1.5 text-xs gap-1.5',
-  md: 'px-3 py-2 text-xs gap-1.5',
-  lg: 'px-4 py-2.5 text-sm gap-2',
+  sm: 'px-2.5 py-1.5 min-h-[32px] text-xs gap-1.5',
+  md: 'px-3 py-2 min-h-[38px] text-xs gap-2',
+  lg: 'px-4 py-2.5 min-h-[44px] text-sm gap-2.5',
 };
 
 const ICON_SIZE: Record<ButtonSize, string> = {
-  sm: 'w-3 h-3',
-  md: 'w-3.5 h-3.5',
-  lg: 'w-4 h-4',
+  sm: 'w-3.5 h-3.5',
+  md: 'w-4 h-4',
+  lg: 'w-4.5 h-4.5',
 };
 
 export const Button: React.FC<ButtonProps> = ({

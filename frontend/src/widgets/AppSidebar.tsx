@@ -18,7 +18,6 @@ import {
   User,
   Users,
   Settings,
-  Layers,
   MapPin,
   BarChart2,
   Search,
@@ -116,13 +115,17 @@ export function visibleTabIds(operadorRole: string | null | undefined): AppTabId
     .map(tab => tab.id);
 }
 
-interface AppSidebarProps {
+export interface AppSidebarProps {
   activeTab: AppTabId;
   onTabChange: (tab: AppTabId) => void;
   recordCount: number;
   auditIssueCount: number;
   operadorRole?: string | null;
   className?: string;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export function AppSidebar({
@@ -132,10 +135,22 @@ export function AppSidebar({
   auditIssueCount,
   operadorRole,
   className = '',
+  collapsed: propCollapsed,
+  onToggleCollapse,
+  mobileOpen: propMobileOpen,
+  onCloseMobile,
 }: AppSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [localCollapsed, setLocalCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>(NAV_GROUPS.map(g => g.id));
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [localMobileOpen, setLocalMobileOpen] = useState(false);
+
+  const isCollapsed = propCollapsed !== undefined ? propCollapsed : localCollapsed;
+  const toggleCollapse = onToggleCollapse ?? (() => setLocalCollapsed(c => !c));
+  const isMobileOpen = propMobileOpen !== undefined ? propMobileOpen : localMobileOpen;
+  const closeMobile = useMemo(
+    () => onCloseMobile ?? (() => setLocalMobileOpen(false)),
+    [onCloseMobile]
+  );
 
   const toggleGroup = (groupId: string) => {
     setOpenGroups(prev => prev.includes(groupId)
@@ -150,15 +165,29 @@ export function AppSidebar({
     tabs: group.tabs.filter(tab => !tab.roles || (operadorRole ? tab.roles.includes(operadorRole) : false)),
   })).filter(group => group.tabs.length > 0), [operadorRole]);
 
-  // Persistir estado colapsado
+  // Persistir estado colapsado cuando no se controla externamente
   useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved !== null) setCollapsed(saved === 'true');
-  }, []);
+    if (propCollapsed === undefined) {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved !== null) setLocalCollapsed(saved === 'true');
+    }
+  }, [propCollapsed]);
 
   useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', String(collapsed));
-  }, [collapsed]);
+    if (propCollapsed === undefined) {
+      localStorage.setItem('sidebar-collapsed', String(localCollapsed));
+    }
+  }, [propCollapsed, localCollapsed]);
+
+  // Cierre con Escape en vista móvil
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobile();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen, closeMobile]);
 
   const renderTab = (tab: NavTab, isMobile: boolean) => {
     const isActive = activeTab === tab.id;
@@ -170,35 +199,35 @@ export function AppSidebar({
         type="button"
         onClick={() => {
           onTabChange(tab.id);
-          if (isMobile) setMobileOpen(false);
+          if (isMobile) closeMobile();
         }}
         aria-current={isActive ? 'page' : undefined}
-        className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all duration-200
+        className={`w-full flex items-center gap-2.5 px-3 py-2 min-h-[38px] rounded-md transition-colors text-left
           ${isActive
-            ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 shadow-sm'
-            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            ? 'bg-brand-500/10 text-brand-700 dark:text-brand-300 font-semibold'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
           }
         `}
-        title={collapsed && !isMobile ? tab.label : ''}
+        title={isCollapsed && !isMobile ? tab.label : ''}
       >
         <tab.icon
-          className={`w-4.5 h-4.5 flex-shrink-0
+          className={`w-4 h-4 flex-shrink-0
             ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 dark:text-slate-400'}
           `}
           aria-hidden="true"
         />
-        {!collapsed || isMobile || isActive ? (
-          <span className="font-medium text-sm truncate flex-1 text-left">{tab.label}</span>
-        ) : null}
-        {count !== undefined && count > 0 && !collapsed && (
+        {(!isCollapsed || isMobile) && (
+          <span className="text-xs truncate flex-1">{tab.label}</span>
+        )}
+        {count !== undefined && count > 0 && (!isCollapsed || isMobile) && (
           <span className={`ml-auto font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${
-            isActive ? 'bg-brand-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+            isActive ? 'bg-brand-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
           }`}>
             {count}
           </span>
         )}
-        {isActive && !collapsed && (
-          <span className="w-0.5 h-6 bg-brand-500 rounded-r ml-2" aria-hidden="true" />
+        {isActive && !isCollapsed && !isMobile && (
+          <span className="w-1 h-4 bg-brand-600 dark:bg-brand-500 rounded-full ml-1" aria-hidden="true" />
         )}
       </button>
     );
@@ -217,124 +246,113 @@ export function AppSidebar({
         <button
           type="button"
           onClick={() => toggleGroup(group.id)}
-          className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all duration-200
-            font-medium text-xs uppercase tracking-wider
+          className={`w-full flex items-center gap-2 px-2.5 py-1.5 min-h-[34px] rounded-md transition-colors
+            font-medium text-[11px] uppercase tracking-wider
             ${hasActiveTab
-              ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'text-brand-700 dark:text-brand-300 bg-brand-50/50 dark:bg-brand-950/20'
+              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
             }
           `}
-          title={collapsed && !isMobile ? group.label : ''}
+          title={isCollapsed && !isMobile ? group.label : ''}
         >
-          <group.icon className={`w-4 h-4 flex-shrink-0
-            ${hasActiveTab ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 dark:text-slate-400'}
+          <group.icon className={`w-3.5 h-3.5 flex-shrink-0
+            ${hasActiveTab ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500'}
           `} />
-          {!collapsed && (
+          {(!isCollapsed || isMobile) && (
             <>
-              <span className="flex-1 text-left">{group.label}</span>
+              <span className="flex-1 text-left truncate">{group.label}</span>
               {activeCount > 0 && (
-                <span className="ml-auto font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300">
+                <span className="ml-auto font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   {activeCount}
                 </span>
               )}
-              <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''} text-slate-400`} />
+              <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''} text-slate-400`} />
             </>
           )}
         </button>
-        {!collapsed && isOpen && (
-          <div className="ml-2.5 mt-1 space-y-0.5 border-l border-slate-200 dark:border-slate-700 pl-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
-            {group.tabs.map(tab => renderTab(tab, false))}
+        {(!isCollapsed || isMobile) && isOpen && (
+          <div className="ml-2 pl-2 space-y-0.5 border-l border-slate-200 dark:border-slate-800">
+            {group.tabs.map(tab => renderTab(tab, isMobile))}
           </div>
         )}
       </div>
     );
   };
 
-  // Mobile: overlay sidebar
-  if (mobileOpen) {
-    return (
-      <>
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        />
-        <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 shadow-xl lg:hidden animate-in slide-in-from-left-4">
-          <div className="flex h-full flex-col">
+  return (
+    <>
+      {/* Mobile Drawer (con accesibilidad aria-modal y tecla Escape) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+          <div
+            className="fixed inset-0 bg-slate-950/60 transition-opacity"
+            onClick={closeMobile}
+            aria-hidden="true"
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl flex flex-col">
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <span className="font-bold text-lg">Módulos</span>
-              <button onClick={() => setMobileOpen(false)} className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Cerrar menú">
+              <div>
+                <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">COTEL DECTlink</span>
+                <p className="text-[11px] text-slate-500">Módulos de Planta Externa</p>
+              </div>
+              <button
+                onClick={closeMobile}
+                className="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Cerrar menú"
+              >
                 <ChevronLeft className="w-5 h-5" />
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto p-3 space-y-3" aria-label="Navegación principal">
               {gruposVisibles.map(group => renderGroup(group, true))}
             </nav>
-          </div>
-        </aside>
-      </>
-    );
-  }
+          </aside>
+        </div>
+      )}
 
-  return (
-    <aside
-      className={`${collapsed ? 'w-16' : 'w-64'} fixed lg:static inset-y-0 left-0 z-40 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
-        transition-all duration-300 ease-out
-        flex flex-col
-        ${className}`}
-      aria-label="Navegación principal"
-    >
-      {/* Header Sidebar */}
-      <div className="flex h-16 items-center justify-between px-3 border-b border-slate-200 dark:border-slate-800">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-500">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <span className="font-bold text-sm text-slate-900 dark:text-white truncate">COTEL Telecom</span>
-          </div>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-500"
-          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          aria-expanded={!collapsed}
-        >
-          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {/* Mobile toggle button (only visible on mobile when closed) */}
-      <button
-        className="lg:hidden fixed bottom-4 right-4 z-50 p-3 rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 transition"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Abrir menú de navegación"
+      {/* Desktop Sidebar */}
+      <aside
+        className={`${isCollapsed ? 'w-16' : 'w-64'} hidden lg:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-200 ease-in-out shrink-0 ${className}`}
+        aria-label="Navegación principal"
       >
-        <Layers className="w-6 h-6" />
-      </button>
-
-      {/* Navegación */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-3" aria-label="Navegación principal">
-        {gruposVisibles.map(group => renderGroup(group, false))}
-      </nav>
-
-      {/* Footer Sidebar - Usuario / Config */}
-      <div className="p-3 border-t border-slate-200 dark:border-slate-800">
-        {!collapsed ? (
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-            <User className="w-5 h-5 text-slate-400" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">Operador COTEL</p>
-              <p className="text-xs text-slate-500 truncate">Área EAI - El Alto</p>
-            </div>
-          </div>
-        ) : (
-          <button className="w-full p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-400" title="Usuario y configuración">
-            <User className="w-5 h-5 mx-auto" />
+        <div className="flex h-12 items-center justify-between px-3 border-b border-slate-200 dark:border-slate-800">
+          {!isCollapsed && (
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Módulos
+            </span>
+          )}
+          <button
+            onClick={toggleCollapse}
+            className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-500 ml-auto"
+            aria-label={isCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+            aria-expanded={!isCollapsed}
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
-        )}
-      </div>
-    </aside>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto p-2.5 space-y-2.5" aria-label="Módulos de la consola">
+          {gruposVisibles.map(group => renderGroup(group, false))}
+        </nav>
+
+        {/* Footer Sidebar */}
+        <div className="p-2.5 border-t border-slate-200 dark:border-slate-800">
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs text-slate-600 dark:text-slate-400">
+              <User className="w-4 h-4 text-slate-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-slate-900 dark:text-slate-200 truncate">{operadorRole || 'Operador'}</p>
+                <p className="text-[10px] text-slate-500 truncate">Siemens DECTlink</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center py-1 text-slate-400" title={operadorRole || 'Operador'}>
+              <User className="w-4 h-4" />
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
   );
 }
 

@@ -50,6 +50,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<AppTabId>('gps-calibration');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
@@ -253,7 +254,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className='min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white'>
+      <div className='min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans'>
         <UnifiedHeader
           dataSource={data.dataSource}
           rawCount={data.rawRecords.length}
@@ -273,7 +274,7 @@ export default function App() {
           onOpenGitMigration={() => setIsGitModalOpen(true)}
           onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
           sidebarCollapsed={sidebarCollapsed}
-          onOpenMobileSidebar={() => {}}
+          onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
           operador={auth.operador}
           onLogout={auth.logout}
           isDemoMode={auth.isDemoMode}
@@ -287,6 +288,10 @@ export default function App() {
             recordCount={data.records.length}
             auditIssueCount={data.auditIssues.length}
             operadorRole={auth.operador?.role ?? null}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+            mobileOpen={mobileSidebarOpen}
+            onCloseMobile={() => setMobileSidebarOpen(false)}
           />
 
           <main className='flex-1 overflow-auto bg-slate-100 dark:bg-slate-950'>

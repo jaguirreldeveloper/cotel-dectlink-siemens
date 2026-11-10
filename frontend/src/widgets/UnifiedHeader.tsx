@@ -70,9 +70,9 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
           <div className='flex items-center justify-between h-16 gap-4'>
             <div className='flex items-center gap-3 min-w-0 flex-1'>
               <button
-                className='lg:hidden p-2 rounded-lg hover:bg-slate-800 transition text-slate-400'
+                className='lg:hidden p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg hover:bg-slate-800 transition text-slate-400'
                 onClick={props.onOpenMobileSidebar}
-                aria-label='Abrir menú'
+                aria-label='Abrir menú de navegación'
               >
                 <Menu className='w-5 h-5' />
               </button>
@@ -126,19 +126,22 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
               </div>
             </div>
 
-            <div className='flex items-center gap-2 sm:gap-3 shrink-0'>
-              <Button variant='soft' size='md' icon={Cloud} onClick={props.onOpenSupabaseMigration} aria-label='Migrar o conectar a Supabase' title='Asistente guiado para migración o conexión con Supabase PostgreSQL' className='!px-2' />
-              <Button variant='soft' size='md' icon={Upload} onClick={props.onOpenUploader} aria-label='Cargar datos CSV' title='Cargar o cambiar datos CSV' className='!px-2' />
+            <div className='hidden sm:flex items-center gap-2 sm:gap-3 shrink-0'>
+              <Button variant='soft' size='md' icon={Cloud} onClick={props.onOpenSupabaseMigration} aria-label='Migrar o conectar a Supabase' title='Asistente guiado para migración o conexión con Supabase PostgreSQL' className='!px-2.5 min-w-[38px]' />
+              <Button variant='soft' size='md' icon={Upload} onClick={props.onOpenUploader} aria-label='Cargar datos CSV' title='Cargar o cambiar datos CSV' className='!px-2.5 min-w-[38px]' />
 
-              <Button variant='secondary' size='md' icon={Database} onClick={props.onOpenDatabase} className='hidden sm:inline-flex' title='Explorador de tablas y consola SQL de PostgreSQL'>
+              <Button variant='secondary' size='md' icon={Database} onClick={props.onOpenDatabase} className='hidden lg:inline-flex' title='Explorador de tablas y consola SQL de PostgreSQL'>
                 <span className='hidden 2xl:inline'>Base de Datos</span>
               </Button>
-              <Button variant='soft' size='md' icon={FileSpreadsheet} iconClassName='text-brand-400' onClick={props.onExportCsv} title='Exportar archivo CSV con normalización' aria-label='Exportar CSV'>
+              <Button variant='soft' size='md' icon={FileSpreadsheet} iconClassName='text-brand-400' onClick={props.onExportCsv} title='Exportar archivo CSV con normalización' aria-label='Exportar CSV' className='hidden lg:inline-flex'>
                 <span className='hidden 2xl:inline'>Exportar CSV</span>
               </Button>
-              <Button variant='primary' size='md' icon={Printer} onClick={props.onPrint} title='Generar informe para impresión / PDF'>
+              <Button variant='primary' size='md' icon={Printer} onClick={props.onPrint} title='Generar informe para impresión / PDF' className='hidden md:inline-flex'>
                 Informe PDF
               </Button>
+            </div>
+
+            <div className='flex items-center gap-2 shrink-0'>
 
               {/* Sección de autenticación y operador */}
               {props.operador ? (
@@ -155,7 +158,8 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
                   <button
                     onClick={props.onLogout}
                     title='Cerrar sesión'
-                    className='p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 transition-colors border border-slate-700/80 hover:border-rose-500/30 cursor-pointer'
+                    aria-label='Cerrar sesión del operador'
+                    className='p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 transition-colors border border-slate-700/80 hover:border-rose-500/30 cursor-pointer'
                   >
                     <LogOut className='w-4 h-4' />
                   </button>

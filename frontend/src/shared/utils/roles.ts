@@ -92,23 +92,23 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
   },
 };
 
-/** Clases de Tailwind (badge) para el color de cada rol. */
+/** Clases de Tailwind (badge) para el color de cada rol con contraste accesible WCAG AA. */
 export function roleBadgeClasses(role: OperadorRole): string {
   switch (role) {
     case 'SUPERADMIN':
-      return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+      return 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60';
     case 'ADMIN':
-      return 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+      return 'bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border border-rose-300 dark:border-rose-700/60';
     case 'SUPERVISOR':
-      return 'bg-violet-500/20 text-violet-300 border border-violet-500/30';
+      return 'bg-violet-50 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 border border-violet-300 dark:border-violet-700/60';
     case 'DESPACHADOR':
-      return 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+      return 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700/60';
     case 'TECNICO':
-      return 'bg-sky-500/20 text-sky-300 border border-sky-500/30';
+      return 'bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 border border-sky-300 dark:border-sky-700/60';
     case 'AUDITOR':
-      return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+      return 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700';
     default:
-      return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
+      return 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700';
   }
 }
 

@@ -196,11 +196,11 @@ export const OfficialTechnicalSheetsView: React.FC<OfficialTechnicalSheetsViewPr
           </div>
 
           {/* Title Banner */}
-          <div className="bg-slate-100 border-l-4 border-emerald-600 p-3 rounded-r">
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+          <div className="bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 p-3.5 rounded-md">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               FICHA TÉCNICA Y PROTOCOLO DE RADIACIÓN DE ABONADO
             </h2>
-            <p className="text-[11px] text-slate-600">
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
               Certificación técnica para fiscalización interna y cumplimiento de la Ley N° 164 ante la ATT.
             </p>
           </div>
