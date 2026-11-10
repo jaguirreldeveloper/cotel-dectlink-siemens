@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@cotel/types": "workspace:*",
+    "@sentry/react": "^8.0.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",
     "react": "^19.0.1",

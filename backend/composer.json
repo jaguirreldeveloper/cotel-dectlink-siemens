@@ -9,7 +9,8 @@
         "php": "^8.3",
         "doctrine/annotations": "^2.0",
         "laravel/framework": "^13.17",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "sentry/sentry-laravel": "^5.0"
     },
     "require-dev": {
         "darkaonline/l5-swagger": "@dev",
