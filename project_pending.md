@@ -15,6 +15,7 @@
 - [x] Rediseño corporativo «panel de instrumentación» commiteado (`DESIGN.md`, `PRODUCT.md`, tema claro/oscuro, badges WCAG AA, sidebar móvil) — `b9110a8`.
 - [x] Skill `impeccable` y comando `/impeccable` de OpenCode trackeados en `.opencode/` — `18f12c0`.
 - [x] WIP de Web Push descartado (migración `push_subscriptions` + `WebPushNotification`, sin dependencias ni endpoints) — decisión del usuario.
+- [x] `pnpm run smoke` respondía 401 en los tres endpoints: `scripts/src/commands/smoke.ts` no enviaba credenciales → ahora envía `x-admin-token` con prioridad `SMOKE_ADMIN_TOKEN` → `backend/.env` → entorno (el orden importa: `cli.ts` importa `db-check.ts`, que ejecuta `dotenv.config()` y contamina `ADMIN_TOKEN` con el `scripts/.env` obsoleto `dev-token-123`); CI expone el secret `SMOKE_ADMIN_TOKEN` — `4600f64`.
 
 ### Backend / Calidad
 - [x] Adoptar `larastan/larastan` y llevar PHPStan a 0 errores (resuelto acceso a propiedades dinámicas en `App\Models\Cell`).
