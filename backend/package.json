@@ -1,10 +1,12 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
+    "name": "@cotel/backend",
     "private": true,
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "php artisan test --compact"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
