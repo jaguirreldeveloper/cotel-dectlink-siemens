@@ -392,6 +392,8 @@ jobs:
         env:
           SMOKE_URL: ${{ secrets.SMOKE_URL }}
           EXPECTED_LINES: ${{ secrets.EXPECTED_LINES }}
+          # La API exige x-admin-token; si no se define, el smoke recibe 401.
+          SMOKE_ADMIN_TOKEN: ${{ secrets.SMOKE_ADMIN_TOKEN }}
 
   deploy-laravel-cloud:
     name: Deploy to Laravel Cloud

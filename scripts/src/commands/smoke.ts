@@ -1,7 +1,14 @@
 /**
  * smoke — CLI command wrapper
  * Verificación de despliegue: el backend sirve el padrón real.
+ *
+ * Las lecturas de la API exigen sesión de operador (middleware `operator`),
+ * así que las peticiones llevan el secreto de servidor en el header
+ * `x-admin-token` (mismo mecanismo que playwright/helpers.ts).
  */
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 interface DbStatus {
   connected: boolean;
@@ -11,14 +18,51 @@ interface DbStatus {
 
 const BASE_URL_DEFAULT = 'http://127.0.0.1:8010';
 
+/**
+ * Secreto de servidor para el header `x-admin-token`.
+ * Prioridad:
+ *  1. SMOKE_ADMIN_TOKEN — explícito para smoke (CI/despliegue contra un
+ *     backend remoto con secreto distinto).
+ *  2. ADMIN_TOKEN de backend/.env — la verdad del backend local (es el
+ *     mismo valor que carga `php artisan serve`). Va antes que
+ *     process.env.ADMIN_TOKEN porque cli.ts importa db-check.ts, que
+ *     ejecuta dotenv.config() y contamina el entorno con
+ *     scripts/.env (ADMIN_TOKEN=dev-token-123, obsoleto).
+ *  3. ADMIN_TOKEN del entorno — entornos CI sin backend/.env.
+ */
+function resolveAdminToken(): string {
+  const explicit = process.env.SMOKE_ADMIN_TOKEN || '';
+  if (explicit) return explicit;
+
+  try {
+    const raw = readFileSync(resolve(process.cwd(), '..', 'backend', '.env'), 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      const eq = line.indexOf('=');
+      if (line.startsWith('#') || eq <= 0) continue;
+      if (line.slice(0, eq).trim() === 'ADMIN_TOKEN') {
+        const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+        if (value) return value;
+      }
+    }
+  } catch {
+    // Sin backend/.env (p. ej. CI): se recurre a process.env más abajo.
+  }
+
+  return process.env.ADMIN_TOKEN || '';
+}
+
 export async function smokeCommand(options: { url?: string; expected?: string }) {
   const BASE_URL = (options.url || process.env.SMOKE_URL || BASE_URL_DEFAULT).replace(/\/$/, '');
   const expectedLines = options.expected ? Number(options.expected) : (process.env.EXPECTED_LINES ? Number(process.env.EXPECTED_LINES) : null);
+  const adminToken = resolveAdminToken();
 
   const problemas: string[] = [];
 
   async function getJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, { signal: AbortSignal.timeout(15000) });
+    const res = await fetch(`${BASE_URL}${path}`, {
+      signal: AbortSignal.timeout(15000),
+      headers: adminToken ? { 'x-admin-token': adminToken } : {},
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
   }
@@ -27,10 +71,18 @@ export async function smokeCommand(options: { url?: string; expected?: string })
     if (err instanceof Error && err.name === 'TimeoutError') {
       return `timeout consultando ${BASE_URL} (el backend no respondió en 15 s)`;
     }
+    if (err instanceof Error && /^HTTP 401/.test(err.message)) {
+      return `HTTP 401 sin autorización en ${BASE_URL} — exporta SMOKE_ADMIN_TOKEN (o ADMIN_TOKEN) o ejecuta desde el repo con backend/.env presente`;
+    }
     return `inaccesible: ${BASE_URL} — ${err instanceof Error ? err.message : err} (¿está el backend en marcha? ¿php artisan serve?)`;
   }
 
   console.log(`smoke — verificación contra ${BASE_URL}`);
+  console.log(
+    adminToken
+      ? '  auth: x-admin-token presente'
+      : '  auth: SIN TOKEN — las lecturas protegidas responderán 401 (exporta SMOKE_ADMIN_TOKEN/ADMIN_TOKEN)'
+  );
 
   // 1. Padrón de abonados
   let lineas = -1;
