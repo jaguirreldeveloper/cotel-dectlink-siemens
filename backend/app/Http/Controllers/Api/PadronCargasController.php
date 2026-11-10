@@ -12,6 +12,7 @@ use App\Models\Subscriber;
 use App\Models\Zone;
 use App\Support\OperatorToken;
 use App\Support\PadronBatchLoader;
+use App\Support\PadronCache;
 use App\Support\SseHub;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -180,6 +181,9 @@ class PadronCargasController extends Controller
             ])->save();
         });
 
+        // Limpiar cache del padrón ya que se aplicaron cambios
+        PadronCache::clear();
+        
         SseHub::emit('subscriber_updated', [
             'tipo' => 'lote_aplicado',
             'loteId' => $lote->id,
@@ -188,7 +192,7 @@ class PadronCargasController extends Controller
         ]);
 
         return response()->json([
-            'message' => "Lote aplicado: {$altas} altas, {$actualizados} actualizaciones.",
+            'message' => "Lote aplicado: {$altas} altas, {$actualizados} actualizaciones. Cache del padrón limpiado.",
             'lote' => $this->serializarCarga($lote->fresh()),
             'altas' => $altas,
             'actualizados' => $actualizados,
@@ -213,6 +217,8 @@ class PadronCargasController extends Controller
         }
 
         $lote->fill(['estado' => PadronCarga::ESTADO_ANULADO])->save();
+        
+        // No es necesario limpiar el cache al anular, ya que no se aplicaron cambios
 
         return response()->json([
             'message' => 'Lote anulado sin aplicar cambios.',

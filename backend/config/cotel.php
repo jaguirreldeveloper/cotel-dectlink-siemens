@@ -13,4 +13,15 @@ return [
 
     'admin_token' => env('ADMIN_TOKEN'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cache del Padrón
+    |--------------------------------------------------------------------------
+    | Configuración del caching para el padrón de abonados.
+    | Usa Redis preferiblemente, con fallback a file/database.
+    */
+
+    'cache_ttl_minutes' => (int) env('PADRON_CACHE_TTL_MINUTES', 5),
+    'cache_enabled' => env('PADRON_CACHE_ENABLED', true),
+
 ];
