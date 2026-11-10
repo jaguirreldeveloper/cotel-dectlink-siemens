@@ -13,6 +13,7 @@ import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { StatusBadge } from '@/shared/ui/StatusBadge';
 import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { TablePagination } from '@/shared/ui/TablePagination';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
 import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
 import { DEFAULT_PAGE_SIZE } from '@/shared/utils/pagination';
@@ -307,11 +308,11 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
           </div>
 
           {/* Tabla de abonados */}
-          <div className='overflow-x-auto'>
+          <div className='overflow-x-auto max-h-[550px]'>
             <table className='w-full text-xs'>
-              <thead className='bg-slate-800/60 text-slate-300'>
+              <thead className='sticky top-0 z-10 bg-slate-800 text-slate-300'>
                 <tr>
-                  <Th field='nro' label='Nro' sortField={sortField} onSort={handleSort} />
+                  <Th field='nro' label='Nro' sortField={sortField} onSort={handleSort} align='right' />
                   <Th field='numero' label='Teléfono' sortField={sortField} onSort={handleSort} />
                   <Th field='nombre' label='Nombre del Cliente' sortField={sortField} onSort={handleSort} />
                   <Th field='direccion' label='Dirección' sortField={sortField} onSort={handleSort} />
@@ -331,7 +332,7 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
                     onClick={() => onSelectRecord(r)}
                     className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
                   >
-                    <td className='px-3 py-2 font-mono text-slate-400'>{r.nro}</td>
+                    <td className='px-3 py-2 font-mono text-slate-400 text-right tabular-nums'>{r.nro}</td>
                     <td className='px-3 py-2 font-mono text-white'>{r.numero}</td>
                     <td className='px-3 py-2 text-slate-200 truncate max-w-[200px]' title={r.nombre}>{r.nombre}</td>
                     <td className='px-3 py-2 text-slate-400 truncate max-w-[180px]' title={r.direccion}>{r.direccion}</td>
@@ -369,7 +370,10 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
                 {pageSubs.length === 0 && (
                   <tr>
                     <td colSpan={11} className='px-3 py-8 text-center text-slate-500'>
-                      {search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
+                      <EmptyState
+                        title={search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
+                        description={search ? 'Prueba con otro nombre, número o dirección.' : 'Selecciona otra celda de la lista.'}
+                      />
                     </td>
                   </tr>
                 )}
@@ -398,17 +402,22 @@ function Th({
   label,
   sortField,
   onSort,
+  align = 'left',
 }: {
   field: SortField;
   label: string;
   sortField: SortField;
   onSort: (f: SortField) => void;
+  /** Alineación de la columna: derecha para numéricas. */
+  align?: 'left' | 'right';
 }) {
   return (
-    <th className='px-3 py-2 text-left whitespace-nowrap'>
+    <th className={`px-3 py-2 whitespace-nowrap ${align === 'right' ? 'text-right' : 'text-left'}`}>
       <button
         onClick={() => onSort(field)}
-        className='inline-flex items-center gap-1 hover:text-white transition'
+        className={`inline-flex items-center gap-1 hover:text-white transition ${
+          align === 'right' ? 'flex-row-reverse' : ''
+        }`}
       >
         {label}
         <ArrowUpDown

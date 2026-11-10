@@ -15,6 +15,7 @@ import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscrib
 import { statusTextClass } from '@/shared/ui/StatusBadge';
 import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { TablePagination } from '@/shared/ui/TablePagination';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
@@ -372,17 +373,17 @@ export const DataTable: React.FC<DataTableProps> = ({
       </div>
 
       {/* Table view */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[550px]">
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-medium select-none">
+          <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-medium select-none">
             <tr>
               <th
                 scope="col"
                 aria-sort={ariaSort('nro')}
                 onClick={() => handleSort('nro')}
-                className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center justify-end gap-1">
                   <span>NRO</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
@@ -458,9 +459,9 @@ export const DataTable: React.FC<DataTableProps> = ({
                 scope="col"
                 aria-sort={ariaSort('distanciaKm')}
                 onClick={() => handleSort('distanciaKm')}
-                className="py-3 px-2 text-center cursor-pointer hover:text-slate-900 dark:hover:text-white"
+                className="py-3 px-2 text-right cursor-pointer hover:text-slate-900 dark:hover:text-white"
               >
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-end gap-1">
                   <span>DISTANCIA</span>
                   <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
@@ -484,8 +485,11 @@ export const DataTable: React.FC<DataTableProps> = ({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {paginatedRecords.length === 0 ? (
               <tr>
-                <td colSpan={12} className="py-12 text-center text-slate-400">
-                  No se encontraron abonados con los filtros aplicados.
+                <td colSpan={13} className="py-12 text-center text-slate-400">
+                  <EmptyState
+                    title="No se encontraron abonados con los filtros aplicados."
+                    description="Ajusta la búsqueda o limpia los filtros de zona, celda, tipo y estado."
+                  />
                 </td>
               </tr>
             ) : (
@@ -498,7 +502,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition group"
                   >
                     {/* NRO */}
-                    <td className="py-2.5 px-3 font-mono text-slate-500 text-xs">
+                    <td className="py-2.5 px-3 font-mono text-slate-500 text-xs text-right tabular-nums">
                       {record.nro}
                     </td>
 
@@ -598,7 +602,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                     </td>
 
                     {/* DISTANCIA A BASE RFP */}
-                    <td className="py-2.5 px-2 text-center font-mono">
+                    <td className="py-2.5 px-2 text-right font-mono tabular-nums">
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
                         {record.distanciaKm} km
                       </span>

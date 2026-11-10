@@ -3,6 +3,7 @@ import { apiFetch } from '@/shared/utils/apiFetch';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import { TablePagination } from '@/shared/ui/TablePagination';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { DEFAULT_PAGE_SIZE } from '@/shared/utils/pagination';
 import { downloadTextFile } from '@/shared/utils/downloadTextFile';
 import { Modal } from '@/shared/ui/Modal';
@@ -935,7 +936,10 @@ export const DatabaseExplorerView: React.FC<DatabaseExplorerViewProps> = ({
                   ) : tableData.length === 0 ? (
                     <tr>
                       <td colSpan={tableColumns.length + 2} className="p-8 text-center text-slate-500">
-                        No se encontraron registros para la tabla {selectedTable}.
+                        <EmptyState
+                          title={`No se encontraron registros para la tabla ${selectedTable}.`}
+                          description="Verifica el nombre de la tabla o registra datos en ella."
+                        />
                       </td>
                     </tr>
                   ) : (

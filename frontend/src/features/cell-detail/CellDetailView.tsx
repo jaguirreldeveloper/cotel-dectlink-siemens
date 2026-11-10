@@ -15,6 +15,7 @@ import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscrib
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { StatusBadge } from '@/shared/ui/StatusBadge';
 import { GeoBadge } from '@/shared/ui/GeoBadge';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Select } from '@/shared/ui/Select';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { Input } from '@/shared/ui/Input';
@@ -250,11 +251,11 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
           </div>
 
           {/* Tabla detallada de abonados */}
-          <div className='rounded-xl border border-slate-700 bg-slate-900/60 overflow-x-auto'>
+          <div className='rounded-xl border border-slate-700 bg-slate-900/60 overflow-x-auto max-h-[550px]'>
             <table className='w-full text-xs'>
-              <thead className='bg-slate-800/60 text-slate-300'>
+              <thead className='sticky top-0 z-10 bg-slate-800 text-slate-300'>
                 <tr>
-                  <SortableTh field='nro' label='Nro' sortField={sortField} onSort={handleSort} />
+                  <SortableTh field='nro' label='Nro' sortField={sortField} onSort={handleSort} align='right' />
                   <SortableTh field='numero' label='Teléfono' sortField={sortField} onSort={handleSort} />
                   <SortableTh field='nombre' label='Cliente' sortField={sortField} onSort={handleSort} />
                   <SortableTh field='direccion' label='Dirección' sortField={sortField} onSort={handleSort} />
@@ -266,7 +267,7 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                   <SortableTh field='fechServ' label='F. Servicio' sortField={sortField} onSort={handleSort} />
                   <th className='px-2 py-2 text-left whitespace-nowrap'>GPS</th>
                   <th className='px-2 py-2 text-left whitespace-nowrap'>Mapa</th>
-                  <th className='px-2 py-2 text-left whitespace-nowrap'>Deuda</th>
+                  <th className='px-2 py-2 text-right whitespace-nowrap'>Deuda</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,7 +277,7 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                     onClick={() => onSelectRecord(r)}
                     className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
                   >
-                    <td className='px-2 py-2 font-mono text-slate-400 whitespace-nowrap'>{r.nro}</td>
+                    <td className='px-2 py-2 font-mono text-slate-400 whitespace-nowrap text-right tabular-nums'>{r.nro}</td>
                     <td className='px-2 py-2 font-mono text-white whitespace-nowrap'>{r.numero}</td>
                     <td className='px-2 py-2 text-slate-200 truncate max-w-[180px]' title={r.nombre}>{r.nombre}</td>
                     <td className='px-2 py-2 text-slate-400 truncate max-w-[160px]' title={r.direccion}>{r.direccion}</td>
@@ -311,7 +312,7 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                         <span className='text-[11px]'>Mapa</span>
                       </a>
                     </td>
-                    <td className='px-2 py-2 whitespace-nowrap'>
+                    <td className='px-2 py-2 whitespace-nowrap text-right tabular-nums'>
                       {r.deudaMeses ? (
                         <span className='inline-flex items-center gap-1 text-amber-400'>
                           <AlertTriangle className='w-3 h-3' />
@@ -326,7 +327,10 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                 {pageSubs.length === 0 && (
                   <tr>
                     <td colSpan={13} className='px-3 py-8 text-center text-slate-500'>
-                      {search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
+                      <EmptyState
+                        title={search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
+                        description={search ? 'Prueba con otro nombre, número o dirección.' : 'Selecciona otra celda de la lista.'}
+                      />
                     </td>
                   </tr>
                 )}
@@ -380,17 +384,22 @@ function SortableTh({
   label,
   sortField,
   onSort,
+  align = 'left',
 }: {
   field: SortField;
   label: string;
   sortField: SortField;
   onSort: (f: SortField) => void;
+  /** Alineación de la columna: derecha para numéricas. */
+  align?: 'left' | 'right';
 }) {
   return (
-    <th className='px-2 py-2 text-left whitespace-nowrap'>
+    <th className={`px-2 py-2 whitespace-nowrap ${align === 'right' ? 'text-right' : 'text-left'}`}>
       <button
         onClick={() => onSort(field)}
-        className='inline-flex items-center gap-1 hover:text-white transition'
+        className={`inline-flex items-center gap-1 hover:text-white transition ${
+          align === 'right' ? 'flex-row-reverse' : ''
+        }`}
       >
         {label}
         <ArrowUpDown className={`w-3 h-3 ${sortField === field ? 'text-brand-400' : 'text-slate-600'}`} />
