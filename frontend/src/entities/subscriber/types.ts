@@ -59,6 +59,13 @@ export interface EnrichedSubscriberRecord extends RawSubscriberRecord {
   fallaDescripcion?: string;
   lat: number;
   lng: number;
+  /**
+   * true cuando lat/lng vienen del padrón (BD/CSV o calibración GPS).
+   * false cuando son una aproximación inventada por zona: el enriquecimiento
+   * siempre rellena coordenadas para poder dibujar el mapa, así que este flag
+   * es la única forma de distinguir una georreferenciación obtenida.
+   */
+  coordsReales: boolean;
   distanciaKm: number;
   azimutGrados: number;
   precisionGps: GpsPrecisionLevel;

@@ -147,11 +147,15 @@ export function enrichRecords(records: RawSubscriberRecord[]): EnrichedSubscribe
 
     // Calculate deterministic geolocation from zone coordinates
     const zoneAnchor = ZONE_COORDINATES[normalizedZona] || ZONE_COORDINATES['TILATA'] || { lat: -16.574, lng: -68.231 };
-    
+
     // Deterministic offset based on NRO and NUMERO so addresses distribute naturally along streets
     const seed = (r.nro * 1337 + parseInt(r.numero.slice(-4) || '1000', 10)) % 10000;
     const offsetAngle = (seed / 10000) * 2 * Math.PI;
     const offsetRadius = 0.0015 + ((seed % 100) / 100) * 0.0035; // ~150m to ~500m around zone center
+
+    // ¿Las coordenadas son del padrón o del fallback de abajo? Hay que
+    // capturarlo antes de sobrescribir lat/lng con la aproximación por zona.
+    const coordsReales = Number.isFinite(r.lat) && Number.isFinite(r.lng);
 
     const lat = r.lat ?? Number((zoneAnchor.lat + Math.sin(offsetAngle) * offsetRadius).toFixed(6));
     const lng = r.lng ?? Number((zoneAnchor.lng + Math.cos(offsetAngle) * offsetRadius).toFixed(6));
@@ -178,6 +182,7 @@ export function enrichRecords(records: RawSubscriberRecord[]): EnrichedSubscribe
       fallaDescripcion: r.fallaDescripcion,
       lat,
       lng,
+      coordsReales,
       distanciaKm,
       azimutGrados,
       precisionGps: r.precisionGps || (r.calibradoPor ? 'CALIBRADO_MAPA' : (r.nro % 4 === 0 ? 'CALIBRADO_MAPA' : r.nro % 3 === 0 ? 'CATASTRO_ESTIMADO' : 'CENTROIDE_ZONA')),
