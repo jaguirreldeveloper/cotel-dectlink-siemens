@@ -9,11 +9,14 @@ import {
   Eye,
   SlidersHorizontal,
   X,
+  ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
+import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
+import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
 
 interface DataTableProps {
   records: EnrichedSubscriberRecord[];
@@ -461,6 +464,8 @@ export const DataTable: React.FC<DataTableProps> = ({
                   <ArrowUpDown className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </div>
               </th>
+              <th scope="col" className="py-3 px-3">GEO</th>
+              <th scope="col" className="py-3 px-3 text-center">MAPA</th>
               <th
                 scope="col"
                 aria-sort={ariaSort('estadoOperativo')}
@@ -478,7 +483,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {paginatedRecords.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-12 text-center text-slate-400">
+                <td colSpan={12} className="py-12 text-center text-slate-400">
                   No se encontraron abonados con los filtros aplicados.
                 </td>
               </tr>
@@ -596,6 +601,38 @@ export const DataTable: React.FC<DataTableProps> = ({
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
                         {record.distanciaKm} km
                       </span>
+                    </td>
+
+                    {/* GEO (coordenadas del padron) */}
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <span
+                        className={`block font-mono text-[11px] ${
+                          record.coordsReales
+                            ? 'text-slate-700 dark:text-slate-300'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                        title={
+                          record.coordsReales
+                            ? 'Coordenadas del padrón'
+                            : 'Sin calibrar: estimada por zona'
+                        }
+                      >
+                        {formatCoords(record.lat, record.lng)}
+                      </span>
+                      <GeoBadge coordsReales={record.coordsReales} className="mt-0.5" />
+                    </td>
+
+                    {/* MAPA (enlace a Google Maps) */}
+                    <td className="py-2.5 px-3 text-center">
+                      <a
+                        href={buildMapsUrl(record.lat, record.lng)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Ver en Google Maps"
+                        className="inline-flex items-center gap-1 text-slate-500 hover:text-emerald-600 transition opacity-70 group-hover:opacity-100"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                      </a>
                     </td>
 
                     {/* ESTADO OPERATIVO DECT */}

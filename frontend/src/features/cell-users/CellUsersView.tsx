@@ -8,11 +8,14 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { StatusBadge } from '@/shared/ui/StatusBadge';
+import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { Input } from '@/shared/ui/Input';
+import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
 import * as api from './api';
 import type { CellInfo } from './types';
 
@@ -84,19 +87,22 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
     return groups;
   }, [records]);
 
-  // Resumen por celda (conteos, estados, zonas)
+  // Resumen por celda (conteos, estados, zonas, georreferenciados)
   const cellSummaries = useMemo(() => {
     return cells.map(cell => {
       const subs = cellGroups.get(cell.id) ?? [];
       const statusCounts: Record<string, number> = {};
       const zonaSet = new Set<string>();
+      let georef = 0;
       for (const s of subs) {
         statusCounts[s.estadoOperativo] = (statusCounts[s.estadoOperativo] ?? 0) + 1;
         if (s.zona) zonaSet.add(s.normalizedZona || s.zona);
+        if (s.coordsReales) georef++;
       }
       return {
         info: cell,
         total: subs.length,
+        georef,
         statusCounts,
         zonas: Array.from(zonaSet).sort(),
       };
@@ -150,6 +156,8 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
 
   const selectedCell = selectedCellId != null ? cellInfoMap.get(selectedCellId) : null;
   const demoInfo = selectedCellId != null ? SIEMENS_DECT_CELLS[String(selectedCellId)] : null;
+  const selectedAllSubs = selectedCellId != null ? cellGroups.get(selectedCellId) ?? [] : [];
+  const selectedGeoref = selectedAllSubs.filter(s => s.coordsReales).length;
 
   if (loading) {
     return (
@@ -255,11 +263,24 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
               )}
               {selectedCell.descripcion && <span>{selectedCell.descripcion}</span>}
               {selectedCell.latitud != null && selectedCell.longitud != null && (
-                <span className='flex items-center gap-1'>
+                <a
+                  href={buildMapsUrl(selectedCell.latitud, selectedCell.longitud)}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  title='Ver la celda en Google Maps'
+                  className='flex items-center gap-1 hover:text-brand-400 transition'
+                >
                   <MapPin className='w-3.5 h-3.5' />
-                  {selectedCell.latitud.toFixed(4)}, {selectedCell.longitud.toFixed(4)}
-                </span>
+                  {formatCoords(selectedCell.latitud, selectedCell.longitud)}
+                  <ExternalLink className='w-3 h-3' aria-hidden='true' />
+                </a>
               )}
+              <span
+                className={`font-semibold ${selectedGeoref === selectedAllSubs.length ? 'text-emerald-400' : 'text-amber-400'}`}
+                title='Abonados con coordenadas reales en el padrón'
+              >
+                {selectedGeoref}/{selectedAllSubs.length} georreferenciados
+              </span>
               {demoInfo && (
                 <span className='text-slate-500'>
                   Capacidad ref: {demoInfo.capacidad} canales · {demoInfo.radioCoberturaKm} km
@@ -298,6 +319,8 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
                   <Th field='normalizedZona' label='Zona' sortField={sortField} onSort={handleSort} />
                   <Th field='cto' label='Contrato' sortField={sortField} onSort={handleSort} />
                   <Th field='fechServ' label='F. Servicio' sortField={sortField} onSort={handleSort} />
+                  <th className='px-3 py-2 text-left'>Coordenadas</th>
+                  <th className='px-3 py-2 text-left'>Mapa</th>
                   <th className='px-3 py-2 text-left'>Estado</th>
                   <th className='px-3 py-2 text-left'>Señal</th>
                 </tr>
@@ -316,13 +339,37 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
                     <td className='px-3 py-2 text-slate-400 truncate max-w-[140px]'>{r.normalizedZona || r.zona}</td>
                     <td className='px-3 py-2 font-mono text-slate-500'>{r.cto}</td>
                     <td className='px-3 py-2 text-slate-500 whitespace-nowrap'>{r.fechServ}</td>
+                    <td className='px-3 py-2 whitespace-nowrap'>
+                      <span
+                        className={`block font-mono text-[11px] ${
+                          r.coordsReales ? 'text-slate-200' : 'text-slate-500'
+                        }`}
+                        title={r.coordsReales ? 'Coordenadas del padrón' : 'Sin calibrar: estimada por zona'}
+                      >
+                        {formatCoords(r.lat, r.lng)}
+                      </span>
+                      <GeoBadge coordsReales={r.coordsReales} className='mt-0.5' />
+                    </td>
+                    <td className='px-3 py-2'>
+                      <a
+                        href={buildMapsUrl(r.lat, r.lng)}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        onClick={e => e.stopPropagation()}
+                        title='Ver en Google Maps'
+                        className='inline-flex items-center gap-1 text-slate-400 hover:text-brand-400 transition'
+                      >
+                        <ExternalLink className='w-3.5 h-3.5' aria-hidden='true' />
+                        <span className='text-[11px]'>Mapa</span>
+                      </a>
+                    </td>
                     <td className='px-3 py-2'><StatusBadge status={r.estadoOperativo} /></td>
                     <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>{r.signalDect ?? '—'}</td>
                   </tr>
                 ))}
                 {pageSubs.length === 0 && (
                   <tr>
-                    <td colSpan={9} className='px-3 py-8 text-center text-slate-500'>
+                    <td colSpan={11} className='px-3 py-8 text-center text-slate-500'>
                       {search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
                     </td>
                   </tr>

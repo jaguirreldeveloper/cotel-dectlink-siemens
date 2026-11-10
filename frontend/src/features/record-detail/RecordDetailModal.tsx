@@ -6,13 +6,16 @@ import {
   AlertTriangle,
   Copy,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { resolveCellName, useCells } from '@/entities/cell/useCells';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
+import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { Modal } from '@/shared/ui/Modal';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
+import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
 
 interface RecordDetailModalProps {
   record: EnrichedSubscriberRecord | null;
@@ -320,14 +323,17 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
             </div>
 
             {/* Geolocation Coordinates & Radio Distance */}
-            <div className="col-span-2 p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs">
+            <div className="col-span-2 p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">
                   Geolocalización GPS
                 </span>
-                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                  {record.lat.toFixed(5)}, {record.lng.toFixed(5)}
-                </span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                    {formatCoords(record.lat, record.lng)}
+                  </span>
+                  <GeoBadge coordsReales={record.coordsReales} />
+                </div>
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">
@@ -337,6 +343,15 @@ export const RecordDetailModal: React.FC<RecordDetailModalProps> = ({
                   {record.distanciaKm} km · {record.azimutGrados}°
                 </span>
               </div>
+              <a
+                href={buildMapsUrl(record.lat, record.lng)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-400 transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                Ver en Google Maps
+              </a>
             </div>
 
             <div className="col-span-2 p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center">

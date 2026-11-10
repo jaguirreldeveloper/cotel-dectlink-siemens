@@ -11,12 +11,15 @@ import {
   AlertTriangle,
   Navigation,
   Gauge,
+  ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { StatusBadge } from '@/shared/ui/StatusBadge';
+import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
+import { buildMapsUrl } from '@/shared/utils/geo';
 import type { CellInfo } from '@/features/cell-users/types';
 import { fetchCells } from '@/features/cell-users/api';
 
@@ -263,6 +266,7 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                   <SortableTh field='cto' label='Contrato' sortField={sortField} onSort={handleSort} />
                   <SortableTh field='fechServ' label='F. Servicio' sortField={sortField} onSort={handleSort} />
                   <th className='px-2 py-2 text-left whitespace-nowrap'>GPS</th>
+                  <th className='px-2 py-2 text-left whitespace-nowrap'>Mapa</th>
                   <th className='px-2 py-2 text-left whitespace-nowrap'>Deuda</th>
                 </tr>
               </thead>
@@ -286,14 +290,27 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                     <td className='px-2 py-2 font-mono text-slate-500 whitespace-nowrap'>{r.cto}</td>
                     <td className='px-2 py-2 text-slate-500 whitespace-nowrap'>{r.fechServ}</td>
                     <td className='px-2 py-2 text-slate-400 whitespace-nowrap'>
-                      {r.lat != null && r.lng != null ? (
-                        <span className='inline-flex items-center gap-1 text-emerald-400'>
-                          <MapPin className='w-3 h-3' />
-                          {r.distanciaKm != null ? `${r.distanciaKm.toFixed(2)}km` : '✓'}
-                        </span>
-                      ) : (
-                        <span className='text-slate-600'>—</span>
-                      )}
+                      <span className='inline-flex items-center gap-1.5'>
+                        <GeoBadge coordsReales={r.coordsReales} />
+                        {r.coordsReales && r.distanciaKm != null && (
+                          <span className='font-mono text-[11px] text-slate-400'>
+                            {r.distanciaKm.toFixed(2)}km
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className='px-2 py-2'>
+                      <a
+                        href={buildMapsUrl(r.lat, r.lng)}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        onClick={e => e.stopPropagation()}
+                        title='Ver en Google Maps'
+                        className='inline-flex items-center gap-1 text-slate-400 hover:text-brand-400 transition'
+                      >
+                        <ExternalLink className='w-3.5 h-3.5' aria-hidden='true' />
+                        <span className='text-[11px]'>Mapa</span>
+                      </a>
                     </td>
                     <td className='px-2 py-2 whitespace-nowrap'>
                       {r.deudaMeses ? (
@@ -309,7 +326,7 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                 ))}
                 {pageSubs.length === 0 && (
                   <tr>
-                    <td colSpan={12} className='px-3 py-8 text-center text-slate-500'>
+                    <td colSpan={13} className='px-3 py-8 text-center text-slate-500'>
                       {search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
                     </td>
                   </tr>
