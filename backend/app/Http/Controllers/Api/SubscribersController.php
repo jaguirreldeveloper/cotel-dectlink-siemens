@@ -200,7 +200,7 @@ class SubscribersController extends Controller
 {
     /**
      * GET /api/subscribers — filas planas con claves camelCase (SubscriberListRow).
-     * 
+     *
      * Usa cache con Redis para mejorar el rendimiento.
      * El cache se refresca automáticamente cada 5 minutos.
      */
@@ -209,21 +209,24 @@ class SubscribersController extends Controller
         try {
             // Obtener el padrón del cache
             $padron = PadronCache::getPadron();
-            
-            // Transformar cada línea usando SubscriberRow
-            $result = array_map(
+
+            // Transformar cada línea usando SubscriberRow.
+            // PadronCache indexa por nro: array_map preserva las claves, así que
+            // array_values() es obligatorio para responder una lista (JSON array)
+            // y no un objeto {"1": {...}} que rompe Array.isArray() en el frontend.
+            $result = array_values(array_map(
                 SubscriberRow::toListRow(...),
                 $padron
-            );
-            
+            ));
+
             return response()->json($result);
         } catch (\Throwable $e) {
             // Fallback: si el cache falla, consultar directamente la BD
             try {
-                return response()->json(array_map(
+                return response()->json(array_values(array_map(
                     SubscriberRow::toListRow(...),
                     SubscriberQuery::all()
-                ));
+                )));
             } catch (\Throwable) {
                 return response()->json(['error' => 'Error al consultar la base de datos PostgreSQL'], 500);
             }
@@ -245,7 +248,7 @@ class SubscribersController extends Controller
 
             if ($payload !== null) {
                 SseHub::emit('subscriber_updated', $payload);
-                
+
                 // Invalidar cache para esta línea y refrescar stats
                 PadronCache::refreshSubscriber((int) $nro);
                 PadronCache::refreshStats();
@@ -279,7 +282,7 @@ class SubscribersController extends Controller
 
             if ($payload !== null) {
                 SseHub::emit('subscriber_coordinates_calibrated', $payload);
-                
+
                 // Invalidar cache para esta línea y refrescar stats
                 PadronCache::refreshSubscriber((int) $nro);
                 PadronCache::refreshStats();
