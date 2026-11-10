@@ -1,8 +1,20 @@
 # Tareas Pendientes — COTEL DECTlink Siemens
 
-> Última actualización: 2026-11-09
+> Última actualización: 2026-11-10
 
 ## ✅ Completadas
+
+### Correcciones 2026-11-10 (regresiones de los commits del 9 de noviembre)
+- [x] `GET /api/subscribers` respondía un objeto indexado por `nro` en vez de una lista (rompía `Array.isArray()` en el frontend y caía a modo demo): `array_values()` en `SubscribersController::index` — `d3c9a74`.
+- [x] Frontend en rojo: JSDoc cerrado prematuramente por `/* redirect ... */` y `self.handleSuccess` inválido en `useOperationFeedback.ts`; label `exit:` y `Sentry.setTag` fuera del guard en `main.tsx`; warnings de ESLint en `LoadingOverlay`/`AppSidebar` — `0b3c925`.
+- [x] `@sentry/react` declarado en `package.json` pero ausente de `pnpm-lock.yaml`, y código con APIs v7 (`BrowserTracing`, `configureScope`, `startTransaction`) → instalado y portado a v8 — `0b3c925`.
+- [x] Rate limit `throttle:padron-cargas`: lecturas (`GET padron/cargas[/id]`) exentas y escrituras de 3/min a 10/min (flujos legítimos y `PadronCargasTest` recibían 429) — `5e8f389`.
+- [x] PHPStan nivel 5 de 34 a 0 errores: `sentry/sentry-laravel ^5.0` no tiene versión estable → ajustado a `^4.29` e instalado; eliminada la llamada a `Integration::init()` (inexistente); `PadronCache::clear()` reescrito sin el barrido crudo con Redis `KEYS`/`DEL`; constante `MIN_REFRESH_INTERVAL` sin uso eliminada — `fc91ab5`.
+- [x] Variables `PADRON_CACHE_*` documentadas en `backend/.env.example` (y `CACHE_STORE` duplicado eliminado) — `52881f5`.
+- [x] `pnpm run test` raíz no funcionaba: `backend/package.json` sin `name` ni script `test` — `00b65b9`.
+- [x] Rediseño corporativo «panel de instrumentación» commiteado (`DESIGN.md`, `PRODUCT.md`, tema claro/oscuro, badges WCAG AA, sidebar móvil) — `b9110a8`.
+- [x] Skill `impeccable` y comando `/impeccable` de OpenCode trackeados en `.opencode/` — `18f12c0`.
+- [x] WIP de Web Push descartado (migración `push_subscriptions` + `WebPushNotification`, sin dependencias ni endpoints) — decisión del usuario.
 
 ### Backend / Calidad
 - [x] Adoptar `larastan/larastan` y llevar PHPStan a 0 errores (resuelto acceso a propiedades dinámicas en `App\Models\Cell`).
@@ -49,6 +61,7 @@
 ## 📊 Línea base de verificación (todo verde)
 - `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
 - `pnpm run lint` ✅ (0 errores, 0 warnings)
+- `pnpm run test` (raíz: frontend + scripts + backend) ✅
 - Vitest: 14 tests ✅
 - Pest / PHPUnit: 120 tests, 461 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
