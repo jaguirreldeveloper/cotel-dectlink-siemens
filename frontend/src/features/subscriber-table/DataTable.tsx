@@ -14,9 +14,11 @@ import {
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { statusTextClass } from '@/shared/ui/StatusBadge';
 import { GeoBadge } from '@/shared/ui/GeoBadge';
+import { TablePagination } from '@/shared/ui/TablePagination';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
+import { DEFAULT_PAGE_SIZE } from '@/shared/utils/pagination';
 
 interface DataTableProps {
   records: EnrichedSubscriberRecord[];
@@ -51,7 +53,7 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Copied state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -150,7 +152,6 @@ export const DataTable: React.FC<DataTableProps> = ({
   }, [filteredRecords, sortField, sortAsc]);
 
   // Pagination
-  const totalPages = Math.ceil(sortedRecords.length / pageSize) || 1;
   const paginatedRecords = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return sortedRecords.slice(start, start + pageSize);
@@ -663,43 +664,16 @@ export const DataTable: React.FC<DataTableProps> = ({
       </div>
 
       {/* Pagination Footer */}
-      <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-        <div className="flex items-center gap-2">
-          <span>Mostrando página {currentPage} de {totalPages}</span>
-          <span>·</span>
-          <Select
-            size="sm"
-            value={pageSize}
-            onChange={e => {
-              setPageSize(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            aria-label="Registros por página"
-          >
-            <option value={15}>15 por página</option>
-            <option value={25}>25 por página</option>
-            <option value={60}>Ver todos</option>
-          </Select>
-        </div>
-
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Anterior
-          </button>
-          <div className="px-2 font-mono">{currentPage} / {totalPages}</div>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <TablePagination
+        page={currentPage}
+        pageSize={pageSize}
+        total={sortedRecords.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={size => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+      />
     </div>
   );
 };

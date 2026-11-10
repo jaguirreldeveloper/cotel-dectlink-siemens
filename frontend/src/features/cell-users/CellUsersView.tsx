@@ -6,16 +6,16 @@ import {
   MapPin,
   Signal,
   Users,
-  ChevronLeft,
-  ChevronRight,
   ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
 import { StatusBadge } from '@/shared/ui/StatusBadge';
 import { GeoBadge } from '@/shared/ui/GeoBadge';
+import { TablePagination } from '@/shared/ui/TablePagination';
 import { Input } from '@/shared/ui/Input';
 import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
+import { DEFAULT_PAGE_SIZE } from '@/shared/utils/pagination';
 import * as api from './api';
 import type { CellInfo } from './types';
 
@@ -46,7 +46,7 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
   const [sortField, setSortField] = useState<SortField>('nro');
   const [sortAsc, setSortAsc] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15;
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Cargar celdas desde la API
   useEffect(() => {
@@ -137,12 +137,11 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
     });
   }, [selectedCellId, cellGroups, search, sortField, sortAsc]);
 
-  // Reset pagina al cambiar de celda o búsqueda
+  // Reset pagina al cambiar de celda, búsqueda o tamaño de página
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCellId, search]);
+  }, [selectedCellId, search, pageSize]);
 
-  const totalPages = Math.ceil(selectedSubs.length / pageSize);
   const pageSubs = selectedSubs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleSort = (field: SortField) => {
@@ -379,31 +378,14 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
           </div>
 
           {/* Paginación */}
-          {totalPages > 1 && (
-            <div className='flex items-center justify-between px-4 py-3 border-t border-slate-800'>
-              <span className='text-xs text-slate-500'>
-                Página {currentPage} de {totalPages}
-              </span>
-              <div className='flex gap-1'>
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className='p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed'
-                  aria-label='Página anterior'
-                >
-                  <ChevronLeft className='w-4 h-4' />
-                </button>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className='p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed'
-                  aria-label='Página siguiente'
-                >
-                  <ChevronRight className='w-4 h-4' />
-                </button>
-              </div>
-            </div>
-          )}
+          <TablePagination
+            page={currentPage}
+            pageSize={pageSize}
+            total={selectedSubs.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            dark
+          />
         </div>
       )}
     </div>
