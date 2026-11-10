@@ -169,14 +169,20 @@ Route::middleware('role:superadmin')->group(function (): void {
 
 // ===========================================================================
 // CARGA DEL PADRÓN POR LOTE (dry-run + aplicación)
-// Lectura del lote, subida y anulación: SUPERADMIN/ADMIN. Aplicar el lote
-// sobre el padrón vigente: exclusivo de SUPERADMIN.
-// Rate limiting: 3 solicitudes/minuto para carga de padrón (operación pesada)
+// Lectura de lotes (index/show): SUPERADMIN/ADMIN, sin rate limit — son
+// consultas baratas y el límite por IP bloqueaba a varios operadores detrás
+// de la misma NAT al listar lotes.
+// Escritura (subida, anulación): 10/min por IP. Sigue siendo una operación
+// pesada, pero un flujo legítimo (cargar → aplicar → recargar → anular)
+// superaba el límite anterior de 3/min.
 // ===========================================================================
-Route::middleware(['role:superadmin,admin', 'throttle:padron-cargas'])->group(function (): void {
+Route::middleware('role:superadmin,admin')->group(function (): void {
     Route::get('padron/cargas', [PadronCargasController::class, 'index']);
-    Route::post('padron/cargas', [PadronCargasController::class, 'store']);
     Route::get('padron/cargas/{id}', [PadronCargasController::class, 'show']);
+});
+
+Route::middleware(['role:superadmin,admin', 'throttle:padron-cargas'])->group(function (): void {
+    Route::post('padron/cargas', [PadronCargasController::class, 'store']);
     Route::post('padron/cargas/{id}/anular', [PadronCargasController::class, 'anular']);
 });
 

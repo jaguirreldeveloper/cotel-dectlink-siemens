@@ -3,11 +3,11 @@
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Cache\RateLimiting\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter as FacadesRateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Sentry\Laravel\Integration as SentryIntegration;
+use Sentry\State\Scope;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,11 +28,11 @@ class AppServiceProvider extends ServiceProvider
         // Configuración de Sentry para monitoreo de errores
         // =========================================================================
         $this->configureSentry();
-        
+
         // =========================================================================
         // Configuración de Rate Limiting para protección de rutas sensibles
         // =========================================================================
-        
+
         // 1. Rutas de escritura de padrón (alta sensibilidad) - estado y coordenadas
         FacadesRateLimiter::for('padron-write', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
@@ -68,9 +68,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(8)->by($request->ip());
         });
 
-        // 8. Rutas de carga de padrón (ETL) - operación pesada, muy restringido
+        // 8. Escritura de carga de padrón (ETL) - operación pesada: 10/min por
+        // IP. Las lecturas de lotes no consumen este límite (van sin throttle).
         FacadesRateLimiter::for('padron-cargas', function (Request $request) {
-            return Limit::perMinute(3)->by($request->ip());
+            return Limit::perMinute(10)->by($request->ip());
         });
     }
 
@@ -80,7 +81,7 @@ class AppServiceProvider extends ServiceProvider
     private function configureSentry(): void
     {
         // Only configure Sentry if it's enabled and DSN is provided
-        if (!config('sentry.enabled') || !config('sentry.dsn')) {
+        if (! config('sentry.enabled') || ! config('sentry.dsn')) {
             return;
         }
 
@@ -95,7 +96,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         // Configure Sentry context
-        \Sentry\configureScope(function (\Sentry\State\Scope $scope): void {
+        \Sentry\configureScope(function (Scope $scope): void {
             // Add application context
             $scope->setTag('app_name', config('app.name', 'COTEL DECTlink'));
             $scope->setTag('app_env', config('app.env', 'production'));
@@ -103,17 +104,17 @@ class AppServiceProvider extends ServiceProvider
             // Add request context if available
             if (app('request')) {
                 $request = app('request');
-                
+
                 // Add IP address (anonymized for privacy)
                 if ($request->ip()) {
                     $scope->setUser(['ip_address' => $request->ip()]);
                 }
-                
+
                 // Add route information
                 if ($request->route()) {
                     $scope->setTag('route', $request->route()?->getName() ?? $request->route()?->getActionName());
                 }
-                
+
                 // Add method
                 $scope->setTag('method', $request->method());
             }
@@ -121,7 +122,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Set error handlers
         set_error_handler(function ($severity, $message, $file, $line) {
-            if (!(error_reporting() & $severity)) {
+            if (! (error_reporting() & $severity)) {
                 return false;
             }
             throw new \ErrorException($message, 0, $severity, $file, $line);
