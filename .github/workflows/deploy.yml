@@ -61,8 +61,43 @@ jobs:
           fi
           echo "✓ Build verified"
 
-      # Laravel Cloud deploy happens automatically on push to main
-      # when the repo is connected. The workflow above just validates
-      # the build works before the platform builds it.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql, pgsql, mbstring, dom, curl, bcmath, gd, intl
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-deploy-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-deploy-
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Setup Laravel Cloud CLI
+        run: |
+          curl -sS https://laravel-cloud-cli.test/get | bash
+          echo "✓ Laravel Cloud CLI installed"
+
+      - name: Deploy to Laravel Cloud
+        if: github.ref == 'refs/heads/main' && (env.LARAVEL_CLOUD_APP != '' && env.LARAVEL_CLOUD_TOKEN != '')
+        working-directory: backend
+        run: |
+          cloud deploy --app="${LARAVEL_CLOUD_APP}" --token="${LARAVEL_CLOUD_TOKEN}" --branch=main --force --no-interaction
+          echo "✅ Deployed to Laravel Cloud"
+        env:
+          LARAVEL_CLOUD_APP: ${{ secrets.LARAVEL_CLOUD_APP }}
+          LARAVEL_CLOUD_TOKEN: ${{ secrets.LARAVEL_CLOUD_TOKEN }}
+
       - name: Build validation complete
-        run: echo "Ready for Laravel Cloud deployment"
+        if: github.ref != 'refs/heads/main' || (env.LARAVEL_CLOUD_APP == '' || env.LARAVEL_CLOUD_TOKEN == '')
+        run: echo "✓ Build validated - Ready for Laravel Cloud deployment"

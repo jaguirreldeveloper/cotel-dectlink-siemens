@@ -392,3 +392,64 @@ jobs:
         env:
           SMOKE_URL: ${{ secrets.SMOKE_URL }}
           EXPECTED_LINES: ${{ secrets.EXPECTED_LINES }}
+
+  deploy-laravel-cloud:
+    name: Deploy to Laravel Cloud
+    runs-on: ubuntu-latest
+    needs: deploy-check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      LARAVEL_CLOUD_APP: ${{ secrets.LARAVEL_CLOUD_APP }}
+      LARAVEL_CLOUD_TOKEN: ${{ secrets.LARAVEL_CLOUD_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql, pgsql, mbstring, dom, curl, bcmath, gd, intl
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-laravel-cloud-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-laravel-cloud-
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Copy frontend to backend/public
+        run: |
+          mkdir -p backend/public
+          cp -r frontend/dist/* backend/public/
+          echo "✓ Frontend copied to backend/public"
+
+      - name: Setup Laravel Cloud CLI
+        run: |
+          curl -sS https://laravel-cloud-cli.test/get | bash
+          echo "✓ Laravel Cloud CLI installed"
+
+      - name: Deploy to Laravel Cloud
+        if: env.LARAVEL_CLOUD_APP != '' && env.LARAVEL_CLOUD_TOKEN != ''
+        run: |
+          cd backend
+          cloud deploy --app="${LARAVEL_CLOUD_APP}" --token="${LARAVEL_CLOUD_TOKEN}" --branch=main --force
+          echo "✓ Deployed to Laravel Cloud"
+        env:
+          CLOUD_APP: ${{ secrets.LARAVEL_CLOUD_APP }}
+          CLOUD_TOKEN: ${{ secrets.LARAVEL_CLOUD_TOKEN }}
