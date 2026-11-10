@@ -10,7 +10,7 @@
         "doctrine/annotations": "^2.0",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "sentry/sentry-laravel": "^5.0"
+        "sentry/sentry-laravel": "4.29"
     },
     "require-dev": {
         "darkaonline/l5-swagger": "@dev",

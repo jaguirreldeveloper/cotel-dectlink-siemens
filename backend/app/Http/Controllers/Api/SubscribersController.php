@@ -222,11 +222,12 @@ class SubscribersController extends Controller
             return response()->json($result);
         } catch (\Throwable $e) {
             // Fallback: si el cache falla, consultar directamente la BD
+            // (SubscriberQuery::all() ya devuelve una lista indexada desde 0).
             try {
-                return response()->json(array_values(array_map(
+                return response()->json(array_map(
                     SubscriberRow::toListRow(...),
                     SubscriberQuery::all()
-                )));
+                ));
             } catch (\Throwable) {
                 return response()->json(['error' => 'Error al consultar la base de datos PostgreSQL'], 500);
             }

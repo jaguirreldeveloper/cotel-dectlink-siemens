@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\RateLimiter as FacadesRateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Sentry\Laravel\Integration as SentryIntegration;
 use Sentry\State\Scope;
 
 class AppServiceProvider extends ServiceProvider
@@ -85,15 +85,8 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        // Configure Sentry integration
-        SentryIntegration::init([
-            'dsn' => config('sentry.dsn'),
-            'environment' => config('sentry.environment'),
-            'release' => config('sentry.release') ?: null,
-            'tracing_enabled' => config('sentry.tracing.enabled', false),
-            'tracing_sample_rate' => (float) config('sentry.tracing.sample_rate', 0.2),
-            'performance_enabled' => config('sentry.performance.enabled', false),
-        ]);
+        // El SDK de Sentry se inicializa automáticamente desde config/sentry.php
+        // por el ServiceProvider de sentry/laravel; aquí solo se agrega contexto.
 
         // Configure Sentry context
         \Sentry\configureScope(function (Scope $scope): void {
@@ -101,23 +94,22 @@ class AppServiceProvider extends ServiceProvider
             $scope->setTag('app_name', config('app.name', 'COTEL DECTlink'));
             $scope->setTag('app_env', config('app.env', 'production'));
 
-            // Add request context if available
-            if (app('request')) {
-                $request = app('request');
+            // Add request context
+            $request = app('request');
 
-                // Add IP address (anonymized for privacy)
-                if ($request->ip()) {
-                    $scope->setUser(['ip_address' => $request->ip()]);
-                }
-
-                // Add route information
-                if ($request->route()) {
-                    $scope->setTag('route', $request->route()?->getName() ?? $request->route()?->getActionName());
-                }
-
-                // Add method
-                $scope->setTag('method', $request->method());
+            // Add IP address (anonymized for privacy)
+            if ($request->ip()) {
+                $scope->setUser(['ip_address' => $request->ip()]);
             }
+
+            // Add route information
+            $route = $request->route();
+            if ($route instanceof Route) {
+                $scope->setTag('route', $route->getName() ?? $route->getActionName());
+            }
+
+            // Add method
+            $scope->setTag('method', $request->method());
         });
 
         // Set error handlers
