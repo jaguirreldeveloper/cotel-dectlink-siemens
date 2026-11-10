@@ -31,21 +31,9 @@ export function configureSentryUser(user: SentryUserContext | null): void {
     
     // Set role as tag
     Sentry.setTag('user_role', user.role);
-    
-    // Clear any previous user context
-    Sentry.configureScope((scope) => {
-      scope.setUser({
-        id: String(user.id),
-        email: user.email,
-        username: user.name || user.email,
-      });
-    });
   } else {
     // Clear user context when logging out
     Sentry.setUser(null);
-    Sentry.configureScope((scope) => {
-      scope.setUser(null);
-    });
   }
 }
 
@@ -93,13 +81,13 @@ export function reportMessageToSentry(
 }
 
 /**
- * Inicia una transacción de rendimiento
+ * Inicia un span de rendimiento inactivo (v8: se finaliza con span.end())
  */
 export function startSentryTransaction(
   name: string,
   operation: string = 'task'
 ): Sentry.Span {
-  return Sentry.startTransaction({
+  return Sentry.startInactiveSpan({
     name,
     op: operation,
   });
@@ -116,7 +104,7 @@ export function useSentryTransaction(
     const transaction = startSentryTransaction(componentName, operation);
     
     return () => {
-      transaction.finish();
+      transaction.end();
     };
   }, [componentName, operation]);
 }

@@ -1,6 +1,5 @@
 import { createRoot } from 'react-dom/client';
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/react';
 import App from './App.tsx';
 import './index.css';
 import { ThemeProvider } from './shared/hooks/useTheme';
@@ -19,17 +18,8 @@ if (sentryEnabled && sentryDsn) {
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
     release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     
-    // Performance monitoring
-    integrations: [
-      new BrowserTracing({
-        // Sample rate for traces (0.0 to 1.0)
-        samplingRate: parseFloat(import.meta.env.VITE_SENTRY_TRACING_SAMPLE_RATE || '0.2'),
-        // Slow transaction threshold in milliseconds
-        slowTransactionThreshold: 2000,
-      }),
-    ],
-    
-    // Error tracking
+    // Performance monitoring: en @sentry/react v8 el browser tracing viene
+    // integrado por defecto; tracesSampleRate activa el muestreo.
     tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACING_SAMPLE_RATE || '0.2'),
     
     // Configure which errors to send
@@ -86,11 +76,11 @@ if (sentryEnabled && sentryDsn) {
       return breadcrumb;
     },
   });
-}
 
-// Set user context based on authenticated user
-Sentry.setTag('app_name', 'COTEL DECTlink');
-Sentry.setTag('app_version', import.meta.env.VITE_APP_VERSION || 'unknown');
+  // Set user context based on authenticated user
+  Sentry.setTag('app_name', 'COTEL DECTlink');
+  Sentry.setTag('app_version', import.meta.env.VITE_APP_VERSION || 'unknown');
+}
 
 // =============================================================================
 // Renderización de la aplicación
@@ -109,10 +99,9 @@ createRoot(rootElement).render(
 );
 
 // Report unhandled errors to Sentry
-exit:
 if (sentryEnabled && sentryDsn) {
   window.onerror = (message, source, lineno, colno, error) => {
-    Sentry.captureException(error || new Error(message));
+    Sentry.captureException(error || new Error(typeof message === 'string' ? message : 'Error no manejado'));
     return false;
   };
   

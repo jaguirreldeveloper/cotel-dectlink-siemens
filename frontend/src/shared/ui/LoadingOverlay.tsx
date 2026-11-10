@@ -198,6 +198,7 @@ export function Progress({
  *     hideLoading();
  *   }
  */
+// eslint-disable-next-line react-refresh/only-export-components -- hook de estado global junto a sus componentes
 export function useGlobalLoading() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [message, setMessage] = React.useState<string>('Cargando...');

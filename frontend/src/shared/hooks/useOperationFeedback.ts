@@ -15,7 +15,7 @@
  *       async () => { return await api.saveData(data); },
  *       { successMessage: 'Datos guardados con éxito', errorMessage: 'Error al guardar' }
  *     );
- *     if (result.success) { /* redirect or other action */ }
+ *     if (result.success) { // redireccionar u otra accion }
  *   };
  */
 
@@ -97,6 +97,65 @@ export function useOperationFeedback<T = unknown>() {
   }, []);
 
   /**
+   * Maneja el éxito de la operación
+   */
+  const handleSuccess = useCallback(
+    (data: T, options: { successMessage: string; onComplete?: (result: OperationResult<T>) => void }): ExecuteResult<T> => {
+      const result: ExecuteResult<T> = {
+        success: true,
+        data,
+        message: options.successMessage,
+        cancelled: false,
+      };
+
+      setState({
+        isLoading: false,
+        isSuccess: true,
+        isError: false,
+        isCancelled: false,
+        error: null,
+        message: options.successMessage,
+        data,
+      });
+
+      options.onComplete?.(result);
+      return result;
+    },
+    []
+  );
+
+  /**
+   * Maneja el error de la operación
+   */
+  const handleError = useCallback(
+    (error: unknown, options: { errorMessage: string; onComplete?: (result: OperationResult<T>) => void; cancelled: boolean }): ExecuteResult<T> => {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const message = options.cancelled ? 'Operación cancelada' : options.errorMessage;
+
+      const result: ExecuteResult<T> = {
+        success: false,
+        error: errorObj,
+        message,
+        cancelled: options.cancelled,
+      };
+
+      setState({
+        isLoading: false,
+        isSuccess: false,
+        isError: true,
+        isCancelled: options.cancelled,
+        error: errorObj,
+        message,
+        data: undefined,
+      });
+
+      options.onComplete?.(result);
+      return result;
+    },
+    []
+  );
+
+  /**
    * Ejecuta una operación asíncrona con feedback visual
    */
   const execute = useCallback(
@@ -175,76 +234,17 @@ export function useOperationFeedback<T = unknown>() {
             }));
             return { success: false, cancelled: true, message: 'Operación cancelada' };
           }
-          return self.handleSuccess(result, { successMessage, onComplete });
+          return handleSuccess(result, { successMessage, onComplete });
         }
 
         // Sin cancelación
         const result = await operationPromise;
-        return self.handleSuccess(result, { successMessage, onComplete });
+        return handleSuccess(result, { successMessage, onComplete });
       } catch (error) {
-        return self.handleError(error, { errorMessage, onComplete, cancelled: isCancelled });
+        return handleError(error, { errorMessage, onComplete, cancelled: isCancelled });
       }
     },
-    [timeoutRef]
-  );
-
-  /**
-   * Maneja el éxito de la operación
-   */
-  const handleSuccess = useCallback(
-    (data: T, options: { successMessage: string; onComplete?: (result: OperationResult<T>) => void }): ExecuteResult<T> => {
-      const result: ExecuteResult<T> = {
-        success: true,
-        data,
-        message: options.successMessage,
-        cancelled: false,
-      };
-
-      setState({
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-        isCancelled: false,
-        error: null,
-        message: options.successMessage,
-        data,
-      });
-
-      options.onComplete?.(result);
-      return result;
-    },
-    []
-  );
-
-  /**
-   * Maneja el error de la operación
-   */
-  const handleError = useCallback(
-    (error: unknown, options: { errorMessage: string; onComplete?: (result: OperationResult) => void; cancelled: boolean }): ExecuteResult => {
-      const errorObj = error instanceof Error ? error : new Error(String(error));
-      const message = options.cancelled ? 'Operación cancelada' : options.errorMessage;
-
-      const result: ExecuteResult = {
-        success: false,
-        error: errorObj,
-        message,
-        cancelled: options.cancelled,
-      };
-
-      setState({
-        isLoading: false,
-        isSuccess: false,
-        isError: true,
-        isCancelled: options.cancelled,
-        error: errorObj,
-        message,
-        data: undefined,
-      });
-
-      options.onComplete?.(result);
-      return result;
-    },
-    []
+    [handleSuccess, handleError, timeoutRef]
   );
 
   /**
