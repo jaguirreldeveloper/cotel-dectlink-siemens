@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Crosshair,
   ClipboardList,
@@ -202,7 +202,7 @@ export function AppSidebar({
           if (isMobile) closeMobile();
         }}
         aria-current={isActive ? 'page' : undefined}
-        className={`w-full flex items-center gap-2.5 px-3 py-2 min-h-[38px] rounded-md transition-colors text-left
+        className={`w-full flex items-center gap-2.5 px-3 py-2 min-h-[44px] rounded-md transition-colors text-left touch-target
           ${isActive
             ? 'bg-brand-500/10 text-brand-700 dark:text-brand-300 font-semibold'
             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
@@ -246,7 +246,7 @@ export function AppSidebar({
         <button
           type="button"
           onClick={() => toggleGroup(group.id)}
-          className={`w-full flex items-center gap-2 px-2.5 py-1.5 min-h-[34px] rounded-md transition-colors
+          className={`w-full flex items-center gap-2 px-2.5 py-1.5 min-h-[44px] rounded-md transition-colors touch-target
             font-medium text-[11px] uppercase tracking-wider
             ${hasActiveTab
               ? 'text-brand-700 dark:text-brand-300 bg-brand-50/50 dark:bg-brand-950/20'
@@ -279,17 +279,32 @@ export function AppSidebar({
     );
   };
 
+  // Bloquear scroll del body cuando el drawer esté abierto en móvil
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileOpen]);
+
   return (
     <>
       {/* Mobile Drawer (con accesibilidad aria-modal y tecla Escape) */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+          {/* Backdrop - cierra el drawer al hacer click */}
           <div
-            className="fixed inset-0 bg-slate-950/60 transition-opacity"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
             onClick={closeMobile}
             aria-hidden="true"
           />
-          <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl flex flex-col">
+          
+          {/* Drawer lateral */}
+          <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl flex flex-col animate-in slide-in-from-left duration-200">
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div>
                 <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">COTEL DECTlink</span>
@@ -297,7 +312,7 @@ export function AppSidebar({
               </div>
               <button
                 onClick={closeMobile}
-                className="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label="Cerrar menú"
               >
                 <ChevronLeft className="w-5 h-5" />

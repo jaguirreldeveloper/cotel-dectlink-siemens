@@ -341,3 +341,73 @@ body {
     animation: none;
   }
 }
+
+/* ====== ESTILOS RESPONSIVE PARA MÓVIL ====== */
+
+/* Área táctil mínima para botones (44px x 44px según WCAG) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* En mobile, asegurar que los botones tengan área táctil adecuada */
+@media (max-width: 1023px) {
+  .touch-target {
+    padding-top: max(0.5rem, calc((44px - var(--tw-pt)) / 2));
+    padding-bottom: max(0.5rem, calc((44px - var(--tw-pb)) / 2));
+    padding-left: max(0.75rem, calc((44px - var(--tw-pl)) / 2));
+    padding-right: max(0.75rem, calc((44px - var(--tw-pr)) / 2));
+  }
+}
+
+/* Bloquear scroll del body cuando hay overlays abiertos */
+.body-no-scroll {
+  overflow: hidden;
+}
+
+/* Asegurar que el contenido no se desborde en móviles */
+@media (max-width: 1023px) {
+  .mobile-overflow-hidden {
+    overflow: hidden;
+  }
+}
+
+/* Tablas responsive - scroll horizontal en móviles */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.4) transparent;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.4);
+  border-radius: 9999px;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184 / 0.6);
+}
+
+/* Tabla con ancho mínimo para evitar colapso en móviles */
+.table-min-width {
+  min-width: 800px;
+  width: 100%;
+}
+
+/* En móviles, reducir el padding lateral para más espacio */
+@media (max-width: 767px) {
+  .mobile-px-reduced {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

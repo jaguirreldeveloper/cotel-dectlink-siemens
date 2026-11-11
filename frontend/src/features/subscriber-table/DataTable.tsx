@@ -19,6 +19,7 @@ import { TablePagination } from '@/shared/ui/TablePagination';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
+import { TableWrapper } from '@/shared/ui/TableWrapper';
 import { buildMapsUrl, formatCoords } from '@/shared/utils/geo';
 import { DEFAULT_PAGE_SIZE } from '@/shared/utils/pagination';
 
@@ -421,8 +422,8 @@ export const DataTable: React.FC<DataTableProps> = ({
       </div>
 
       {/* Table view */}
-      <div className="overflow-x-auto max-h-[550px]">
-        <table className="w-full text-left text-xs">
+      <TableWrapper className="max-h-[550px]">
+        <table className="w-full text-left text-xs table-min-width">
           <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-medium select-none">
             <tr>
               <th
@@ -724,7 +725,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             )}
           </tbody>
         </table>
-      </div>
+      </TableWrapper>
 
       {/* Pagination Footer */}
       <TablePagination
