@@ -10,8 +10,7 @@ import {
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
-import { StatusBadge } from '@/shared/ui/StatusBadge';
-import { GeoBadge } from '@/shared/ui/GeoBadge';
+import { RESUMEN_COLUMNS } from '@/entities/subscriber/columns';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
@@ -312,17 +311,27 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
             <table className='w-full text-xs'>
               <thead className='sticky top-0 z-10 bg-slate-800 text-slate-300'>
                 <tr>
-                  <Th field='nro' label='Nro' sortField={sortField} onSort={handleSort} align='right' />
-                  <Th field='numero' label='Teléfono' sortField={sortField} onSort={handleSort} />
-                  <Th field='nombre' label='Nombre del Cliente' sortField={sortField} onSort={handleSort} />
-                  <Th field='direccion' label='Dirección' sortField={sortField} onSort={handleSort} />
-                  <Th field='normalizedZona' label='Zona' sortField={sortField} onSort={handleSort} />
-                  <Th field='cto' label='Contrato' sortField={sortField} onSort={handleSort} />
-                  <Th field='fechServ' label='F. Servicio' sortField={sortField} onSort={handleSort} />
-                  <th className='px-3 py-2 text-left'>Coordenadas</th>
-                  <th className='px-3 py-2 text-left'>Mapa</th>
-                  <th className='px-3 py-2 text-left'>Estado</th>
-                  <th className='px-3 py-2 text-left'>Señal</th>
+                  {RESUMEN_COLUMNS.map(col =>
+                    col.sortField ? (
+                      <Th
+                        key={col.key}
+                        field={col.sortField}
+                        label={col.label}
+                        sortField={sortField}
+                        onSort={handleSort}
+                        align={col.align ?? 'left'}
+                      />
+                    ) : (
+                      <th
+                        key={col.key}
+                        className={`px-3 py-2 whitespace-nowrap ${
+                          col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
+                        }`}
+                      >
+                        {col.label}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -332,44 +341,21 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
                     onClick={() => onSelectRecord(r)}
                     className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
                   >
-                    <td className='px-3 py-2 font-mono text-slate-400 text-right tabular-nums'>{r.nro}</td>
-                    <td className='px-3 py-2 font-mono text-white'>{r.numero}</td>
-                    <td className='px-3 py-2 text-slate-200 truncate max-w-[200px]' title={r.nombre}>{r.nombre}</td>
-                    <td className='px-3 py-2 text-slate-400 truncate max-w-[180px]' title={r.direccion}>{r.direccion}</td>
-                    <td className='px-3 py-2 text-slate-400 truncate max-w-[140px]'>{r.normalizedZona || r.zona}</td>
-                    <td className='px-3 py-2 font-mono text-slate-500'>{r.cto}</td>
-                    <td className='px-3 py-2 text-slate-500 whitespace-nowrap'>{r.fechServ}</td>
-                    <td className='px-3 py-2 whitespace-nowrap'>
-                      <span
-                        className={`block font-mono text-[11px] ${
-                          r.coordsReales ? 'text-slate-200' : 'text-slate-500'
-                        }`}
-                        title={r.coordsReales ? 'Coordenadas del padrón' : 'Sin calibrar: estimada por zona'}
+                    {RESUMEN_COLUMNS.map(col => (
+                      <td
+                        key={col.key}
+                        className={`px-3 py-2 text-slate-400 ${col.mono ? 'font-mono ' : ''}${
+                          col.align === 'right' ? 'text-right ' : col.align === 'center' ? 'text-center ' : ''
+                        }${col.cellClassName ?? ''}`}
                       >
-                        {formatCoords(r.lat, r.lng)}
-                      </span>
-                      <GeoBadge coordsReales={r.coordsReales} className='mt-0.5' />
-                    </td>
-                    <td className='px-3 py-2'>
-                      <a
-                        href={buildMapsUrl(r.lat, r.lng)}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        onClick={e => e.stopPropagation()}
-                        title='Ver en Google Maps'
-                        className='inline-flex items-center gap-1 text-slate-400 hover:text-brand-400 transition'
-                      >
-                        <ExternalLink className='w-3.5 h-3.5' aria-hidden='true' />
-                        <span className='text-[11px]'>Mapa</span>
-                      </a>
-                    </td>
-                    <td className='px-3 py-2'><StatusBadge status={r.estadoOperativo} /></td>
-                    <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>{r.signalDect ?? '—'}</td>
+                        {col.render(r)}
+                      </td>
+                    ))}
                   </tr>
                 ))}
                 {pageSubs.length === 0 && (
                   <tr>
-                    <td colSpan={11} className='px-3 py-8 text-center text-slate-500'>
+                    <td colSpan={RESUMEN_COLUMNS.length} className='px-3 py-8 text-center text-slate-500'>
                       <EmptyState
                         title={search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
                         description={search ? 'Prueba con otro nombre, número o dirección.' : 'Selecciona otra celda de la lista.'}
@@ -409,14 +395,18 @@ function Th({
   sortField: SortField;
   onSort: (f: SortField) => void;
   /** Alineación de la columna: derecha para numéricas. */
-  align?: 'left' | 'right';
+  align?: 'left' | 'right' | 'center';
 }) {
   return (
-    <th className={`px-3 py-2 whitespace-nowrap ${align === 'right' ? 'text-right' : 'text-left'}`}>
+    <th
+      className={`px-3 py-2 whitespace-nowrap ${
+        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+      }`}
+    >
       <button
         onClick={() => onSort(field)}
         className={`inline-flex items-center gap-1 hover:text-white transition ${
-          align === 'right' ? 'flex-row-reverse' : ''
+          align === 'right' ? 'flex-row-reverse' : align === 'center' ? 'w-full justify-center' : ''
         }`}
       >
         {label}

@@ -77,7 +77,7 @@ export const SUBSCRIBER_COLUMNS: SubscriberColumn[] = [
     mono: true,
     sortField: 'numero',
     cellClassName: 'whitespace-nowrap',
-    render: r => <span className='font-bold'>{r.numero}</span>,
+    render: r => <span className='font-bold text-white'>{r.numero}</span>,
   },
   {
     key: 'nombre',
@@ -86,7 +86,7 @@ export const SUBSCRIBER_COLUMNS: SubscriberColumn[] = [
     sortField: 'nombre',
     cellClassName: 'max-w-[180px] truncate',
     render: r => (
-      <span title={r.nombre}>
+      <span className='text-slate-200' title={r.nombre}>
         {r.nombre}
         {r.isMultiLineTitular && (
           <span className='ml-1 text-[10px] text-indigo-400 font-semibold' title='Titular con múltiples líneas'>
@@ -119,7 +119,7 @@ export const SUBSCRIBER_COLUMNS: SubscriberColumn[] = [
     mono: true,
     sortField: 'cto',
     cellClassName: 'whitespace-nowrap',
-    render: r => r.cto,
+    render: r => <span className='text-slate-500'>{r.cto}</span>,
   },
   {
     key: 'fechServ',
@@ -128,7 +128,7 @@ export const SUBSCRIBER_COLUMNS: SubscriberColumn[] = [
     mono: true,
     sortField: 'fechServ',
     cellClassName: 'whitespace-nowrap',
-    render: r => r.fechServ,
+    render: r => <span className='text-slate-500'>{r.fechServ}</span>,
   },
 
   // —— Servicio y técnico ——
