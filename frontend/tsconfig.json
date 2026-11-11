@@ -21,6 +21,6 @@
   "references": [
     { "path": "../packages/types" }
   ],
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/env.d.ts"],
   "exclude": ["node_modules", "dist", "playwright", ".tsbuildinfo", "tests", "*.config.ts"]
 }

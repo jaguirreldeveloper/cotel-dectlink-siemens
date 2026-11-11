@@ -13,7 +13,8 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "clean": "rm -rf dist .tsbuildinfo node_modules/.vite"
+    "clean": "rm -rf dist .tsbuildinfo node_modules/.vite",
+    "postbuild": "node scripts/copy-sw.js"
   },
   "dependencies": {
     "@cotel/types": "workspace:*",

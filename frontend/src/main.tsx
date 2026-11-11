@@ -110,3 +110,41 @@ if (sentryEnabled && sentryDsn) {
   };
 }
 
+// =============================================================================
+// Service Worker Registration (PWA)
+// =============================================================================
+
+// Registrar Service Worker solo en producción
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) => {
+        console.log('[SW] ServiceWorker registration successful:', registration.scope);
+      })
+      .catch((error) => {
+        console.error('[SW] ServiceWorker registration failed:', error);
+      });
+  });
+}
+
+// Escuchar mensajes del Service Worker (para sincronización)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'ONLINE') {
+      // Conexión recuperada - recargar datos
+      window.dispatchEvent(new CustomEvent('cotel-online'));
+    }
+    
+    if (event.data?.type === 'OFFLINE') {
+      // Conexión perdida - mostrar modo offline
+      window.dispatchEvent(new CustomEvent('cotel-offline'));
+    }
+    
+    if (event.data?.type === 'SYNC_REQUESTED') {
+      // Sincronización solicitada
+      window.dispatchEvent(new CustomEvent('cotel-sync-requested'));
+    }
+  });
+}
+

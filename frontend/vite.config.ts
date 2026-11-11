@@ -46,7 +46,27 @@ export default defineConfig(({ mode }) => {
               if (id.includes('lucide-react')) return 'ui';
             }
           }
-        }
+        },
+        // Incluir sw.ts en el build
+        input: {
+          main: path.resolve(__dirname, 'src/main.tsx'),
+          sw: path.resolve(__dirname, 'src/sw.ts'),
+        },
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom')) return 'vendor';
+              if (id.includes('leaflet')) return 'leaflet';
+              if (id.includes('lucide-react')) return 'ui';
+            }
+          },
+          entryFileNames: (chunkInfo) => {
+            if (chunkInfo.name === 'sw') {
+              return 'sw.js';
+            }
+            return '[name]-[hash].js';
+          },
+        },
       }
     },
     define: {
