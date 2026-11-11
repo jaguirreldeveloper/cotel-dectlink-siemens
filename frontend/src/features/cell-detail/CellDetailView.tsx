@@ -6,20 +6,17 @@ import {
   MapPin,
   Signal,
   Users,
-  AlertTriangle,
   Navigation,
   Gauge,
-  ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
 import { SIEMENS_DECT_CELLS } from '@/demo/initialData';
+import { DETALLE_COLUMNS } from '@/entities/subscriber/columns';
 import { StatusBadge } from '@/shared/ui/StatusBadge';
-import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Select } from '@/shared/ui/Select';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { Input } from '@/shared/ui/Input';
-import { buildMapsUrl } from '@/shared/utils/geo';
 import { DEFAULT_PAGE_SIZE } from '@/shared/utils/pagination';
 import type { CellInfo } from '@/features/cell-users/types';
 import { fetchCells } from '@/features/cell-users/api';
@@ -39,13 +36,6 @@ const STATUS_DOT: Record<string, string> = {
   'CORTE X MORA': 'bg-amber-500',
   'FALLA TECNICA': 'bg-rose-500',
   'S/SERV.': 'bg-slate-500',
-};
-
-const SIGNAL_LABEL: Record<string, string> = {
-  EXCELENTE: 'text-emerald-400',
-  BUENO: 'text-blue-400',
-  DEBIL: 'text-amber-400',
-  SIN_ENLACE: 'text-rose-400',
 };
 
 export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps) {
@@ -255,19 +245,27 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
             <table className='w-full text-xs'>
               <thead className='sticky top-0 z-10 bg-slate-800 text-slate-300'>
                 <tr>
-                  <SortableTh field='nro' label='Nro' sortField={sortField} onSort={handleSort} align='right' />
-                  <SortableTh field='numero' label='Teléfono' sortField={sortField} onSort={handleSort} />
-                  <SortableTh field='nombre' label='Cliente' sortField={sortField} onSort={handleSort} />
-                  <SortableTh field='direccion' label='Dirección' sortField={sortField} onSort={handleSort} />
-                  <SortableTh field='normalizedZona' label='Zona' sortField={sortField} onSort={handleSort} />
-                  <th className='px-2 py-2 text-left whitespace-nowrap'>Estado</th>
-                  <SortableTh field='signalDect' label='Señal' sortField={sortField} onSort={handleSort} />
-                  <SortableTh field='fauModel' label='FAU' sortField={sortField} onSort={handleSort} />
-                  <SortableTh field='cto' label='Contrato' sortField={sortField} onSort={handleSort} />
-                  <SortableTh field='fechServ' label='F. Servicio' sortField={sortField} onSort={handleSort} />
-                  <th className='px-2 py-2 text-left whitespace-nowrap'>GPS</th>
-                  <th className='px-2 py-2 text-left whitespace-nowrap'>Mapa</th>
-                  <th className='px-2 py-2 text-right whitespace-nowrap'>Deuda</th>
+                  {DETALLE_COLUMNS.map(col =>
+                    col.sortField ? (
+                      <SortableTh
+                        key={col.key}
+                        field={col.sortField}
+                        label={col.label}
+                        sortField={sortField}
+                        onSort={handleSort}
+                        align={col.align ?? 'left'}
+                      />
+                    ) : (
+                      <th
+                        key={col.key}
+                        className={`px-2 py-2 whitespace-nowrap ${
+                          col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
+                        }`}
+                      >
+                        {col.label}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -277,56 +275,21 @@ export function CellDetailView({ records, onSelectRecord }: CellDetailViewProps)
                     onClick={() => onSelectRecord(r)}
                     className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
                   >
-                    <td className='px-2 py-2 font-mono text-slate-400 whitespace-nowrap text-right tabular-nums'>{r.nro}</td>
-                    <td className='px-2 py-2 font-mono text-white whitespace-nowrap'>{r.numero}</td>
-                    <td className='px-2 py-2 text-slate-200 truncate max-w-[180px]' title={r.nombre}>{r.nombre}</td>
-                    <td className='px-2 py-2 text-slate-400 truncate max-w-[160px]' title={r.direccion}>{r.direccion}</td>
-                    <td className='px-2 py-2 text-slate-400 truncate max-w-[120px]'>{r.normalizedZona || r.zona}</td>
-                    <td className='px-2 py-2 whitespace-nowrap'><StatusBadge status={r.estadoOperativo} /></td>
-                    <td className={`px-2 py-2 whitespace-nowrap font-mono ${SIGNAL_LABEL[r.signalDect] ?? 'text-slate-500'}`}>
-                      {r.signalDect ?? '—'}
-                    </td>
-                    <td className='px-2 py-2 text-slate-400 whitespace-nowrap'>{r.fauModel || '—'}</td>
-                    <td className='px-2 py-2 font-mono text-slate-500 whitespace-nowrap'>{r.cto}</td>
-                    <td className='px-2 py-2 text-slate-500 whitespace-nowrap'>{r.fechServ}</td>
-                    <td className='px-2 py-2 text-slate-400 whitespace-nowrap'>
-                      <span className='inline-flex items-center gap-1.5'>
-                        <GeoBadge coordsReales={r.coordsReales} />
-                        {r.coordsReales && r.distanciaKm != null && (
-                          <span className='font-mono text-[11px] text-slate-400'>
-                            {r.distanciaKm.toFixed(2)}km
-                          </span>
-                        )}
-                      </span>
-                    </td>
-                    <td className='px-2 py-2'>
-                      <a
-                        href={buildMapsUrl(r.lat, r.lng)}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        onClick={e => e.stopPropagation()}
-                        title='Ver en Google Maps'
-                        className='inline-flex items-center gap-1 text-slate-400 hover:text-brand-400 transition'
+                    {DETALLE_COLUMNS.map(col => (
+                      <td
+                        key={col.key}
+                        className={`px-2 py-2 text-slate-400 ${col.mono ? 'font-mono ' : ''}${
+                          col.align === 'right' ? 'text-right ' : col.align === 'center' ? 'text-center ' : ''
+                        }${col.cellClassName ?? ''}`}
                       >
-                        <ExternalLink className='w-3.5 h-3.5' aria-hidden='true' />
-                        <span className='text-[11px]'>Mapa</span>
-                      </a>
-                    </td>
-                    <td className='px-2 py-2 whitespace-nowrap text-right tabular-nums'>
-                      {r.deudaMeses ? (
-                        <span className='inline-flex items-center gap-1 text-amber-400'>
-                          <AlertTriangle className='w-3 h-3' />
-                          {r.deudaMeses}m
-                        </span>
-                      ) : (
-                        <span className='text-slate-600'>—</span>
-                      )}
-                    </td>
+                        {col.render(r)}
+                      </td>
+                    ))}
                   </tr>
                 ))}
                 {pageSubs.length === 0 && (
                   <tr>
-                    <td colSpan={13} className='px-3 py-8 text-center text-slate-500'>
+                    <td colSpan={DETALLE_COLUMNS.length} className='px-3 py-8 text-center text-slate-500'>
                       <EmptyState
                         title={search ? 'Sin resultados para esta búsqueda.' : 'No hay abonados en esta celda.'}
                         description={search ? 'Prueba con otro nombre, número o dirección.' : 'Selecciona otra celda de la lista.'}
@@ -391,14 +354,18 @@ function SortableTh({
   sortField: SortField;
   onSort: (f: SortField) => void;
   /** Alineación de la columna: derecha para numéricas. */
-  align?: 'left' | 'right';
+  align?: 'left' | 'right' | 'center';
 }) {
   return (
-    <th className={`px-2 py-2 whitespace-nowrap ${align === 'right' ? 'text-right' : 'text-left'}`}>
+    <th
+      className={`px-2 py-2 whitespace-nowrap ${
+        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+      }`}
+    >
       <button
         onClick={() => onSort(field)}
         className={`inline-flex items-center gap-1 hover:text-white transition ${
-          align === 'right' ? 'flex-row-reverse' : ''
+          align === 'right' ? 'flex-row-reverse' : align === 'center' ? 'w-full justify-center' : ''
         }`}
       >
         {label}

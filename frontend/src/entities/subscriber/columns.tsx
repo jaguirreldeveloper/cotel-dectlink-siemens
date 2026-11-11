@@ -244,6 +244,7 @@ export const SUBSCRIBER_COLUMNS: SubscriberColumn[] = [
         href={buildMapsUrl(r.lat, r.lng)}
         target='_blank'
         rel='noopener noreferrer'
+        onClick={e => e.stopPropagation()}
         title='Ver en Google Maps'
         className='inline-flex items-center gap-1 text-slate-400 hover:text-brand-400 transition'
       >
