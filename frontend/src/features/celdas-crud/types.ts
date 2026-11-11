@@ -10,6 +10,10 @@ export interface CeldaCrud extends Record<string, unknown> {
   radioCoberturaKm: number | null;
   latitud: number | null;
   longitud: number | null;
+  /** Subcentral de servicio asignada (null = sin asignar). */
+  idSubcentral: number | null;
+  /** Nombre de la subcentral de servicio (para mostrar sin join en la UI). */
+  nombreSubcentral: string | null;
 }
 
 /** Campos del formulario de crear/editar celda. */

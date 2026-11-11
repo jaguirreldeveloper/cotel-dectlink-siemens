@@ -6,14 +6,22 @@ import {
   Trash2,
   RefreshCw,
   MapPin,
+  Search,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 import type { Operador, OperadorRole } from '@/features/auth/types';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
+import { Select } from '@/shared/ui/Select';
 import { invalidateCellsCache } from '@/entities/cell/useCells';
+import { infraApi } from '@/features/infraestructura/api';
+import type { SubcentralDTO } from '@/features/infraestructura/types';
 import * as api from './api';
+import { summarizeCeldas, ocupacionCelda, UMBRAL_OCUPACION_ALERTA } from './summary';
 import type { CeldaCrud, CeldaFormData } from './types';
 
 interface CeldasCrudViewProps {
@@ -37,15 +45,88 @@ const EMPTY_FORM: CeldaFormData = {
   longitud: '',
 };
 
+/** Columnas ordenables de la tabla administrativa. */
+type SortKey = 'id' | 'nombre' | 'subcentral' | 'capacidad' | 'ocupacion' | 'abonados';
+type SortDir = 'asc' | 'desc';
+
+/** Franja de KPIs del panel (una tarjeta por métrica). */
+function KpiTile({
+  label,
+  value,
+  sub,
+  tone = 'text-white',
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  tone?: string;
+}) {
+  return (
+    <div className='rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2.5'>
+      <div className='text-[10px] font-bold uppercase tracking-wider text-slate-400'>{label}</div>
+      <div className={`text-2xl font-extrabold font-mono mt-0.5 ${tone}`}>{value}</div>
+      {sub && <div className='text-[10px] text-slate-500 mt-0.5'>{sub}</div>}
+    </div>
+  );
+}
+
+/** Cabecera de columna ordenable (patrón de DataTable). */
+function Th({
+  label,
+  sortKey,
+  current,
+  dir,
+  onSort,
+  align = 'left',
+}: {
+  label: string;
+  sortKey: SortKey;
+  current: SortKey;
+  dir: SortDir;
+  onSort: (k: SortKey) => void;
+  align?: 'left' | 'right';
+}) {
+  const activa = current === sortKey;
+  const Icon = !activa ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th
+      aria-sort={activa ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={`px-3 py-2 select-none ${
+        align === 'right' ? 'text-right' : 'text-left'
+      } ${activa ? 'text-white' : ''}`}
+    >
+      <button
+        type='button'
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 hover:text-white transition ${
+          align === 'right' ? 'flex-row-reverse' : ''
+        }`}
+      >
+        <span>{label}</span>
+        <Icon className='w-3 h-3 text-slate-500' aria-hidden='true' />
+      </button>
+    </th>
+  );
+}
+
 export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
   const rol = operador?.role as OperadorRole | undefined;
   const escritura = !!rol && PUEDE_ESCRIBIR.includes(rol);
   const borrado = !!rol && PUEDE_ELIMINAR.includes(rol);
 
   const [celdas, setCeldas] = useState<CeldaCrud[]>([]);
+  const [subcentrales, setSubcentrales] = useState<SubcentralDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Filtros, búsqueda y orden de la tabla administrativa
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroCalibracion, setFiltroCalibracion] = useState<'todas' | 'calibradas' | 'sin'>('todas');
+  const [filtroSubcentral, setFiltroSubcentral] = useState<'todas' | 'con' | 'sin'>('todas');
+  const [filtroAbonados, setFiltroAbonados] = useState<'todos' | 'con' | 'sin'>('todos');
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
+  const [assigningId, setAssigningId] = useState<number | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -78,6 +159,115 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
   useEffect(() => {
     loadCeldas();
   }, [loadCeldas]);
+
+  // Catálogo de subcentrales para la asignación inline (solo quien puede escribir)
+  useEffect(() => {
+    if (!escritura) return;
+    let cancelado = false;
+    infraApi
+      .fetchSubcentrales()
+      .then(lista => {
+        if (!cancelado) setSubcentrales(lista);
+      })
+      .catch(() => {
+        /* sin catálogo el select queda solo con «Sin asignar» */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [escritura]);
+
+  const resumen = useMemo(() => summarizeCeldas(celdas, abonadosPorCelda), [celdas, abonadosPorCelda]);
+
+  /** Filtrado + orden (los nulos van siempre al final). */
+  const filas = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    const dirMul = sort.dir === 'asc' ? 1 : -1;
+
+    const filtradas = celdas.filter(c => {
+      if (q) {
+        const hay = `${c.id} ${c.nombre} ${c.tecnologia ?? ''} ${c.rfpModelo ?? ''} ${
+          c.nombreSubcentral ?? ''
+        }`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      const calibrada = c.latitud != null && c.longitud != null;
+      if (filtroCalibracion === 'calibradas' && !calibrada) return false;
+      if (filtroCalibracion === 'sin' && calibrada) return false;
+      if (filtroSubcentral === 'con' && c.idSubcentral == null) return false;
+      if (filtroSubcentral === 'sin' && c.idSubcentral != null) return false;
+      const count = abonadosPorCelda.get(c.id) ?? 0;
+      if (filtroAbonados === 'con' && count === 0) return false;
+      if (filtroAbonados === 'sin' && count > 0) return false;
+      return true;
+    });
+
+    const num = (x: number | null, y: number | null): number => {
+      if (x == null && y == null) return 0;
+      if (x == null) return 1; // nulos al final en ambos sentidos
+      if (y == null) return -1;
+      return (x - y) * dirMul;
+    };
+
+    return [...filtradas].sort((a, b) => {
+      switch (sort.key) {
+        case 'id':
+          return (a.id - b.id) * dirMul;
+        case 'nombre':
+          return a.nombre.localeCompare(b.nombre, 'es') * dirMul;
+        case 'subcentral': {
+          if (a.nombreSubcentral == null && b.nombreSubcentral == null) return 0;
+          if (a.nombreSubcentral == null) return 1;
+          if (b.nombreSubcentral == null) return -1;
+          return a.nombreSubcentral.localeCompare(b.nombreSubcentral, 'es') * dirMul;
+        }
+        case 'capacidad':
+          return num(a.capacidadCanales, b.capacidadCanales);
+        case 'ocupacion':
+          return num(
+            ocupacionCelda(a, abonadosPorCelda.get(a.id) ?? 0),
+            ocupacionCelda(b, abonadosPorCelda.get(b.id) ?? 0)
+          );
+        case 'abonados':
+          return (
+            ((abonadosPorCelda.get(a.id) ?? 0) - (abonadosPorCelda.get(b.id) ?? 0)) * dirMul
+          );
+      }
+    });
+  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, sort]);
+
+  const hayFiltros =
+    busqueda !== '' ||
+    filtroCalibracion !== 'todas' ||
+    filtroSubcentral !== 'todas' ||
+    filtroAbonados !== 'todos';
+
+  const limpiarFiltros = () => {
+    setBusqueda('');
+    setFiltroCalibracion('todas');
+    setFiltroSubcentral('todas');
+    setFiltroAbonados('todos');
+  };
+
+  const handleSort = (key: SortKey) => {
+    setSort(prev => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  };
+
+  /** Asignación inline de la subcentral de servicio (PATCH /cells/{id}/subcentral). */
+  const asignarSubcentral = async (c: CeldaCrud, idSubcentral: number | null) => {
+    setAssigningId(c.id);
+    try {
+      const { message } = await infraApi.asignarSubcentralACelda(c.id, idSubcentral);
+      setNotice(message);
+      invalidateCellsCache();
+      await loadCeldas();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al asignar subcentral');
+      await loadCeldas(); // reverte el select al valor real
+    } finally {
+      setAssigningId(null);
+    }
+  };
 
   const openCreate = () => {
     setForm(EMPTY_FORM);
@@ -163,12 +353,43 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
+  /** Barra de ocupación: ámbar sobre el umbral, rojo sobre capacidad, «—» sin capacidad. */
+  const celdaOcupacion = (c: CeldaCrud) => {
+    const count = abonadosPorCelda.get(c.id) ?? 0;
+    const pct = ocupacionCelda(c, count);
+    if (pct == null) {
+      return (
+        <span className='text-slate-600' title='Sin capacidad de canales declarada'>
+          —
+        </span>
+      );
+    }
+    const sobre = pct > 100;
+    const alerta = pct > UMBRAL_OCUPACION_ALERTA;
+    const barra = sobre ? 'bg-rose-500' : alerta ? 'bg-amber-500' : 'bg-emerald-500';
+    const texto = sobre ? 'text-rose-400' : alerta ? 'text-amber-400' : 'text-emerald-400';
+    return (
+      <div
+        className='flex items-center gap-2 justify-end'
+        title={`${count} de ${c.capacidadCanales} canales en uso (${pct}%)`}
+      >
+        <span className='font-mono text-[10px] text-slate-500'>
+          {count}/{c.capacidadCanales}
+        </span>
+        <div className='w-14 h-1.5 rounded-full bg-slate-800 overflow-hidden'>
+          <div className={`h-full rounded-full ${barra}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+        </div>
+        <span className={`font-mono text-[10px] w-9 text-right ${texto}`}>{pct}%</span>
+      </div>
+    );
+  };
+
   return (
     <div className='space-y-5'>
       <div className='flex items-center justify-between'>
         <h2 className='text-xl font-bold text-white flex items-center gap-2'>
           <Radio className='w-5 h-5 text-brand-400' />
-          Gestión de Celdas (RFP)
+          Panel de Administración de Celdas (RFP)
         </h2>
         <div className='flex gap-2'>
           <Button variant='soft' size='sm' icon={RefreshCw} onClick={loadCeldas} disabled={loading}>
@@ -193,37 +414,186 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
         </div>
       )}
 
-      {/* Tabla de celdas */}
+      {/* Franja de KPIs */}
+      <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3'>
+        <KpiTile label='Celdas totales' value={resumen.total} sub='RFP registradas' />
+        <KpiTile
+          label='Canales instalados'
+          value={resumen.canalesInstalados}
+          sub='capacidad agregada'
+        />
+        <KpiTile label='Abonados' value={resumen.abonados} sub='asignados a celdas' />
+        <KpiTile
+          label='Ocupación media'
+          value={`${resumen.ocupacionPct}%`}
+          sub={
+            resumen.alertasOcupacion > 0
+              ? `${resumen.alertasOcupacion} celda(s) con >${UMBRAL_OCUPACION_ALERTA}%`
+              : `sin celdas sobre el ${UMBRAL_OCUPACION_ALERTA}%`
+          }
+          tone={resumen.alertasOcupacion > 0 ? 'text-amber-400' : 'text-emerald-400'}
+        />
+        <KpiTile
+          label='Sin calibrar'
+          value={resumen.sinCalibrar}
+          sub='sin coordenadas GPS'
+          tone={resumen.sinCalibrar > 0 ? 'text-rose-400' : 'text-emerald-400'}
+        />
+        <KpiTile
+          label='Sin subcentral'
+          value={resumen.sinSubcentral}
+          sub='por asignar'
+          tone={resumen.sinSubcentral > 0 ? 'text-amber-400' : 'text-emerald-400'}
+        />
+      </div>
+
+      {/* Búsqueda y filtros */}
+      <div className='flex flex-wrap items-center gap-2'>
+        <Input
+          dark
+          size='sm'
+          icon={Search}
+          placeholder='Buscar por nombre, RFP, tecnología…'
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          onClear={() => setBusqueda('')}
+          aria-label='Buscar celdas'
+          className='w-60'
+        />
+        <Select
+          dark
+          size='sm'
+          value={filtroCalibracion}
+          onChange={e => setFiltroCalibracion(e.target.value as 'todas' | 'calibradas' | 'sin')}
+          aria-label='Filtrar por calibración'
+        >
+          <option value='todas'>Calibración: todas</option>
+          <option value='calibradas'>Solo calibradas</option>
+          <option value='sin'>Sin calibrar</option>
+        </Select>
+        <Select
+          dark
+          size='sm'
+          value={filtroSubcentral}
+          onChange={e => setFiltroSubcentral(e.target.value as 'todas' | 'con' | 'sin')}
+          aria-label='Filtrar por subcentral'
+        >
+          <option value='todas'>Subcentral: todas</option>
+          <option value='con'>Con subcentral</option>
+          <option value='sin'>Sin subcentral</option>
+        </Select>
+        <Select
+          dark
+          size='sm'
+          value={filtroAbonados}
+          onChange={e => setFiltroAbonados(e.target.value as 'todos' | 'con' | 'sin')}
+          aria-label='Filtrar por abonados'
+        >
+          <option value='todos'>Abonados: todos</option>
+          <option value='con'>Con abonados</option>
+          <option value='sin'>Sin abonados</option>
+        </Select>
+        {hayFiltros && (
+          <Button variant='ghost' size='sm' onClick={limpiarFiltros}>
+            Limpiar filtros
+          </Button>
+        )}
+        <span className='ml-auto text-xs text-slate-500 font-mono tabular-nums'>
+          {filas.length} de {celdas.length} celdas
+        </span>
+      </div>
+
+      {/* Tabla administrativa de celdas */}
       <div className='rounded-xl border border-slate-700 bg-slate-900/60 overflow-x-auto'>
         <table className='w-full text-xs'>
           <thead className='bg-slate-800/60 text-slate-300'>
             <tr>
-              <th className='px-3 py-2 text-left'>RFP #</th>
-              <th className='px-3 py-2 text-left'>Nombre</th>
+              <Th label='RFP #' sortKey='id' current={sort.key} dir={sort.dir} onSort={handleSort} />
+              <Th label='Nombre' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
+              <Th
+                label='Subcentral'
+                sortKey='subcentral'
+                current={sort.key}
+                dir={sort.dir}
+                onSort={handleSort}
+              />
               <th className='px-3 py-2 text-left'>Tecnología</th>
-              <th className='px-3 py-2 text-left'>Banda</th>
-              <th className='px-3 py-2 text-right'>Capacidad</th>
-              <th className='px-3 py-2 text-right'>Cobertura</th>
+              <Th
+                label='Capacidad'
+                sortKey='capacidad'
+                current={sort.key}
+                dir={sort.dir}
+                onSort={handleSort}
+                align='right'
+              />
+              <Th
+                label='Ocupación'
+                sortKey='ocupacion'
+                current={sort.key}
+                dir={sort.dir}
+                onSort={handleSort}
+                align='right'
+              />
               <th className='px-3 py-2 text-left'>Coordenadas</th>
-              <th className='px-3 py-2 text-right'>Abonados</th>
+              <Th
+                label='Abonados'
+                sortKey='abonados'
+                current={sort.key}
+                dir={sort.dir}
+                onSort={handleSort}
+                align='right'
+              />
               <th className='px-3 py-2 text-right'>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {celdas.map(c => {
+            {filas.map(c => {
               const count = abonadosPorCelda.get(c.id) ?? 0;
               return (
                 <tr key={c.id} className='border-t border-slate-800 hover:bg-slate-800/40'>
                   <td className='px-3 py-2 font-mono font-bold text-brand-400'>{c.id}</td>
                   <td className='px-3 py-2 text-white font-medium'>{c.nombre}</td>
-                  <td className='px-3 py-2 text-slate-400'>{c.tecnologia ?? '—'}</td>
-                  <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>{c.bandaFrecuencia ?? '—'}</td>
-                  <td className='px-3 py-2 text-right text-slate-400'>
-                    {c.capacidadCanales != null ? `${c.capacidadCanales} ch` : '—'}
+                  <td className='px-3 py-2'>
+                    {escritura ? (
+                      <Select
+                        dark
+                        size='sm'
+                        value={c.idSubcentral ?? ''}
+                        disabled={assigningId === c.id}
+                        onChange={e =>
+                          asignarSubcentral(c, e.target.value ? Number(e.target.value) : null)
+                        }
+                        aria-label={`Subcentral de ${c.nombre}`}
+                        className='w-44'
+                      >
+                        <option value=''>— Sin asignar —</option>
+                        {subcentrales
+                          .filter(s => s.activo || s.id === c.idSubcentral)
+                          .map(s => (
+                            <option key={s.id} value={s.id}>
+                              {s.codigo} · {s.nombre}
+                            </option>
+                          ))}
+                      </Select>
+                    ) : (
+                      <span className={c.nombreSubcentral ? 'text-slate-300' : 'text-slate-600'}>
+                        {c.nombreSubcentral ?? '—'}
+                      </span>
+                    )}
+                  </td>
+                  <td className='px-3 py-2 text-slate-400'>
+                    <div>{c.tecnologia ?? '—'}</div>
+                    <div className='text-[10px] text-slate-600 whitespace-nowrap'>
+                      {c.bandaFrecuencia ?? ''}
+                    </div>
                   </td>
                   <td className='px-3 py-2 text-right text-slate-400'>
-                    {c.radioCoberturaKm != null ? `${c.radioCoberturaKm} km` : '—'}
+                    <div>{c.capacidadCanales != null ? `${c.capacidadCanales} ch` : '—'}</div>
+                    <div className='text-[10px] text-slate-600'>
+                      {c.radioCoberturaKm != null ? `${c.radioCoberturaKm} km` : 'sin cobertura'}
+                    </div>
                   </td>
+                  <td className='px-3 py-2'>{celdaOcupacion(c)}</td>
                   <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>
                     {c.latitud != null && c.longitud != null ? (
                       <span className='inline-flex items-center gap-1 text-emerald-400'>
@@ -262,10 +632,27 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
                 </tr>
               );
             })}
-            {celdas.length === 0 && !loading && (
+            {filas.length === 0 && !loading && (
               <tr>
                 <td colSpan={9} className='px-3 py-8 text-center text-slate-500'>
-                  No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
+                  {celdas.length === 0 ? (
+                    <>
+                      No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
+                    </>
+                  ) : (
+                    <>
+                      Ninguna celda coincide con la búsqueda o los filtros.{' '}
+                      {hayFiltros && (
+                        <button
+                          type='button'
+                          onClick={limpiarFiltros}
+                          className='text-brand-400 hover:text-brand-300 underline'
+                        >
+                          Limpiar filtros
+                        </button>
+                      )}
+                    </>
+                  )}
                 </td>
               </tr>
             )}
