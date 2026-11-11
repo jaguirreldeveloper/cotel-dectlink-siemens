@@ -37,10 +37,13 @@ import { buildSubscribersCsv, subscribersCsvFilename } from '@/entities/subscrib
 import { useSubscriberData } from '@/entities/subscriber/hooks/useSubscriberData';
 import { useAuth, BrandedLoginView } from '@/features/auth';
 import { AppTabId } from '@/widgets/AppTabs';
+import { usePersistentState, useClearNavigationState } from '@/shared/hooks/usePersistentState';
 import { Radio } from 'lucide-react';
 
 export default function App() {
   const auth = useAuth();
+  const clearNavigationState = useClearNavigationState();
+
   // La carga del padrón y el SSE solo arrancan con sesión iniciada; en modo
   // demo se usan los datos locales sin llamar a la API.
   const data = useSubscriberData({
@@ -48,19 +51,27 @@ export default function App() {
     demo: auth.isDemoMode,
   });
 
-  const [activeTab, setActiveTab] = useState<AppTabId>('gps-calibration');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // Persistencia de estado de navegación en sessionStorage
+  const [activeTab, setActiveTab] = usePersistentState<AppTabId>('activeTab', 'gps-calibration');
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState('sidebarCollapsed', false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = usePersistentState('mobileSidebarOpen', false);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
 
-  const [externalCeldaFilter, setExternalCeldaFilter] = useState('');
-  const [externalZoneFilter, setExternalZoneFilter] = useState('');
-  const [externalYearFilter, setExternalYearFilter] = useState<number | undefined>(undefined);
+  const [externalCeldaFilter, setExternalCeldaFilter] = usePersistentState('externalCeldaFilter', '');
+  const [externalZoneFilter, setExternalZoneFilter] = usePersistentState('externalZoneFilter', '');
+  const [externalYearFilter, setExternalYearFilter] = usePersistentState<number | undefined>('externalYearFilter', undefined);
 
   // Drill-down desde el Padrón: celda a preseleccionar en "Abonados por Celda".
-  const [drilldownCelda, setDrilldownCelda] = useState<string | null>(null);
+  const [drilldownCelda, setDrilldownCelda] = usePersistentState<string | null>('drilldownCelda', null);
+
+  // Limpiar estado de navegación al cerrar sesión o cambiar de modo
+  useEffect(() => {
+    if (!auth.isAuthenticated && !auth.isDemoMode) {
+      clearNavigationState();
+    }
+  }, [auth.isAuthenticated, auth.isDemoMode, clearNavigationState]);
 
   // Si el tab activo no es visible para el rol de la sesión (o la sesión es
   // de solo lectura), redirigir al primer módulo visible y sin 403 a ciegas.
