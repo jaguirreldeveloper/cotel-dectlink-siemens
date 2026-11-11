@@ -12,7 +12,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord, OperationalStatus } from '@/entities/subscriber/types';
-import { statusTextClass } from '@/shared/ui/StatusBadge';
+import { summarizeRecords, OPERATIONAL_STATUSES } from '@/entities/subscriber/summary';
+import { statusTextClass, STATUS_STYLES } from '@/shared/ui/StatusBadge';
 import { GeoBadge } from '@/shared/ui/GeoBadge';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { EmptyState } from '@/shared/ui/EmptyState';
@@ -85,8 +86,10 @@ export const DataTable: React.FC<DataTableProps> = ({
     return map;
   }, [records]);
 
-  // Filtering
-  const filteredRecords = useMemo(() => {
+  // Filtering (sin el filtro de estado: base compartida por la tabla y
+  // por la franja de segmentos, para que los conteos reaccionen al resto
+  // de filtros pero no al segmento activo).
+  const baseFiltered = useMemo(() => {
     // Búsqueda unificada con filterRecords (superconjunto: nombre, número, CTO,
     // dirección, zona cruda/normalizada y celda). Los demás filtros se aplican encima.
     return filterRecords(records, search).filter(r => {
@@ -111,11 +114,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         if (r.clientType !== selectedClientType) return false;
       }
 
-      // Operational Status (Siemens DECT Link)
-      if (selectedStatus) {
-        if (r.estadoOperativo !== selectedStatus) return false;
-      }
-
       // Multi-line
       if (onlyMultiLine && !r.isMultiLineTitular) return false;
 
@@ -131,11 +129,22 @@ export const DataTable: React.FC<DataTableProps> = ({
     activeCelda,
     externalYearFilter,
     selectedClientType,
-    selectedStatus,
     onlyMultiLine,
     onlyAuditIssues,
     showNormalized,
   ]);
+
+  // Operational Status (Siemens DECTlink): segmento seleccionado
+  const filteredRecords = useMemo(
+    () =>
+      selectedStatus
+        ? baseFiltered.filter(r => r.estadoOperativo === selectedStatus)
+        : baseFiltered,
+    [baseFiltered, selectedStatus]
+  );
+
+  // Franja de resumen + segmentos (sobre el conjunto sin filtro de estado)
+  const segmentSummary = useMemo(() => summarizeRecords(baseFiltered), [baseFiltered]);
 
   // Sorting
   const sortedRecords = useMemo(() => {
@@ -197,6 +206,19 @@ export const DataTable: React.FC<DataTableProps> = ({
     setOnlyMultiLine(false);
     setOnlyAuditIssues(false);
     if (onClearExternalFilters) onClearExternalFilters();
+    setCurrentPage(1);
+  };
+
+  // Clase de los segmentos de estado de la franja (patrón de chips del archivo)
+  const segmentChipClass = (active: boolean) =>
+    `px-2.5 py-1 rounded border text-xs transition ${
+      active
+        ? 'bg-brand-50 dark:bg-brand-950/40 border-brand-300 dark:border-brand-800 text-brand-700 dark:text-brand-300 font-medium'
+        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+    }`;
+
+  const selectSegment = (status: string) => {
+    setSelectedStatus(status);
     setCurrentPage(1);
   };
 
@@ -306,25 +328,6 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value="COMERCIAL">Comercial</option>
           </Select>
 
-          {/* Operational Status Siemens DECTlink */}
-          <Select
-            size="sm"
-            value={selectedStatus}
-            onChange={e => {
-              setSelectedStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            aria-label="Filtrar por estado operativo"
-            className="font-medium"
-          >
-            <option value="">Todos los Estados</option>
-            <option value="C/SERV.">Activo (C/SERV.)</option>
-            <option value="EN DEPOSITO">En Depósito</option>
-            <option value="CORTE X MORA">Corte x Mora</option>
-            <option value="FALLA TECNICA">Falla Técnica DECT</option>
-            <option value="S/SERV.">Sin Servicio / Baja</option>
-          </Select>
-
           {/* Quick toggle chips */}
           <button
             onClick={() => {
@@ -370,6 +373,48 @@ export const DataTable: React.FC<DataTableProps> = ({
             {sortedRecords.length} de {records.length} registros
           </div>
         </div>
+      </div>
+
+      {/* Franja de resumen del padrón + segmentos rápidos por estado */}
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-xs">
+        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+          {segmentSummary.total} abonados
+        </span>
+        <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+
+        <button
+          onClick={() => selectSegment('')}
+          aria-pressed={!selectedStatus}
+          className={segmentChipClass(!selectedStatus)}
+        >
+          Todos <span className="font-mono tabular-nums">{segmentSummary.total}</span>
+        </button>
+        {OPERATIONAL_STATUSES.map(status => (
+          <button
+            key={status}
+            onClick={() => selectSegment(status)}
+            aria-pressed={selectedStatus === status}
+            className={segmentChipClass(selectedStatus === status)}
+          >
+            {STATUS_STYLES[status].label}{' '}
+            <span className="font-mono tabular-nums">{segmentSummary.byStatus[status]}</span>
+          </button>
+        ))}
+
+        <span className="text-slate-300 dark:text-slate-600 ml-1" aria-hidden="true">·</span>
+        <span
+          title="Abonados con coordenadas reales en el padrón (BD/CSV o calibración GPS)"
+          className={`tabular-nums ${
+            segmentSummary.georreferenciados > 0
+              ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+              : 'text-slate-500'
+          }`}
+        >
+          Georreferenciados {segmentSummary.georreferenciados}/{segmentSummary.total} (
+          {segmentSummary.georefPct}%)
+        </span>
+        <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+        <span className="text-slate-500 tabular-nums">{segmentSummary.celdas} celdas</span>
       </div>
 
       {/* Table view */}
