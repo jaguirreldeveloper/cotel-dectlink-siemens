@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeCeldas, ocupacionCelda, UMBRAL_OCUPACION_ALERTA } from '@/features/celdas-crud/summary';
-import type { CeldaCrud } from '@/features/celdas-crud/types';
+import {
+  summarizeCeldas,
+  ocupacionCelda,
+  validarFormCelda,
+  UMBRAL_OCUPACION_ALERTA,
+} from '@/features/celdas-crud/summary';
+import type { CeldaCrud, CeldaFormData } from '@/features/celdas-crud/types';
 
 function celda(overrides: Partial<CeldaCrud>): CeldaCrud {
   return {
@@ -94,5 +99,52 @@ describe('ocupacionCelda', () => {
 
   it('0 abonados sobre capacidad válida es 0%, no null', () => {
     expect(ocupacionCelda(celda({ capacidadCanales: 40 }), 0)).toBe(0);
+  });
+});
+
+describe('validarFormCelda', () => {
+  function form(overrides: Partial<CeldaFormData> = {}): CeldaFormData {
+    return {
+      id: 20,
+      nombre: 'CELDA A-20',
+      tecnologia: 'DECT-Link',
+      descripcion: '',
+      rfp_modelo: '',
+      banda_frecuencia: '',
+      capacidad_canales: '',
+      radio_cobertura_km: '',
+      latitud: '',
+      longitud: '',
+      ...overrides,
+    };
+  }
+
+  it('formulario válido (con y sin coordenadas) devuelve null', () => {
+    expect(validarFormCelda(form(), false)).toBeNull();
+    expect(validarFormCelda(form({ latitud: '-16.521', longitud: '-68.235' }), false)).toBeNull();
+    expect(validarFormCelda(form({ id: 0 }), true)).toBeNull(); // al editar el ID no importa
+  });
+
+  it('exige nombre y, al crear, un ID de RFP positivo', () => {
+    expect(validarFormCelda(form({ nombre: '  ' }), false)).toContain('nombre');
+    expect(validarFormCelda(form({ id: 0 }), false)).toContain('ID');
+  });
+
+  it('rechaza latitud fuera de rango y no numérica', () => {
+    expect(validarFormCelda(form({ latitud: '91' }), false)).toContain('entre -90 y 90');
+    expect(validarFormCelda(form({ latitud: '-90.5' }), false)).toContain('entre -90 y 90');
+    expect(validarFormCelda(form({ latitud: 'abc' }), false)).toContain('número válido');
+    expect(validarFormCelda(form({ latitud: '-90' }), false)).toBeNull(); // límite válido
+  });
+
+  it('rechaza longitud fuera de rango', () => {
+    expect(validarFormCelda(form({ longitud: '-181' }), false)).toContain('entre -180 y 180');
+    expect(validarFormCelda(form({ longitud: '180' }), false)).toBeNull(); // límite válido
+  });
+
+  it('rechaza capacidad o cobertura negativas', () => {
+    expect(validarFormCelda(form({ capacidad_canales: '-1' }), false)).toContain('capacidad');
+    expect(validarFormCelda(form({ radio_cobertura_km: '-0.5' }), false)).toContain('cobertura');
+    expect(validarFormCelda(form({ capacidad_canales: '0', radio_cobertura_km: '0' }), false)).toBeNull();
   });
 });

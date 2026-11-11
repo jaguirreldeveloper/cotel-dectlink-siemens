@@ -160,10 +160,10 @@ class CellsController extends Controller
             'descripcion' => ['nullable', 'string'],
             'rfp_modelo' => ['nullable', 'string', 'max:255'],
             'banda_frecuencia' => ['nullable', 'string', 'max:100'],
-            'capacidad_canales' => ['nullable', 'integer'],
-            'radio_cobertura_km' => ['nullable', 'numeric'],
-            'latitud' => ['nullable', 'numeric'],
-            'longitud' => ['nullable', 'numeric'],
+            'capacidad_canales' => ['nullable', 'integer', 'min:0'],
+            'radio_cobertura_km' => ['nullable', 'numeric', 'min:0'],
+            'latitud' => ['nullable', 'numeric', 'min:-90', 'max:90'],
+            'longitud' => ['nullable', 'numeric', 'min:-180', 'max:180'],
         ]);
 
         $cell = Cell::create([
@@ -233,10 +233,10 @@ class CellsController extends Controller
             'descripcion' => ['nullable', 'string'],
             'rfp_modelo' => ['nullable', 'string', 'max:255'],
             'banda_frecuencia' => ['nullable', 'string', 'max:100'],
-            'capacidad_canales' => ['nullable', 'integer'],
-            'radio_cobertura_km' => ['nullable', 'numeric'],
-            'latitud' => ['nullable', 'numeric'],
-            'longitud' => ['nullable', 'numeric'],
+            'capacidad_canales' => ['nullable', 'integer', 'min:0'],
+            'radio_cobertura_km' => ['nullable', 'numeric', 'min:0'],
+            'latitud' => ['nullable', 'numeric', 'min:-90', 'max:90'],
+            'longitud' => ['nullable', 'numeric', 'min:-180', 'max:180'],
         ]);
 
         $cell->fill($validated);

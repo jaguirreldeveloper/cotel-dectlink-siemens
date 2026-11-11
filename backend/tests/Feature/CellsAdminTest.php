@@ -116,4 +116,45 @@ class CellsAdminTest extends TestCase
             ->assertOk()
             ->assertExactJson([]);
     }
+
+    public function test_store_rechaza_coordenadas_fuera_de_rango(): void
+    {
+        $this->postJson('/api/cells', [
+            'id' => 900,
+            'nombre' => 'CELDA RANGO',
+            'latitud' => 91,
+            'longitud' => -181,
+        ])->assertStatus(422)->assertJsonValidationErrors(['latitud', 'longitud']);
+    }
+
+    public function test_store_rechaza_capacidad_y_cobertura_negativas(): void
+    {
+        $this->postJson('/api/cells', [
+            'id' => 901,
+            'nombre' => 'CELDA NEGATIVA',
+            'capacidad_canales' => -1,
+            'radio_cobertura_km' => -2.5,
+        ])->assertStatus(422)->assertJsonValidationErrors(['capacidad_canales', 'radio_cobertura_km']);
+    }
+
+    public function test_update_rechaza_latitud_fuera_de_rango(): void
+    {
+        $cell = Cell::factory()->create();
+
+        $this->patchJson("/api/cells/{$cell->id}", ['latitud' => -91])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['latitud']);
+    }
+
+    public function test_store_acepta_coordenadas_en_rango_y_valores_limite(): void
+    {
+        $this->postJson('/api/cells', [
+            'id' => 902,
+            'nombre' => 'CELDA LIMITE',
+            'latitud' => -90,
+            'longitud' => 180,
+            'capacidad_canales' => 0,
+            'radio_cobertura_km' => 0,
+        ])->assertStatus(201);
+    }
 }

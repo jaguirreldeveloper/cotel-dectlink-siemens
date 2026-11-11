@@ -24,7 +24,8 @@ import type { SubcentralDTO } from '@/features/infraestructura/types';
 import * as api from './api';
 import type { EntradaBitacora } from './api';
 import { ACCION_LABEL, cambiosDeEntrada, fechaLegible } from './bitacora';
-import { summarizeCeldas, ocupacionCelda, UMBRAL_OCUPACION_ALERTA } from './summary';
+import { CoordenadasMapa } from './CoordenadasMapa';
+import { summarizeCeldas, ocupacionCelda, validarFormCelda, UMBRAL_OCUPACION_ALERTA } from './summary';
 import type { CeldaCrud, CeldaFormData } from './types';
 
 interface CeldasCrudViewProps {
@@ -146,6 +147,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [form, setForm] = useState<CeldaFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Confirmación de borrado con Modal (sin window.confirm nativo)
+  const [pendienteEliminar, setPendienteEliminar] = useState<CeldaCrud | null>(null);
 
   // Conteo de abonados por celda
   const abonadosPorCelda = useMemo(() => {
@@ -312,7 +316,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   };
 
   const openCreate = () => {
-    setForm(EMPTY_FORM);
+    // Sugerencia del siguiente RFP libre (max(id) + 1) para no pisar existentes.
+    const siguiente = celdas.reduce((max, c) => Math.max(max, c.id), 0) + 1;
+    setForm({ ...EMPTY_FORM, id: siguiente });
     setEditingId(null);
     setFormError(null);
     setModalOpen(true);
@@ -337,12 +343,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   };
 
   const handleSave = async () => {
-    if (!form.nombre.trim()) {
-      setFormError('El nombre es obligatorio.');
-      return;
-    }
-    if (editingId === null && (!form.id || form.id < 1)) {
-      setFormError('El ID (número de RFP) es obligatorio para crear una celda.');
+    const errorValidacion = validarFormCelda(form, editingId !== null);
+    if (errorValidacion) {
+      setFormError(errorValidacion);
       return;
     }
 
@@ -379,8 +382,10 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     }
   };
 
-  const handleDelete = async (c: CeldaCrud) => {
-    if (!window.confirm(`¿Eliminar la celda "${c.nombre}" (RFP ${c.id})? Esta acción no se puede deshacer.`)) return;
+  const handleDelete = async () => {
+    const c = pendienteEliminar;
+    if (!c) return;
+    setPendienteEliminar(null);
     try {
       const r = await api.deleteCelda(c.id);
       setNotice(r.message);
@@ -667,7 +672,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                     )}
                     {borrado && (
                       <button
-                        onClick={() => handleDelete(c)}
+                        onClick={() => setPendienteEliminar(c)}
                         className='p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-slate-800 transition inline-flex items-center ml-1'
                         aria-label={`Eliminar ${c.nombre}`}
                       >
@@ -858,6 +863,37 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         )}
       </Modal>
 
+      {/* Confirmación de borrado (Modal propio, sin window.confirm) */}
+      <Modal
+        isOpen={pendienteEliminar != null}
+        onClose={() => setPendienteEliminar(null)}
+        dark
+        title='Eliminar celda'
+        panelClassName='max-w-md p-6'
+        footer={
+          <div className='flex justify-end gap-2'>
+            <Button variant='ghost' size='sm' onClick={() => setPendienteEliminar(null)}>
+              Cancelar
+            </Button>
+            <Button variant='primary' size='sm' icon={Trash2} onClick={handleDelete}>
+              Eliminar definitivamente
+            </Button>
+          </div>
+        }
+      >
+        {pendienteEliminar && (
+          <div className='space-y-2 text-sm'>
+            <p className='text-slate-300'>
+              ¿Eliminar la celda <strong className='text-white'>{pendienteEliminar.nombre}</strong>{' '}
+              (RFP <span className='font-mono'>{pendienteEliminar.id}</span>)?
+            </p>
+            <p className='text-xs text-slate-500'>
+              Esta acción no se puede deshacer y queda registrada en la bitácora.
+            </p>
+          </div>
+        )}
+      </Modal>
+
       {/* Modal de crear/editar */}
       <Modal
         isOpen={modalOpen}
@@ -980,29 +1016,48 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-3'>
-            <div>
-              <label className='block text-xs font-semibold text-slate-400 mb-1'>Latitud</label>
-              <Input
-                dark
-                type='number'
-                step='0.0001'
-                value={form.latitud}
-                onChange={e => updateField('latitud', e.target.value)}
-                placeholder='Ej: -16.5210'
-              />
+          <div className='space-y-2'>
+            <label className='block text-xs font-semibold text-slate-400'>
+              Coordenadas (clic en el mapa para fijar)
+            </label>
+            <CoordenadasMapa
+              lat={form.latitud ? Number(form.latitud) : null}
+              lng={form.longitud ? Number(form.longitud) : null}
+              onPick={(la, lo) => {
+                setForm(prev => ({ ...prev, latitud: la.toFixed(6), longitud: lo.toFixed(6) }));
+              }}
+            />
+            <div className='grid grid-cols-2 gap-3'>
+              <div>
+                <label className='block text-xs font-semibold text-slate-400 mb-1'>Latitud</label>
+                <Input
+                  dark
+                  type='number'
+                  step='0.000001'
+                  min='-90'
+                  max='90'
+                  value={form.latitud}
+                  onChange={e => updateField('latitud', e.target.value)}
+                  placeholder='Ej: -16.5210'
+                />
+              </div>
+              <div>
+                <label className='block text-xs font-semibold text-slate-400 mb-1'>Longitud</label>
+                <Input
+                  dark
+                  type='number'
+                  step='0.000001'
+                  min='-180'
+                  max='180'
+                  value={form.longitud}
+                  onChange={e => updateField('longitud', e.target.value)}
+                  placeholder='Ej: -68.2350'
+                />
+              </div>
             </div>
-            <div>
-              <label className='block text-xs font-semibold text-slate-400 mb-1'>Longitud</label>
-              <Input
-                dark
-                type='number'
-                step='0.0001'
-                value={form.longitud}
-                onChange={e => updateField('longitud', e.target.value)}
-                placeholder='Ej: -68.2350'
-              />
-            </div>
+            <p className='text-[10px] text-slate-600'>
+              Rangos válidos: latitud −90…90, longitud −180…180. Bolivia: lat ≈ −16 a −22, lng ≈ −57 a −70.
+            </p>
           </div>
         </div>
       </Modal>
