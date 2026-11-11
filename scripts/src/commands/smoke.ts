@@ -5,9 +5,14 @@
  * Las lecturas de la API exigen sesión de operador (middleware `operator`),
  * así que las peticiones llevan el secreto de servidor en el header
  * `x-admin-token` (mismo mecanismo que playwright/helpers.ts).
+ *
+ * ⚠️ SEGURIDAD: Este token es secreto y NO debe exponerse en logs o código.
+ *    - En desarrollo: se lee de scripts/.env o backend/.env
+ *    - En CI/CD: usar variables de entorno (SMOKE_ADMIN_TOKEN o ADMIN_TOKEN)
+ *    - NUNCA comitear tokens reales en el repositorio
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 interface DbStatus {
@@ -23,31 +28,55 @@ const BASE_URL_DEFAULT = 'http://127.0.0.1:8010';
  * Prioridad:
  *  1. SMOKE_ADMIN_TOKEN — explícito para smoke (CI/despliegue contra un
  *     backend remoto con secreto distinto).
- *  2. ADMIN_TOKEN de backend/.env — la verdad del backend local (es el
- *     mismo valor que carga `php artisan serve`). Va antes que
- *     process.env.ADMIN_TOKEN porque cli.ts importa db-check.ts, que
- *     ejecuta dotenv.config() y contamina el entorno con
- *     scripts/.env (ADMIN_TOKEN=dev-token-123, obsoleto).
- *  3. ADMIN_TOKEN del entorno — entornos CI sin backend/.env.
+ *  2. scripts/.env — archivo local para herramientas CLI
+ *  3. backend/.env — la verdad del backend local (solo en desarrollo).
+ *  4. ADMIN_TOKEN del entorno — entornos CI sin archivos .env.
+ *
+ * ⚠️ En producción, SIEMPRE usar variables de entorno (opciones 1 o 4).
+ *    Las opciones 2 y 3 son solo para desarrollo local.
  */
 function resolveAdminToken(): string {
+  // 1. Token explícito para smoke (CI/despliegue)
   const explicit = process.env.SMOKE_ADMIN_TOKEN || '';
   if (explicit) return explicit;
 
+  // 2. scripts/.env (preferido sobre backend/.env)
   try {
-    const raw = readFileSync(resolve(process.cwd(), '..', 'backend', '.env'), 'utf8');
-    for (const line of raw.split(/\r?\n/)) {
-      const eq = line.indexOf('=');
-      if (line.startsWith('#') || eq <= 0) continue;
-      if (line.slice(0, eq).trim() === 'ADMIN_TOKEN') {
-        const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
-        if (value) return value;
+    const scriptsEnvPath = resolve(process.cwd(), '.env');
+    if (existsSync(scriptsEnvPath)) {
+      const raw = readFileSync(scriptsEnvPath, 'utf8');
+      for (const line of raw.split(/\r?\n/)) {
+        const eq = line.indexOf('=');
+        if (line.startsWith('#') || eq <= 0) continue;
+        if (line.slice(0, eq).trim() === 'ADMIN_TOKEN') {
+          const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+          if (value) return value;
+        }
+      }
+    }
+  } catch {
+    // Ignorar errores de lectura
+  }
+
+  // 3. backend/.env (desarrollo local)
+  try {
+    const backendEnvPath = resolve(process.cwd(), '..', 'backend', '.env');
+    if (existsSync(backendEnvPath)) {
+      const raw = readFileSync(backendEnvPath, 'utf8');
+      for (const line of raw.split(/\r?\n/)) {
+        const eq = line.indexOf('=');
+        if (line.startsWith('#') || eq <= 0) continue;
+        if (line.slice(0, eq).trim() === 'ADMIN_TOKEN') {
+          const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+          if (value) return value;
+        }
       }
     }
   } catch {
     // Sin backend/.env (p. ej. CI): se recurre a process.env más abajo.
   }
 
+  // 4. Variables de entorno
   return process.env.ADMIN_TOKEN || '';
 }
 
