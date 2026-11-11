@@ -67,7 +67,12 @@ class CellsController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $rows = DB::select('SELECT * FROM celdas ORDER BY id ASC');
+            $rows = DB::select('
+                SELECT c.*, s.nombre AS subcentral_nombre
+                FROM celdas c
+                LEFT JOIN subcentrales s ON s.id = c.id_subcentral
+                ORDER BY c.id ASC
+            ');
 
             return response()->json(array_map(fn (object $row): array => [
                 'id' => (int) $row->id,
@@ -80,10 +85,51 @@ class CellsController extends Controller
                 'radioCoberturaKm' => $row->radio_cobertura_km !== null ? (float) $row->radio_cobertura_km : null,
                 'latitud' => $row->latitud !== null ? (float) $row->latitud : null,
                 'longitud' => $row->longitud !== null ? (float) $row->longitud : null,
+                'idSubcentral' => $row->id_subcentral !== null ? (int) $row->id_subcentral : null,
+                'nombreSubcentral' => $row->subcentral_nombre ?? null,
                 'createdAt' => CarbonImmutable::parse($row->created_at)->toIso8601String(),
             ], $rows));
         } catch (\Throwable) {
             return response()->json(['error' => 'Error al consultar celdas en PostgreSQL'], 500);
+        }
+    }
+
+    /**
+     * GET /api/cells/{id}/bitacora — historial de cambios de la celda
+     * (acciones registradas en infraestructura_bitacora por el módulo).
+     */
+    #[OA\Get(path: '/api/cells/{id}/bitacora', tags: ['Infraestructura'], summary: 'Historial de cambios de la celda RFP (SUPERADMIN/ADMIN)')]
+    #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'Historial ordenado por fecha descendente')]
+    public function bitacora(int $id): JsonResponse
+    {
+        try {
+            $rows = DB::select('
+                SELECT b.id, b.accion, b.payload, b.created_at,
+                       o.email AS operador_email, o.nombre AS operador_nombre
+                FROM infraestructura_bitacora b
+                LEFT JOIN operadores o ON o.id = b.operador_id
+                WHERE b.tabla = ? AND b.registro_id = ?
+                ORDER BY b.created_at DESC, b.id DESC
+                LIMIT 50
+            ', ['celdas', $id]);
+
+            return response()->json(array_map(function (object $row): array {
+                $payload = $row->payload;
+                if (is_string($payload)) {
+                    $payload = json_decode($payload, true);
+                }
+
+                return [
+                    'id' => (int) $row->id,
+                    'accion' => $row->accion,
+                    'operador' => $row->operador_email ?? $row->operador_nombre ?? null,
+                    'payload' => $payload ?? null,
+                    'createdAt' => CarbonImmutable::parse($row->created_at)->toIso8601String(),
+                ];
+            }, $rows));
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Error al consultar la bitácora de la celda'], 500);
         }
     }
 

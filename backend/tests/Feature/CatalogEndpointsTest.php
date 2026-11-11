@@ -26,10 +26,13 @@ class CatalogEndpointsTest extends TestCase
 
         $this->assertSame([
             'id', 'nombre', 'tecnologia', 'descripcion', 'rfpModelo', 'bandaFrecuencia',
-            'capacidadCanales', 'radioCoberturaKm', 'latitud', 'longitud', 'createdAt',
+            'capacidadCanales', 'radioCoberturaKm', 'latitud', 'longitud',
+            'idSubcentral', 'nombreSubcentral', 'createdAt',
         ], array_keys($response->json()[0]));
         $this->assertSame(17, $response->json()[0]['id']);
         $this->assertSame('CELDA A-17 TILATA', $response->json()[0]['nombre']);
+        $this->assertNull($response->json()[0]['idSubcentral']);
+        $this->assertNull($response->json()[0]['nombreSubcentral']);
     }
 
     public function test_cells_returns_empty_array_without_data(): void

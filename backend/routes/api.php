@@ -54,6 +54,7 @@ Route::middleware('operator')->group(function (): void {
     // Padrón y celdas
     Route::get('subscribers', [SubscribersController::class, 'index']);
     Route::get('cells', [CellsController::class, 'index']);
+    Route::get('cells/{id}/bitacora', [CellsController::class, 'bitacora']);
 
     // Órdenes de trabajo, cuadrillas y materiales
     Route::get('work-orders', [WorkOrdersController::class, 'index']);
