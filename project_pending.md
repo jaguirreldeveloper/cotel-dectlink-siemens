@@ -17,6 +17,18 @@
 - [x] WIP de Web Push descartado (migración `push_subscriptions` + `WebPushNotification`, sin dependencias ni endpoints) — decisión del usuario.
 - [x] `pnpm run smoke` respondía 401 en los tres endpoints: `scripts/src/commands/smoke.ts` no enviaba credenciales → ahora envía `x-admin-token` con prioridad `SMOKE_ADMIN_TOKEN` → `backend/.env` → entorno (el orden importa: `cli.ts` importa `db-check.ts`, que ejecuta `dotenv.config()` y contamina `ADMIN_TOKEN` con el `scripts/.env` obsoleto `dev-token-123`); CI expone el secret `SMOKE_ADMIN_TOKEN` — `4600f64`.
 
+### Reorganización de las 3 tablas de abonados (2026-11-10, 9 commits, todos pusheados)
+Plan de 5 fases sobre las vistas Padrón / Abonados por Celda / Detalle por Celda, previo a esto la base geo y la paginación:
+- [x] Base geo honesta: `coordsReales` + helpers de mapa en `shared/utils/geo.ts` — `cdb51fd`.
+- [x] Columnas GEO y MAPA en las tablas de abonados (coordenadas reales y enlace al mapa con semántica común por vista) — `3cccfa0`.
+- [x] Paginación compartida 5/10/15/20/25 con defecto 10 (`shared/utils/pagination.ts`) — `ef63e4d`.
+- [x] Presentación de tablas: cabecera/primera columna sticky, alineación numérica (`tabular-nums`, mono) y `EmptyState` conservando sus textos — `d6d321d`.
+- [x] Registro compartido de columnas `entities/subscriber/columns.tsx`: `RESUMEN_COLUMNS` (6 col) ⊂ `DETALLE_COLUMNS` (15 col), con contrato de subconjunto validado por `subscriberColumns.test.ts` (6 tests) — `20effac`.
+- [x] Abonados por Celda usa `RESUMEN_COLUMNS` (Nro, Teléfono, Nombre, Zona, Estado, Señal); `Th` acepta alineación centrada — `a74ff8d`.
+- [x] Detalle por Celda usa `DETALLE_COLUMNS` (15 col, agrega Tiempo Dep., Falla y GPS mejorada); `SortableTh` acepta centrado — `d710a02`.
+- [x] Padrón con franja de resumen + chips de estado: `summary.ts` (`summarizeRecords`, `OPERATIONAL_STATUSES`), conteos sobre `baseFiltered` (todos los filtros salvo estado), select de estado eliminado, enlace Mapa con `stopPropagation`; 4 tests en `recordSummary.test.ts` — `5de4276`.
+- [x] Drill-down Padrón → Abonados por Celda: `onOpenCelda` en `DataTable`, estado `drilldownCelda` en `App.tsx`, `initialCelda` en `CellUsersView` (ignora NaN/celda inexistente) — `1e7893b`.
+
 ### Backend / Calidad
 - [x] Adoptar `larastan/larastan` y llevar PHPStan a 0 errores (resuelto acceso a propiedades dinámicas en `App\Models\Cell`).
 - [x] Limpiar 160 warnings de ESLint en frontend + 6 warnings en vistas recientes (`BrandedLoginView` y `CeldasCrudView`). 0 errores, 0 warnings.
@@ -48,7 +60,7 @@
 - [x] Tokens de sesión en `sessionStorage` por defecto (`localStorage` solo con «Recordarme») y sin `VITE_ADMIN_TOKEN` en el bundle.
 
 ### Tests
-- [x] 14 tests Vitest para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
+- [x] Tests Vitest para funciones puras: `rfCalculations`, `recordFilters`, `roles`, `geo`, `pagination` + nuevos `subscriberColumns` (6) y `recordSummary` (4) → **38 tests en 7 archivos**.
 - [x] 120 tests PHPUnit (backend) — todos verdes (461 assertions).
 - [x] Specs e2e Playwright migrados de «Modo Consulta» (datos demo locales) a **sesión real de operador** para validar el padrón de la BD.
 - [x] Lecturas e2e autenticadas: `x-admin-token` en `/api/subscribers` y `/api/work-orders` (incluidos los `expect.poll` de `status-change`).
@@ -63,7 +75,7 @@
 - `pnpm run typecheck` ✅ (0 errores en frontend, scripts y types)
 - `pnpm run lint` ✅ (0 errores, 0 warnings)
 - `pnpm run test` (raíz: frontend + scripts + backend) ✅
-- Vitest: 14 tests ✅
+- Vitest: 38 tests (7 archivos) ✅
 - Pest / PHPUnit: 120 tests, 461 assertions ✅
 - PHPStan nivel 5: 0 errores ✅
 - Frontend build: ✅ Generado y copiado a `backend/public`
@@ -71,25 +83,27 @@
 - Servidores: Backend `:8010` y Frontend `:5173` (levantados con `pnpm test:e2e` o `php artisan serve` + `pnpm dev`)
 
 ## 🗂️ Estado del repositorio
-- Ramas publicadas en `origin`: `main` (con el trabajo de `feat/celdas-enlaces-mapa` ya fusionado) y `feat/celdas-enlaces-mapa` (`cdfbc48`) conservada como respaldo.
-- `main` incluye el merge de `origin/main`, el fix de la migración `SIN DATO`, el fix de los e2e (`fix(e2e): usar sesión real de operador…`) y el job `e2e` de CI habilitado.
-- `backend/public/` ya no versiona `assets/` ni `index.html`: se generan con `pnpm --filter scripts run copy:dist`.
+- `main` sincronizada con `origin/main`, HEAD `1e7893b` (push hecho: `d6d321d..1e7893b`), árbol limpio.
+- Commits del 2026-11-10 (de más antiguo a más reciente): `00b65b9` → `18f12c0` → `b9110a8` (correcciones y rediseño), `4600f64` → `87e28fb` → `8759ad2` (smoke test y docs), `cdb51fd` → `3cccfa0` → `ef63e4d` → `d6d321d` (geo, columnas, paginación, presentación), `20effac` → `a74ff8d` → `d710a02` → `5de4276` → `1e7893b` (registro de columnas y las 3 tablas).
+- Rama `feat/celdas-enlaces-mapa` (`cdfbc48`) conservada como respaldo en `origin`.
+- `backend/public/` ya no versiona `assets/` ni `index.html` (ignorados en `backend/.gitignore`): se generan con `pnpm run build` (vite build + `copy:dist`).
 
 ## 🖥️ Entorno
 - Windows / PowerShell. Disco C con ~700 MB libres tras limpieza.
 - Chromium 1248 instalado en `%LOCALAPPDATA%\ms-playwright`; **Chrome del sistema no está instalado**, por eso los e2e deben lanzarse con `PW_CHANNEL=chromium`.
-- BD local PostgreSQL `cotel_dectlink` (244 líneas en el padrón; el total puede variar según cargas).
+- BD local PostgreSQL `cotel_dectlink` (verificada vía API el 2026-11-10): **244** abonados, **5** celdas (ids 4, 5, 11, 15, 17 — solo la 4 con lat/lng), **48** zonas, **235** clientes, **44** registros de bitácora, **6** órdenes de trabajo. (Los conteos antiguos 216/4/41/212/0 que circulan en docs eran de Supabase.)
 - Backend Laravel en `:8010`, frontend Vite en `:5173`.
 
 ## ⏳ Pendientes
 - [ ] Revisar en el navegador el resultado del workflow tras el push: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/actions (no verificable desde la CLI: `gh` no está instalado y el repo es privado).
 
-## 🚀 Para continuar
-1. `git log --oneline -10` para ver los últimos commits.
-2. `pnpm run typecheck && pnpm run lint` para confirmar baseline.
-3. `$env:PW_CHANNEL='chromium'; pnpm test:e2e` para el humo completo (8 tests).
-4. Atacar los **Pendientes**.
-5. Recordar: una tarea = un commit, verificar antes de commitear.
+## 🚀 Para continuar (mañana)
+1. `git log --oneline -15` para ver los últimos commits (la reorganización de las tablas terminó en `1e7893b`).
+2. `pnpm run typecheck && pnpm run lint && pnpm run test` para confirmar baseline (Vitest 38 + Pest 120/461).
+3. `$env:PW_CHANNEL='chromium'; pnpm test:e2e` para el humo completo (8 tests en 6 specs); servidores en `:5173` / `:8010`.
+4. Atacar los **Pendientes** (revisar el workflow de GitHub Actions tras el push).
+5. Ideas abiertas tras la reorganización: completar lat/lng de las celdas 5, 11, 15 y 17 (solo la 4 tiene coordenadas), y valorar drill-down inverso (Detalle por Celda ← Padrón).
+6. Recordar: una tarea = un commit, verificar antes de commitear.
 
 ## 📝 Cuentas / credenciales útiles
 - Operador de prueba e2e: `testadmin@cotel.bo` / `TestPass123!` (rol ADMIN).

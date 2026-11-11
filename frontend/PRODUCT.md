@@ -35,7 +35,7 @@ No es un CRM genérico: es una consola técnica de planta externa donde el dato 
 
 ## Capabilities and Constraints
 
-- Módulos actuales: padrón de abonados, celdas y detalle de celda, usuarios de celda, órdenes de trabajo (kanban), cuadrillas y materiales, calibración GPS, cobertura GIS, simulación de enlace RF, fichas técnicas, auditoría de datos, explorador de base de datos, cargas CSV, migraciones (Supabase, Git, técnicas) y gestión de usuarios.
+- Módulos actuales: padrón de abonados (tabla filtrable con franja de resumen, segmentos de estado y drill-down a la celda), abonados por celda (vista resumen) y detalle por celda (vista completa), usuarios de celda, órdenes de trabajo (kanban), cuadrillas y materiales, calibración GPS, cobertura GIS, simulación de enlace RF, fichas técnicas, auditoría de datos, explorador de base de datos, cargas CSV, migraciones (Supabase, Git, técnicas) y gestión de usuarios.
 - Navegación por pestañas en estado React, sin router: recargar pierde la vista activa.
 - Layout de escritorio con sidebar fijo; el comportamiento móvil está incompleto (el botón de menú del header no controla el sidebar).
 - El frontend nunca debe romper la paridad de payloads camelCase de la API.
@@ -49,8 +49,9 @@ No es un CRM genérico: es una consola técnica de planta externa donde el dato 
 
 ## Evidence on Hand
 
-- Padrón real: 4 celdas, 41 zonas, 212 clientes, 216 líneas, 0 registros de bitácora al momento de documentar.
-- 120 tests de backend (Pest, 461 assertions) y 8 specs e2e de Playwright.
+- Padrón real (BD local `cotel_dectlink`, 2026-11-10): 5 celdas, 48 zonas, 235 clientes, 244 líneas, 44 registros de bitácora, 6 órdenes de trabajo.
+- 38 tests de frontend (Vitest, 7 archivos), 120 tests de backend (Pest, 461 assertions) y 8 tests e2e en 6 specs de Playwright.
+- Tres vistas de abonados con registro de columnas compartido: Padrón (franja de resumen, chips de estado, drill-down a celda), Abonados por Celda (resumen de 6 columnas) y Detalle por Celda (15 columnas).
 - Documentación de producto y arquitectura en `README.md`.
 - No hay testimonios, clientes citables, métricas de negocio ni material de marketing: no inventarlos.
 

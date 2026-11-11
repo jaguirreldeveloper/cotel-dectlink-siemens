@@ -77,3 +77,17 @@ Definidos como fuente única de verdad en `@theme static` dentro de `src/index.c
 3. **Áreas táctiles mínimas:** Todos los botones y disparadores tienen una altura mínima de 38px a 44px para permitir uso con guantes y en pantallas táctiles de campo.
 4. **Respeto a `prefers-reduced-motion`:** Transiciones atenuadas sin cortes bruscos globales de 0.01ms.
 5. **Dato real prioritario:** La interfaz siempre declara de dónde vienen los datos y nunca mezcla datos demo con producción en silencio.
+
+---
+
+## 6. Tablas de abonados (registro único de columnas)
+
+Fuente única en `src/entities/subscriber/columns.tsx`, con contrato de subconjunto validado por tests (`tests/subscriberColumns.test.ts`):
+
+- **`RESUMEN_COLUMNS`** (6 columnas): Nro, Teléfono, Nombre, Zona, Estado, Señal — usado por **Abonados por Celda**.
+- **`DETALLE_COLUMNS`** (15 columnas): el resumen + Dirección, Contrato, F. Servicio, FAU, Deuda, Tiempo Dep., Falla, GPS y Mapa — usado por **Detalle por Celda**.
+- **Regla:** `RESUMEN ⊂ DETALLE` (mismo `key`, mismo label); agregar una columna nueva empieza en `DETALLE_COLUMNS`.
+- **Padrón:** conserva su propia tabla de 13 columnas en línea (`DataTable.tsx`: Nro, Número, Contrato, Titular, Dirección, Fecha alta, Celda, Zona, Distancia, GEO, MAPA, Estado DECT, Acción), con la misma semántica GEO/MAPA que el registro compartido.
+- **Presentación:** cabecera y primera columna *sticky*, números con `tabular-nums` y mono donde corresponde (teléfonos, coordenadas), alineación centrada opcional en `Th`/`SortableTh`, y `EmptyState` con sus textos fijos ("No se encontraron abonados…").
+- **Padrón:** franja de resumen + chips de estado cuyo conteo es sobre `baseFiltered` (todos los filtros salvo estado); drill-down de fila a Abonados por Celda con `stopPropagation` en el enlace Mapa.
+- **Paginación compartida:** 5/10/15/20/25 filas, defecto 10 (`src/shared/utils/pagination.ts`).

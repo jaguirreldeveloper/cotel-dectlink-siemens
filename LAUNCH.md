@@ -6,11 +6,14 @@
 
 | Componente | Estado | Resultado |
 |------------|--------|-----------|
-| **Frontend Build** | ✅ **EXITOSO** | 2.29s · 6 assets generados |
-| **Backend Tests** | ✅ **EXITOSO** | 116 tests, 446 assertions |
-| **Frontend Tests** | ✅ **EXITOSO** | 14 tests pasando |
-| **TypeScript** | ✅ **EXITOSO** | 0 errores |
-| **Git Commit** | ✅ **EXITOSO** | 719 archivos actualizados |
+| **Frontend Build** | ✅ **EXITOSO** | vite build + copia a `backend/public` |
+| **Backend Tests** | ✅ **EXITOSO** | 120 tests, 461 assertions (Pest) |
+| **Frontend Tests** | ✅ **EXITOSO** | 38 tests pasando (Vitest, 7 archivos) |
+| **E2E Playwright** | ✅ **EXITOSO** | 8 tests en 6 specs (`PW_CHANNEL=chromium`) |
+| **TypeScript** | ✅ **EXITOSO** | 0 errores (frontend, scripts y types) |
+| **PHPStan / ESLint** | ✅ **EXITOSO** | PHPStan nivel 5: 0 errores · ESLint: 0 warnings |
+
+> Última verificación completa: **2026-11-10** (`pnpm run typecheck` + `lint` + `test` en la raíz, HEAD `1e7893b`).
 
 ### 🎨 **SISTEMA DE DISEÑO UI/UX PRO MAX IMPLEMENTADO**
 
@@ -43,7 +46,8 @@ pnpm run dev
 **URLs:**
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:8010`
-- Login: `admin@cotel.bo` / `secret1234` (crear con `php artisan operador:create`)
+- Base de datos: PostgreSQL local `cotel_dectlink` (`127.0.0.1:5432`, user `cotel`) — 244 abonados / 5 celdas (verificado 2026-11-10)
+- Login: `testadmin@cotel.bo` / `TestPass123!` (ADMIN) o `testsuperadmin@cotel.bo` / `TestPass123!` (SUPERADMIN) — operadores de prueba creados por `E2eSeeder`; para crear otros: `php artisan operador:create`
 
 ### **Opción 2: Producción Laravel Cloud**
 
@@ -123,20 +127,15 @@ services:
 ✓ Assets: 6 archivos generados
 ```
 
-### **Coverage Backend**
+### **Coverage Backend / Frontend / E2E**
 ```
-✓ Tests: 116/116 pasados (100%)
-✓ Assertions: 446/446 correctas
-✓ Duración: 22.59 segundos
-✓ Categorías:
-  - Auth & RBAC: 20 tests
-  - Operadores: 11 tests  
-  - Subscribers: 12 tests
-  - Work Orders: 17 tests
-  - Catálogos: 9 tests
-  - Infraestructura: 6 tests
-  - Seguridad: 16 tests
-  - Otros: 25 tests
+✓ Backend (Pest): 120/120 tests pasados (100%) · 461/461 assertions
+✓ Frontend (Vitest): 38/38 tests (7 archivos: geo, paginación, filtros, roles,
+  rfCalculations, columnas de abonados, resumen de registros)
+✓ E2E (Playwright): 8/8 tests en 6 specs (búsqueda/filtro, cambio de estado,
+  carga CSV, OT, roles, fallback demo) — Chromium 1248
+✓ Suites: Auth & RBAC, Operadores, Subscribers, Work Orders, Catálogos,
+  Infraestructura, Seguridad, E2eSeeder
 ```
 
 ### **Accesibilidad (WCAG 2.1 AA)**
@@ -204,13 +203,14 @@ echo "   Credenciales: testsuperadmin@cotel.bo / TestPass123!"
 ## 📱 **CHECKLIST DE LANZAMIENTO**
 
 ### **Pre-lanzamiento**
-- [x] Tests backend pasando (116/116)
-- [x] Tests frontend pasando (14/14)  
+- [x] Tests backend pasando (120/120 · 461 assertions)
+- [x] Tests frontend pasando (38/38)
+- [x] Tests e2e Playwright pasando (8/8)
 - [x] TypeScript sin errores
 - [x] Build frontend exitoso
 - [x] Sistema de diseño implementado
 - [x] Accesibilidad verificada
-- [x] Git commit creado
+- [x] Git commit creado y pusheado (2026-11-10, `1e7893b`)
 
 ### **Configuración Producción**
 - [ ] Configurar `.env.production` en backend

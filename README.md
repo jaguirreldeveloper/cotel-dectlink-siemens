@@ -10,7 +10,7 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 
 - **Frontend**: React 19, TypeScript (modo **estricto**), Tailwind CSS 4, Leaflet, Lucide Icons. Aplicación de una sola página (sin router). Rutas relativas a `/api/*`; el `EventSource` de realtime apunta a `/api/events`.
 - **Backend**: **Laravel 13** (PHP 8.4) en `backend/` — migración con **paridad total** de la API Express original (mismos paths y payloads camelCase, para no tocar el frontend). Sirve el build de Vite desde `public/` (SPA con catch-all) y expone **Server-Sent Events (SSE)** para sincronización en tiempo real entre operadores y cuadrillas (pub/sub en Valkey/Redis, canal `cotel-events`).
-- **Capa de datos**: SQL directo (facade `DB` de Laravel, driver `pgsql`) contra **Supabase Cloud** (PostgreSQL 17, pooler IPv4). El **padrón real** se carga con `pnpm run db:load` (ETL Drizzle/TS en `scripts/` sobre el CSV consolidado; `supabase/seed.sql` es solo informativo).
+- **Capa de datos**: SQL directo (facade `DB` de Laravel, driver `pgsql`). En desarrollo local apunta a **PostgreSQL local `cotel_dectlink`** (`127.0.0.1:5432`, user `cotel`); en la nube, a **Supabase Cloud** (PostgreSQL 17, pooler IPv4). El **padrón real** se carga con `pnpm run db:load` (ETL Drizzle/TS en `scripts/` sobre el CSV consolidado; `supabase/seed.sql` es solo informativo).
 - **Monorepo pnpm**: `frontend/` (SPA React), `backend/` (Laravel), `scripts/` (herramientas ETL/verificación como CLI) y `packages/types` (tipos TS compartidos `@cotel/types`). El runtime de producción es Laravel; el backend Express original se retiró tras la migración.
 - **Migraciones**: las 6 migraciones históricas viven en `backend/database/sql/` y se ejecutan envueltas por `backend/database/migrations/` (stampeadas como aplicadas en la BD viva); el DDL versionado está en `supabase/migrations/`.
 
@@ -20,7 +20,7 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 
 ```
 backend/                      Backend Laravel 13 (runtime de producción)
-  routes/api.php              29 rutas API con paridad total del Express original
+  routes/api.php              66 rutas API con paridad total del Express original
   app/Http/Controllers/Api/   Subscribers, Cells, WorkOrders, Cuadrillas, Materiales, Logs, Database, Git (stub), Events (SSE)
   app/Domains/                Subscriber, WorkOrder (Actions / Queries / Resources)
   app/Http/Middleware/        AdminToken (x-admin-token → 401/503)
@@ -32,11 +32,13 @@ backend/                      Backend Laravel 13 (runtime de producción)
   tests/                      Feature/Unit (Pest): 120 tests de paridad y seguridad
 frontend/                     SPA React 19 (FSD: entities/features/shared/widgets)
   src/entities/               cell, crew, subscriber, workOrder (tipos y lógica de dominio)
-  src/features/               16 módulos (vistas y modales; ver «Módulos funcionales»)
-  src/shared/                 ui/ (Modal, StatusBadge), utils/ (apiFetch, recordFilters, downloadTextFile)
+  src/features/               23 módulos (vistas y modales; ver «Módulos funcionales»)
+  src/shared/                 ui/ (Modal, StatusBadge, EmptyState), utils/ (apiFetch, recordFilters, geo, pagination, roles)
+  src/entities/subscriber/    columns.tsx (registro RESUMEN ⊂ DETALLE), summary.ts, analysis.ts, exportCsv
   src/widgets/                Navbar, AppTabs, AppSidebar, DataSourceBar, ExecutiveReport, etc.
   src/demo/                   Datos demo de respaldo (fallback offline siempre etiquetado)
-  playwright/                 8 specs e2e de humo (backend real; CI con SQLite aislado)
+  playwright/                 6 specs / 8 tests e2e de humo (backend real; CI con SQLite aislado)
+  tests/                      Vitest: 38 tests en 7 archivos (geo, paginación, filtros, roles, columnas, resumen)
 scripts/                      @cotel/scripts: ETL/verificación (CLI commander)
   src/cli.ts                  Entrada: pnpm --filter scripts db:load|db:check|db:verify|db:clean|smoke
   src/commands/               load-consolidado, db-check, db-verify, cleanup-pruebas, smoke
@@ -61,7 +63,7 @@ supabase/
 
 ## 🧬 Modelo de datos (padrón normalizado)
 
-El padrón de planta externa vive normalizado en Supabase (PostgreSQL 17):
+El padrón de planta externa vive normalizado en PostgreSQL (esquema canónico en `supabase/migrations/`; en desarrollo local, la BD `cotel_dectlink`):
 
 ```
 zonas ─< clientes ─< abonados_lineas >─ celdas
@@ -69,15 +71,18 @@ zonas ─< clientes ─< abonados_lineas >─ celdas
                      └─< work_orders            (OTs, FK a nro)
 ```
 
-| Tabla | Contenido | Registros reales |
+| Tabla | Contenido | Registros (BD local, 2026-11-10) |
 |-------|-----------|:----------------:|
-| `celdas` | Estaciones base RFP Siemens (`id` = nº de RFP: 5, 11, 15, 17). `latitud/longitud/capacidad` quedan **NULL** hasta calibrar en campo | 4 |
-| `zonas` | Barrios/urbanizaciones canónicos (normalizados desde 55 variantes crudas del CSV) | 41 |
-| `clientes` | Titulares deduplicados por `(nombre_completo, direccion)`; 1 cliente → N líneas | 212 |
-| `abonados_lineas` | Padrón maestro de líneas: `nro` serial global (identificador de negocio), teléfono y contrato únicos, estados con CHECK, señal/calidad/GPS nullable, y `zona_origen`/`nro_registro_origen` como **procedencia** del CSV | 216 |
-| `bitacora` | Auditoría transaccional de cambios de estado y calibraciones GPS | 0 |
+| `celdas` | Estaciones base RFP Siemens (ids locales 4, 5, 11, 15, 17). `latitud/longitud/capacidad` quedan **NULL** hasta calibrar en campo (hoy solo la celda 4 tiene coordenadas) | 5 |
+| `zonas` | Barrios/urbanizaciones canónicos (normalizados desde 55 variantes crudas del CSV) | 48 |
+| `clientes` | Titulares deduplicados por `(nombre_completo, direccion)`; 1 cliente → N líneas | 235 |
+| `abonados_lineas` | Padrón maestro de líneas: `nro` serial global (identificador de negocio), teléfono y contrato únicos, estados con CHECK, señal/calidad/GPS nullable, y `zona_origen`/`nro_registro_origen` como **procedencia** del CSV | 244 |
+| `bitacora` | Auditoría transaccional de cambios de estado y calibraciones GPS | 44 |
+| `work_orders` | Órdenes de trabajo (FK → `abonados_lineas.nro`) | 6 |
 
-Se conservan además `users`, `work_orders` (FK → `abonados_lineas.nro`), `cuadrillas`, `materiales` y el puente `work_order_materiales` (M:N con cantidad).
+> Cifras históricas de la BD Supabase (216 abonados / 212 clientes / 41 zonas / 4 celdas / 0 bitácora) quedan superadas por la carga local actual.
+
+Se conservan además `users`, `cuadrillas`, `materiales` y el puente `work_order_materiales` (M:N con cantidad).
 
 **Carga del padrón real:**
 
@@ -98,7 +103,7 @@ La app arranca vacía y se hidrata desde la base de datos; el encabezado **siemp
 | Indicador | Significado |
 |-----------|-------------|
 | ⏳ `Cargando padrón real…` | Consulta en curso a `/api/subscribers` (18 s por intento, **5 intentos automáticos** con backoff 1/3/6/12 s; el badge muestra `intento N/5`) |
-| 🟢 `Conectado a BD · N líneas` | Padrón real desde PostgreSQL/Supabase |
+| 🟢 `Conectado a BD · N líneas` | Padrón real desde PostgreSQL (local `cotel_dectlink` o Supabase en la nube) |
 | 🔵 `CSV cargado localmente · N líneas` | Archivo cargado por el operador con el modal CSV (no persistido) |
 | 🟠 `BD vacía · falta pnpm run db:load` | La BD responde pero no contiene líneas (padrón sin cargar) |
 | 🟠 `Modo demo (79 líneas) — BD no disponible` | Tras agotar los reintentos: datos de demostración **etiquetados** + banner ámbar con la causa (404 / 500 / timeout / red) |
@@ -109,7 +114,7 @@ El botón **↻ Recargar** relanza la consulta y cancela cualquier reintento pen
 
 ## 📡 Endpoints de la API
 
-Implementados en Laravel (`backend/routes/api.php`) con **paths y payloads idénticos** al backend Express original (el frontend no requirió cambios). En la nube, `git/*` y `test/connection`/`apply-connection` quedan como **stub 501**: en Laravel Cloud la BD se fija por variables de entorno.
+Implementados en Laravel (`backend/routes/api.php`, **66 rutas**) con **paths y payloads idénticos** al backend Express original (el frontend no requirió cambios). En la nube, `git/*` y `test/connection`/`apply-connection` quedan como **stub 501**: en Laravel Cloud la BD se fija por variables de entorno.
 
 ### Públicos (sin token)
 | Método | Ruta | Descripción |
@@ -187,7 +192,9 @@ Lectura pública (`GET /api/centrales`, `/subcentrales`, `/shelters`, `/armarios
 | — | **Mapa GIS** | Cobertura por celdas, marcadores por estado, export GeoJSON/KML |
 | — | **Operaciones DECT** | Consola por fallas, mora, depósito y celdas |
 | — | **BD PostgreSQL** | Explorador de tablas y consola SQL en vivo |
-| — | **Padrón** | Tabla filtrable, ordenable y paginada |
+| — | **Padrón** | Tabla filtrable, ordenable y paginada (5–25 filas), franja de resumen + chips de estado, drill-down a la celda del abonado |
+| — | **Abonados por Celda** | Vista resumen por celda (6 columnas: Nro, Teléfono, Nombre, Zona, Estado, Señal) |
+| — | **Detalle por Celda** | Vista detalle completa (15 columnas: técnica, GPS, tiempo de depósito, falla y enlace al mapa) |
 | — | **Auditoría** | Detección ETL de errores de zona, caracteres mal codificados, fechas futuras y duplicados |
 | — | **Cuentas Clave** | Segmentación institucional/comercial y titulares multi-línea |
 | — | **Diagnóstico** | Informe ejecutivo y gráficos con drill-down |
@@ -288,10 +295,12 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
+- `pnpm run test` — Vitest **38 tests** (frontend, 7 archivos) + Pest **120 tests / 461 assertions** (backend); `scripts` sin tests (sale 0).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
-- `pnpm run db:verify` — integridad en vivo: recuentos del padrón (216/212/41/4), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
+- `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
 - `pnpm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 pnpm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
+- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **8 tests de humo en 6 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, visibilidad por rol y fallback demo.
 - `pnpm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
 - La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, lectura del padrón sin sesión → `401` y con token de operador → `200`. El frontend nunca lee secretos de `import.meta.env`: usa el token de la sesión (`sessionStorage` por defecto; `localStorage` solo con «Recordarme»).
@@ -302,12 +311,24 @@ Hay dos entornos con sus propios `.env`:
 
 ## 🛠️ Cambios recientes
 
+**2026-11-10 — Reorganización de las 3 tablas de abonados (9 commits: de `cdb51fd` a `1e7893b`, todos en `main`):**
+- Base geo honesta (`coordsReales` + helpers en `shared/utils/geo.ts`) y columnas **GEO**/**MAPA** en las tablas de abonados (coordenadas reales y enlace al mapa con la misma semántica en cada vista).
+- Paginación compartida de 5/10/15/20/25 filas con defecto 10 (`shared/utils/pagination.ts`) y presentación de tablas (cabecera/primera columna sticky, alineación numérica `tabular-nums`, `EmptyState` con sus textos conservados).
+- Registro compartido de columnas `entities/subscriber/columns.tsx`: `RESUMEN_COLUMNS` (6 columnas) ⊂ `DETALLE_COLUMNS` (15 columnas), con contrato de subconjunto validado por tests.
+- **Abonados por Celda** ahora usa el resumen (Nro, Teléfono, Nombre, Zona, Estado, Señal) y **Detalle por Celda** el detalle completo (+ Tiempo Dep., Falla, GPS mejorada).
+- **Padrón** con franja de resumen y chips de estado (conteos sobre todos los filtros salvo estado), sin select de estado; drill-down de cualquier fila a Abonados por Celda (`onOpenCelda` → `drilldownCelda` → `initialCelda`).
+- Tests Vitest de **14 → 38** (7 archivos): nuevos `subscriberColumns` (6) y `recordSummary` (4), más `geo` y `pagination`.
+- `routes/api.php` verificado con `php artisan route:list --json`: **66 rutas** (el README decía 29); sidebar con 19 pestañas y `frontend/src/features` con 23 directorios.
+- `pnpm run smoke` autenticado con `x-admin-token` (prioridad `SMOKE_ADMIN_TOKEN` → `backend/.env` → entorno) — `4600f64`.
+
+**Anteriores:**
+
 - Se amplió el `CHECK` de `estado_servicio` en la migración de pruebas (`2026_10_22_164813_create_cotel_testing_schema.php`) para incluir el nuevo valor **`ACTIVO`**, permitiendo que los tests de `PadronCargas` inserten filas con ese estado.
 - Se añadió el valor **`SIN DATO`** al `CHECK` de `estado_operativo` para cubrir casos de datos ausentes en la carga del padrón.
 - La migración `20261031100000_sin_dato_estado_operativo.sql` (con su envoltura Laravel `2026_10_31_100000_sql_sin_dato_estado_operativo.php`) alinea ambos CHECK en `abonados_lineas` (y en la tabla legacy `abonados_dect`). Es idempotente; el esquema de Supabase ya acepta ambos valores.
 - `PadronCargasController::store` ahora omite las filas `RECHAZADO` al persistir detalles del lote (solo afectan conteos del resumen).
-- Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos**.
+- Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos** (hoy: 120 tests / 461 assertions).
 - Nueva pestaña **Carga de Padrón** (`PadronCargasView`) en el frontend: subir CSV (ADMIN+), listar lotes, ver detalle por fila, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
-- Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`).
+- Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`) — hoy ampliados a **38 tests**.
 - Tests e2e Playwright reparados y en verde (8/8): se liberó disco, se instaló Chromium 1248, se corrigieron los specs (entrada a modo consulta, selectores de sidebar, ruta de `backend/.env` en helpers) y el badge "Conectado a BD" (punto medio) en `UnifiedHeader`.
 - Job `e2e` de GitHub Actions habilitado: backend SQLite aislado (`database/ci.sqlite`), `migrate:fresh` + `E2eSeeder`, Playwright Chromium y subida de trazas si falla. El seeder es idempotente y solo corre en SQLite, así que nunca toca la base PostgreSQL real.

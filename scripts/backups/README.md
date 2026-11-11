@@ -1,6 +1,8 @@
 # COTEL DECTlink - Backups de Supabase
 
 > Sistema de backups automáticos para la base de datos PostgreSQL de COTEL DECTlink en Supabase
+>
+> **Nota (2026-11-10):** el desarrollo local usa PostgreSQL local `cotel_dectlink` (`127.0.0.1:5432`); estos backups aplican al entorno Supabase en la nube (ver `RESGUARDO_CREDENCIALES.md`, solo en esta máquina).
 
 ## 📋 Descripción
 

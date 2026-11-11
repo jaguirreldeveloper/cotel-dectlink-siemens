@@ -11,11 +11,12 @@ camelCase, por lo que el frontend React no requirió cambios.
 
 | Capa | Implementación |
 |------|----------------|
-| API | 29 rutas en `routes/api.php` (subscribers, cells, work-orders, cuadrillas, materiales, logs, database/*, git/*, events) |
-| Auth | Middleware `AdminToken` — header `x-admin-token` vs `ADMIN_TOKEN` (401 inválido, 503 sin configurar) |
+| API | 66 rutas en `routes/api.php` (subscribers, cells, work-orders, cuadrillas, materiales, operadores, padron/cargas, infraestructura jerárquica, logs, database/*, git/*, events) — verificadas con `php artisan route:list --path=api --json` |
+| Auth | Middleware `AdminToken` — header `x-admin-token` vs `ADMIN_TOKEN` (401 inválido, 503 sin configurar); sesiones de operador con tokens Bearer cifrados (`operator`, `RequireRole`) |
 | Realtime | SSE `/api/events` (StreamedResponse) con pub/sub en Valkey/Redis, canal `cotel-events` (`Support/SseHub`); sin Redis degrada a heartbeat |
-| Datos | SQL directo (PDO `pgsql`) contra Supabase (PostgreSQL 17, pooler `:5432`); sin Eloquent ni modelos |
+| Datos | SQL directo (facade `DB`, driver `pgsql`): PostgreSQL local `cotel_dectlink` en desarrollo, Supabase (pooler `:5432`) en la nube; sin Eloquent ni modelos |
 | Frontend | Build de Vite servido desde `public/` (SPA con catch-all vía `SpaController`) |
+| Tests | Pest: **120 tests / 461 assertions** (`vendor/bin/pint` obligatorio antes de commitear; PHPStan nivel 5 en 0 errores) |
 | Stubs nube | `git/*`, `database/test-connection`, `database/apply-connection` → **501** (la BD se fija por env en Laravel Cloud) |
 
 ## Comandos
@@ -28,8 +29,9 @@ php artisan migrate:status     # las 6 migraciones aparecen como "Ran" (stampead
 vendor/bin/pint                # formato de código (obligatorio antes de commitear)
 ```
 
-Frontend en desarrollo: desde la raíz del repo, `npx vite` (proxy `/api` →
-Laravel). Actualizar el build servido: `npm run build:backend` (raíz).
+Frontend en desarrollo: desde la raíz del repo, `pnpm run dev` (Vite con proxy
+`/api` → Laravel). Actualizar el build servido: `pnpm run build` (raíz:
+`vite build` + copia a `backend/public/`).
 
 ## Entorno
 
