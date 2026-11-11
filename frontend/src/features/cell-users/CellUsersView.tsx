@@ -22,6 +22,8 @@ import type { CellInfo } from './types';
 interface CellUsersViewProps {
   records: EnrichedSubscriberRecord[];
   onSelectRecord: (record: EnrichedSubscriberRecord) => void;
+  /** Drill-down desde el Padrón: celda (id en string) a preseleccionar. */
+  initialCelda?: string | null;
 }
 
 type SortField = keyof EnrichedSubscriberRecord;
@@ -36,7 +38,7 @@ const STATUS_BAR_COLORS: Record<string, string> = {
   'S/SERV.': 'bg-slate-500',
 };
 
-export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
+export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUsersViewProps) {
   const [cells, setCells] = useState<CellInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,15 @@ export function CellUsersView({ records, onSelectRecord }: CellUsersViewProps) {
       cancelled = true;
     };
   }, []);
+
+  // Drill-down desde el Padrón: preseleccionar la celda pedida si existe.
+  // Ignora valores no numéricos o celdas que ya no están en el padrón.
+  useEffect(() => {
+    if (!initialCelda || cells.length === 0) return;
+    const id = Number(initialCelda);
+    if (!Number.isInteger(id)) return;
+    if (cells.some(c => c.id === id)) setSelectedCellId(id);
+  }, [initialCelda, cells]);
 
   // Mapear celdaId (string en records) → info de la API
   const cellInfoMap = useMemo(() => {

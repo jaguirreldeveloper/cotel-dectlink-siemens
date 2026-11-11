@@ -59,6 +59,9 @@ export default function App() {
   const [externalZoneFilter, setExternalZoneFilter] = useState('');
   const [externalYearFilter, setExternalYearFilter] = useState<number | undefined>(undefined);
 
+  // Drill-down desde el Padrón: celda a preseleccionar en "Abonados por Celda".
+  const [drilldownCelda, setDrilldownCelda] = useState<string | null>(null);
+
   // Si el tab activo no es visible para el rol de la sesión (o la sesión es
   // de solo lectura), redirigir al primer módulo visible y sin 403 a ciegas.
   useEffect(() => {
@@ -174,6 +177,10 @@ export default function App() {
               externalYearFilter={externalYearFilter}
               externalCeldaFilter={externalCeldaFilter}
               onClearExternalFilters={handleClearExternalFilters}
+              onOpenCelda={celda => {
+                setDrilldownCelda(celda);
+                setActiveTab('cell-users');
+              }}
               onUpdateStatus={data.updateStatus}
             />
           </div>
@@ -206,6 +213,7 @@ export default function App() {
           <CellUsersView
             records={data.records}
             onSelectRecord={data.selectRecord}
+            initialCelda={drilldownCelda}
           />
         );
       case 'cell-detail':

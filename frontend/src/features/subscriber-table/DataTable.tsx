@@ -29,6 +29,8 @@ interface DataTableProps {
   externalYearFilter?: number;
   externalCeldaFilter?: string;
   onClearExternalFilters?: () => void;
+  /** Drill-down: navegar a "Abonados por Celda" con la celda preseleccionada. */
+  onOpenCelda?: (celda: string) => void;
   onUpdateStatus?: (nro: number, newStatus: OperationalStatus, details?: { fallaDescripcion?: string; deudaMeses?: number; tiempoDepositoMeses?: number }) => void;
 }
 
@@ -39,6 +41,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   externalYearFilter,
   externalCeldaFilter,
   onClearExternalFilters,
+  onOpenCelda,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedZone, setSelectedZone] = useState<string>('');
@@ -622,21 +625,32 @@ export const DataTable: React.FC<DataTableProps> = ({
                       )}
                     </td>
 
-                    {/* CELDA */}
+                    {/* CELDA (clic: drill-down a Abonados por Celda) */}
                     <td
                       className="py-2.5 px-2 text-center font-mono font-semibold max-w-[160px]"
                       title={record.celdaNombre ?? `Celda ${record.celda}`}
                     >
-                      <span
-                        className={`block truncate text-[11px] ${
-                          record.celda === '17' ? 'text-violet-600' : 'text-blue-600'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          onOpenCelda?.(record.celda);
+                        }}
+                        disabled={!onOpenCelda}
+                        title="Ver abonados de esta celda"
+                        className="block w-full truncate text-[11px] rounded px-1 py-0.5 transition hover:bg-blue-50 dark:hover:bg-blue-950/40 disabled:cursor-default disabled:hover:bg-transparent"
                       >
-                        {record.celdaNombre ?? `Celda ${record.celda}`}
-                      </span>
-                      <span className="block text-[10px] font-normal text-slate-400">
-                        RFP {record.celda}
-                      </span>
+                        <span
+                          className={`block truncate ${
+                            record.celda === '17' ? 'text-violet-600' : 'text-blue-600'
+                          }`}
+                        >
+                          {record.celdaNombre ?? `Celda ${record.celda}`}
+                        </span>
+                        <span className="block text-[10px] font-normal text-slate-400">
+                          RFP {record.celda}
+                        </span>
+                      </button>
                     </td>
 
                     {/* ZONA */}
