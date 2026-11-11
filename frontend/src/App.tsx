@@ -224,7 +224,17 @@ export default function App() {
           />
         );
       case 'celdas-crud':
-        return <CeldasCrudView operador={auth.operador} records={data.records} />;
+        return (
+          <CeldasCrudView
+            operador={auth.operador}
+            records={data.records}
+            onOpenCelda={celda => {
+              setDrilldownCelda(celda);
+              setActiveTab('cell-users');
+            }}
+            onGoToTab={tab => setActiveTab(tab as AppTabId)}
+          />
+        );
       case 'qa':
         return <QaView />;
       default:

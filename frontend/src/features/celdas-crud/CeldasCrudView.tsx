@@ -10,6 +10,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Users,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 import type { Operador, OperadorRole } from '@/features/auth/types';
@@ -21,12 +22,18 @@ import { invalidateCellsCache } from '@/entities/cell/useCells';
 import { infraApi } from '@/features/infraestructura/api';
 import type { SubcentralDTO } from '@/features/infraestructura/types';
 import * as api from './api';
+import type { EntradaBitacora } from './api';
+import { ACCION_LABEL, cambiosDeEntrada, fechaLegible } from './bitacora';
 import { summarizeCeldas, ocupacionCelda, UMBRAL_OCUPACION_ALERTA } from './summary';
 import type { CeldaCrud, CeldaFormData } from './types';
 
 interface CeldasCrudViewProps {
   operador?: Operador | null;
   records: EnrichedSubscriberRecord[];
+  /** Drill-down a Abonados por Celda (pestaña cell-users). */
+  onOpenCelda?: (celda: string) => void;
+  /** Navegación genérica a otra pestaña del shell (p. ej. el mapa GIS). */
+  onGoToTab?: (tab: string) => void;
 }
 
 const PUEDE_ESCRIBIR: OperadorRole[] = ['SUPERADMIN', 'ADMIN'];
@@ -109,7 +116,7 @@ function Th({
   );
 }
 
-export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
+export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: CeldasCrudViewProps) {
   const rol = operador?.role as OperadorRole | undefined;
   const escritura = !!rol && PUEDE_ESCRIBIR.includes(rol);
   const borrado = !!rol && PUEDE_ELIMINAR.includes(rol);
@@ -119,6 +126,12 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Detalle de la celda seleccionada (ficha + historial)
+  const [detalleId, setDetalleId] = useState<number | null>(null);
+  const [bitacora, setBitacora] = useState<EntradaBitacora[]>([]);
+  const [bitacoraLoading, setBitacoraLoading] = useState(false);
+  const [bitacoraError, setBitacoraError] = useState<string | null>(null);
 
   // Filtros, búsqueda y orden de la tabla administrativa
   const [busqueda, setBusqueda] = useState('');
@@ -178,6 +191,32 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
   }, [escritura]);
 
   const resumen = useMemo(() => summarizeCeldas(celdas, abonadosPorCelda), [celdas, abonadosPorCelda]);
+
+  // Historial de la celda en detalle (se carga al abrir el panel)
+  useEffect(() => {
+    if (detalleId == null) {
+      setBitacora([]);
+      setBitacoraError(null);
+      return;
+    }
+    let cancelado = false;
+    setBitacoraLoading(true);
+    setBitacoraError(null);
+    api
+      .fetchBitacoraCelda(detalleId)
+      .then(entradas => {
+        if (!cancelado) setBitacora(entradas);
+      })
+      .catch(e => {
+        if (!cancelado) setBitacoraError(e instanceof Error ? e.message : 'Error al cargar el historial');
+      })
+      .finally(() => {
+        if (!cancelado) setBitacoraLoading(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [detalleId]);
 
   /** Filtrado + orden (los nulos van siempre al final). */
   const filas = useMemo(() => {
@@ -241,6 +280,9 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
     filtroCalibracion !== 'todas' ||
     filtroSubcentral !== 'todas' ||
     filtroAbonados !== 'todos';
+
+  /** Celda seleccionada para el panel de detalle. */
+  const detalle = detalleId != null ? (celdas.find(c => c.id === detalleId) ?? null) : null;
 
   const limpiarFiltros = () => {
     setBusqueda('');
@@ -550,10 +592,14 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
             {filas.map(c => {
               const count = abonadosPorCelda.get(c.id) ?? 0;
               return (
-                <tr key={c.id} className='border-t border-slate-800 hover:bg-slate-800/40'>
+                <tr
+                  key={c.id}
+                  onClick={() => setDetalleId(c.id)}
+                  className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
+                >
                   <td className='px-3 py-2 font-mono font-bold text-brand-400'>{c.id}</td>
                   <td className='px-3 py-2 text-white font-medium'>{c.nombre}</td>
-                  <td className='px-3 py-2'>
+                  <td className='px-3 py-2' onClick={e => e.stopPropagation()}>
                     {escritura ? (
                       <Select
                         dark
@@ -609,7 +655,7 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
                       {count}
                     </span>
                   </td>
-                  <td className='px-3 py-2 text-right whitespace-nowrap'>
+                  <td className='px-3 py-2 text-right whitespace-nowrap' onClick={e => e.stopPropagation()}>
                     {escritura && (
                       <button
                         onClick={() => openEdit(c)}
@@ -665,6 +711,152 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
           </div>
         )}
       </div>
+
+      {/* Panel de detalle de la celda (ficha + drill-down + historial) */}
+      <Modal
+        isOpen={detalleId != null}
+        onClose={() => setDetalleId(null)}
+        dark
+        title={detalle ? `Celda RFP ${detalle.id} · ${detalle.nombre}` : 'Detalle de celda'}
+        panelClassName='max-w-2xl p-6 max-h-[90vh] overflow-y-auto'
+        footer={
+          <div className='flex flex-wrap justify-end gap-2'>
+            {onGoToTab && (
+              <Button variant='soft' size='sm' icon={MapPin} onClick={() => onGoToTab('map')}>
+                Ver en mapa
+              </Button>
+            )}
+            {onOpenCelda && detalle && (
+              <Button variant='soft' size='sm' icon={Users} onClick={() => {
+                onOpenCelda(String(detalle.id));
+                setDetalleId(null);
+              }}>
+                Ver abonados
+              </Button>
+            )}
+            {escritura && detalle && (
+              <Button variant='primary' size='sm' icon={Pencil} onClick={() => {
+                setDetalleId(null);
+                openEdit(detalle);
+              }}>
+                Editar
+              </Button>
+            )}
+          </div>
+        }
+      >
+        {detalle && (
+          <div className='space-y-4'>
+            {/* Ficha completa */}
+            <div className='grid grid-cols-2 sm:grid-cols-3 gap-px bg-slate-800 rounded-lg overflow-hidden'>
+              <DetalleTile label='Tecnología' value={detalle.tecnologia} />
+              <DetalleTile label='Modelo RFP' value={detalle.rfpModelo} />
+              <DetalleTile label='Banda' value={detalle.bandaFrecuencia} />
+              <DetalleTile
+                label='Capacidad'
+                value={detalle.capacidadCanales != null ? `${detalle.capacidadCanales} canales` : null}
+              />
+              <DetalleTile
+                label='Cobertura'
+                value={detalle.radioCoberturaKm != null ? `${detalle.radioCoberturaKm} km` : null}
+              />
+              <DetalleTile label='Subcentral' value={detalle.nombreSubcentral} />
+              <DetalleTile
+                label='Coordenadas'
+                value={
+                  detalle.latitud != null && detalle.longitud != null
+                    ? `${detalle.latitud.toFixed(4)}, ${detalle.longitud.toFixed(4)}`
+                    : null
+                }
+                tono={detalle.latitud != null ? 'ok' : 'warn'}
+                vacio='Sin calibrar'
+              />
+              <DetalleTile
+                label='Abonados'
+                value={String(abonadosPorCelda.get(detalle.id) ?? 0)}
+                tono='ok'
+              />
+              <DetalleTile
+                label='Ocupación'
+                value={(() => {
+                  const pct = ocupacionCelda(detalle, abonadosPorCelda.get(detalle.id) ?? 0);
+                  return pct == null ? null : `${pct}%`;
+                })()}
+                tono={(() => {
+                  const pct = ocupacionCelda(detalle, abonadosPorCelda.get(detalle.id) ?? 0);
+                  if (pct == null) return 'muted';
+                  return pct > UMBRAL_OCUPACION_ALERTA ? 'warn' : 'ok';
+                })()}
+                vacio='Sin capacidad'
+              />
+            </div>
+
+            {detalle.descripcion && (
+              <p className='text-xs text-slate-400'>{detalle.descripcion}</p>
+            )}
+
+            {/* Historial de cambios */}
+            <div>
+              <h4 className='text-xs font-bold uppercase tracking-wider text-slate-400 mb-2'>
+                Historial de cambios
+              </h4>
+              {bitacoraLoading && (
+                <div className='flex items-center gap-2 text-xs text-slate-500 py-2'>
+                  <RefreshCw className='w-3.5 h-3.5 animate-pulse' />
+                  Cargando historial…
+                </div>
+              )}
+              {bitacoraError && (
+                <div className='rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300'>
+                  {bitacoraError}
+                </div>
+              )}
+              {!bitacoraLoading && !bitacoraError && bitacora.length === 0 && (
+                <p className='text-xs text-slate-600'>
+                  Sin cambios registrados para esta celda.
+                </p>
+              )}
+              {!bitacoraLoading && bitacora.length > 0 && (
+                <ul className='space-y-2'>
+                  {bitacora.map(e => {
+                    const cambios = cambiosDeEntrada(e);
+                    return (
+                      <li
+                        key={e.id}
+                        className='rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2'
+                      >
+                        <div className='flex items-center justify-between gap-2 text-xs'>
+                          <span className='font-semibold text-slate-200'>
+                            {ACCION_LABEL[e.accion] ?? e.accion}
+                          </span>
+                          <span className='text-slate-500 font-mono text-[10px]'>
+                            {fechaLegible(e.createdAt)}
+                          </span>
+                        </div>
+                        <div className='text-[11px] text-slate-500 mt-0.5'>
+                          {e.operador ?? 'Sistema'}
+                        </div>
+                        {cambios.length > 0 && (
+                          <ul className='mt-1.5 space-y-0.5'>
+                            {cambios.map(ch => (
+                              <li key={ch.campo} className='text-[11px] text-slate-400'>
+                                <span className='text-slate-500'>{ch.campo}:</span>{' '}
+                                <span className='line-through text-slate-600'>{ch.antes}</span>
+                                {' → '}
+                                <span className='text-emerald-400'>{ch.despues}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Modal de crear/editar */}
       <Modal
@@ -814,6 +1006,34 @@ export function CeldasCrudView({ operador, records }: CeldasCrudViewProps) {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+/** Tile de la ficha del panel de detalle. */
+function DetalleTile({
+  label,
+  value,
+  tono = 'normal',
+  vacio = '—',
+}: {
+  label: string;
+  value: string | null;
+  tono?: 'normal' | 'ok' | 'warn' | 'muted';
+  vacio?: string;
+}) {
+  const color =
+    tono === 'ok'
+      ? 'text-emerald-400'
+      : tono === 'warn'
+        ? 'text-amber-400'
+        : tono === 'muted'
+          ? 'text-slate-500'
+          : 'text-slate-200';
+  return (
+    <div className='bg-slate-900/60 px-3 py-2.5'>
+      <div className='text-[10px] text-slate-500 uppercase tracking-wider mb-1'>{label}</div>
+      <div className={`text-sm font-semibold ${color}`}>{value ?? vacio}</div>
     </div>
   );
 }

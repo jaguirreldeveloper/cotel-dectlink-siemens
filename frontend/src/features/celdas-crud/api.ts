@@ -37,3 +37,19 @@ export async function deleteCelda(id: number): Promise<{ message: string }> {
   if (!res.ok) throw new Error(data?.message || `Error ${res.status} al eliminar celda`);
   return { message: data?.message || 'Celda eliminada.' };
 }
+
+/** Entrada del historial de cambios de una celda (infraestructura_bitacora). */
+export interface EntradaBitacora {
+  id: number;
+  accion: string;
+  operador: string | null;
+  payload: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+/** Historial de cambios de la celda (últimas 50 entradas, orden descendente). */
+export async function fetchBitacoraCelda(id: number): Promise<EntradaBitacora[]> {
+  const res = await apiFetch(`${BASE}/${id}/bitacora`);
+  if (!res.ok) throw new Error(`Error ${res.status} al obtener el historial de la celda`);
+  return res.json();
+}
