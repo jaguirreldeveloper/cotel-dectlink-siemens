@@ -342,6 +342,435 @@ body {
   }
 }
 
+/* =============================================================================
+   ESTILOS RESPONSIVE GLOBALES PARA TODOS LOS COMPONENTES
+   =============================================================================
+   Estos estilos aseguran que la aplicación sea usable en dispositivos móviles
+   y tablets (pantallas < 1024px).
+ */
+
+/* ---------------------------------------------------------------------------
+   Breakpoints consistentes
+   ---------------------------------------------------------------------------
+   sm: 640px  - Móviles pequeños
+   md: 768px  - Tablets en vertical
+   lg: 1024px - Tablets en horizontal / Pantallas pequeñas
+   xl: 1280px - Pantallas medianas
+   2xl: 1536px - Pantallas grandes
+ */
+
+/* ---------------------------------------------------------------------------
+   Contenedores Responsive
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  /* En móviles/tablet, reducir padding lateral */
+  .mobile-px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .mobile-px-6 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  /* Espaciado vertical más compacto */
+  .mobile-space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Cards con menos padding */
+  .mobile-card-compact {
+    padding: 1rem;
+  }
+  
+  /* Botones con tamaño adecuado para touch */
+  .btn-mobile {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Títulos más pequeños */
+  .mobile-h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  .mobile-h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  
+  /* Textos más legibles en móviles */
+  .mobile-text-base {
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
+  }
+  
+  .mobile-text-sm {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Móviles pequeños - ajustes adicionales */
+  .xs-mobile-px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .xs-btn-mobile {
+    min-height: 42px;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Esconder elementos no esenciales */
+  .xs-hide {
+    display: none !important;
+  }
+  
+  /* Apilar elementos horizontalmente */
+  .xs-flex-col {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Tablas: ocultar columnas menos importantes */
+  .xs-table-compact th:nth-child(n+5),
+  .xs-table-compact td:nth-child(n+5) {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Formularios Responsive
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  /* Formularios apilados */
+  .form-grid-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* Inputs full width */
+  .form-input-mobile {
+    width: 100%;
+  }
+  
+  /* grupos de botones apilados */
+  .btn-group-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  /* Alinear labels a la izquierda */
+  .form-label-mobile {
+    text-align: left;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Modales y Drawers
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  /* Modales full screen */
+  .modal-mobile-full {
+    width: 100%;
+    height: 100vh;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  /* Drawers desde el fondo */
+  .drawer-mobile-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 80vh;
+    max-height: none;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Mapas Responsive (Leaflet)
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .leaflet-map-mobile {
+    height: 300px !important;
+    min-height: 250px !important;
+  }
+  
+  /* Controles de mapa más pequeños */
+  .leaflet-control-mobile {
+    transform: scale(0.8);
+    transform-origin: top left;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Tablas mejoradas para móvil
+   --------------------------------------------------------------------------- */
+/* Scroll horizontal con indicador visual */
+.table-container-mobile {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-container-mobile::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
+  pointer-events: none;
+}
+
+/* Tabla con ancho mínimo para evitar colapso */
+.table-min-w-800 {
+  min-width: 800px;
+}
+
+.table-min-w-600 {
+  min-width: 600px;
+}
+
+/* En móviles pequeños, ocultar columnas opcionales */
+@media (max-width: 767px) {
+  .table-hide-on-xs {
+    display: none !important;
+  }
+  
+  .table-col-xs-1 { display: table-cell !important; }
+  .table-col-xs-2 { display: table-cell !important; }
+  .table-col-xs-3 { display: table-cell !important; }
+  .table-col-xs-4 { display: table-cell !important; }
+  .table-col-xs-5 { display: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Grids Responsive
+   --------------------------------------------------------------------------- */
+.grid-cols-mobile-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .grid-cols-mobile-1 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+.grid-cols-mobile-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 767px) {
+  .grid-cols-mobile-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Tarjetas (Cards) Responsive
+   --------------------------------------------------------------------------- */
+.card-grid-mobile {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 767px) {
+  .card-grid-mobile {
+    grid-template-columns: 1fr;
+  }
+  
+  .card-mobile-compact {
+    padding: 1rem;
+  }
+  
+  .card-mobile-compact h3 {
+    font-size: 1.125rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Tipografía Responsive
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .text-mobile-lg {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+  }
+  
+  .text-mobile-base {
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
+  }
+  
+  .text-mobile-sm {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Espaciado Responsive
+   --------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .space-y-mobile-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .space-y-mobile-6 > * + * {
+    margin-top: 1.5rem;
+  }
+  
+  .gap-mobile-3 {
+    gap: 0.75rem;
+  }
+  
+  .gap-mobile-4 {
+    gap: 1rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilidades para Visibilidad
+   --------------------------------------------------------------------------- */
+/* Mostrar solo en móviles */
+@media (min-width: 1024px) {
+  .lg-hidden {
+    display: none !important;
+  }
+}
+
+/* Mostrar solo en escritorio */
+@media (max-width: 1023px) {
+  .lg-only {
+    display: none !important;
+  }
+}
+
+/* Mostrar solo en móviles pequeños */
+@media (min-width: 768px) {
+  .sm-hidden {
+    display: none !important;
+  }
+}
+
+/* Mostrar solo en escritorio grande */
+@media (max-width: 767px) {
+  .sm-only {
+    display: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Responsividad para Componentes Específicos
+   --------------------------------------------------------------------------- */
+
+/* GIS: Panel de celdas */
+@media (max-width: 1023px) {
+  .gis-panel-mobile {
+    flex-direction: column;
+  }
+  
+  .gis-map-container-mobile {
+    order: -1;
+  }
+  
+  .gis-sidebar-mobile {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Kanban: Tarjetas más pequeñas */
+@media (max-width: 1023px) {
+  .kanban-card-mobile {
+    min-width: 250px;
+  }
+  
+  .kanban-column-mobile {
+    min-width: 280px;
+  }
+}
+
+/* Filtros: Apilados en móvil */
+@media (max-width: 1023px) {
+  .filter-bar-mobile {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .filter-input-mobile {
+    flex: 1 1 200px;
+  }
+}
+
+/* Header: Compacto en móvil */
+@media (max-width: 1023px) {
+  .header-compact-mobile {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .header-title-mobile {
+    font-size: 1rem;
+  }
+}
+
+/* Footer: Compacto en móvil */
+@media (max-width: 1023px) {
+  .footer-compact-mobile {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+}
+
+/* Dashboard: Grids apilados */
+@media (max-width: 1023px) {
+  .dashboard-grid-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Clases de utilidad para desarrollo rápido
+   --------------------------------------------------------------------------- */
+
+/* Para debugging visual en móviles */
+@media (max-width: 1023px) {
+  .debug-border-mobile {
+    border: 1px solid red !important;
+  }
+  
+  .debug-bg-mobile {
+    background-color: rgba(255, 0, 0, 0.1) !important;
+  }
+}
+
+
 /* ====== ESTILOS RESPONSIVE PARA MÓVIL ====== */
 
 /* Área táctil mínima para botones (44px x 44px según WCAG) */
