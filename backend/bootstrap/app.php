@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureOperator;
 use App\Http\Middleware\RequireRole;
+use App\Http\Middleware\VerifyAdminToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RequireRole::class,
             'operator' => EnsureOperator::class,
+            'x-admin-token' => \App\Http\Middleware\VerifyAdminToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

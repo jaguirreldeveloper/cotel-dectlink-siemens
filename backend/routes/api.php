@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\ArmariosController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CellsController;
@@ -166,6 +167,15 @@ Route::middleware('role:superadmin')->group(function (): void {
     Route::delete('shelters/{shelter}', [SheltersController::class, 'destroy']);
     Route::delete('armarios/{armario}', [ArmariosController::class, 'destroy']);
     Route::delete('cells/{id}', [CellsController::class, 'destroy']);
+});
+
+// ===========================================================================
+// ENDPOINTS ADMINISTRATIVOS PARA CLI
+// Acceso exclusivo mediante x-admin-token (token de servidor)
+// ===========================================================================
+Route::middleware('x-admin-token')->prefix('admin')->group(function (): void {
+    Route::post('execute-command', [AdminController::class, 'executeCommand']);
+    Route::get('connection-info', [AdminController::class, 'connectionInfo']);
 });
 
 // ===========================================================================
