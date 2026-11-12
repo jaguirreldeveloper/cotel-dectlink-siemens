@@ -27,7 +27,7 @@ program
 program
   .command('load-consolidado')
   .description('Carga el padrón real desde CSV consolidado (idempotente, conserva estados/GPS/auditoría)')
-  .argument('[csvPath]', 'Ruta al CSV consolidado (default: F:\\CD-INAL-EA\\CONSOLIDADO_CELDAS_INALAMBRICAS.csv)')
+  .argument('[csvPath]', 'Ruta al CSV consolidado (default: ./CONSOLIDADO_CELDAS_INALAMBRICAS.csv o $CSV_PATH)')
   .option('--limpio', 'Recarga total descartando estados/GPS/auditoría previos')
   .action(loadConsolidadoCommand);
 

@@ -136,7 +136,10 @@ const CONSERVAR = [
   { col: 'tiempo_deposito_meses', field: 'tiempoDepositoMeses', pgType: 'integer' },
 ] as const;
 
-const DEFAULT_CSV = 'F:\\CD-INAL-EA\\CONSOLIDADO_CELDAS_INALAMBRICAS.csv';
+// Ruta por defecto del CSV: usa variable de entorno o path relativo
+// Para desarrollo en Windows: export CSV_PATH=F:\\CD-INAL-EA\\CONSOLIDADO_CELDAS_INALAMBRICAS.csv
+// Para produccion: export CSV_PATH=/path/to/CONSOLIDADO_CELDAS_INALAMBRICAS.csv
+const DEFAULT_CSV = process.env.CSV_PATH || './CONSOLIDADO_CELDAS_INALAMBRICAS.csv';
 
 export async function loadConsolidadoCommand(csvPathArg: string | undefined, options: { limpio?: boolean }) {
   const cargaLimpia = options.limpio ?? false;

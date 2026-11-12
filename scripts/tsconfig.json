@@ -14,8 +14,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@cotel/types": ["../packages/types/src"]
-    },
-    "allowImportingTsExtensions": true
+    }
   },
   "references": [
     { "path": "../packages/types" }

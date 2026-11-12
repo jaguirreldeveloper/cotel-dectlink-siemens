@@ -87,8 +87,8 @@ Se conservan además `users`, `cuadrillas`, `materiales` y el puente `work_order
 **Carga del padrón real:**
 
 ```bash
-pnpm run db:load            # CSV por defecto: F:\CD-INAL-EA\CONSOLIDADO_CELDAS_INALAMBRICAS.csv
-pnpm run db:load -- <ruta>  # CSV alternativo
+pnpm run db:load              # CSV por defecto: ./CONSOLIDADO_CELDAS_INALAMBRICAS.csv (o $CSV_PATH)
+pnpm run db:load -- <ruta>    # CSV alternativo
 pnpm run db:load -- --limpio  # carga total: descarta estados/GPS/auditoría previos
 ```
 

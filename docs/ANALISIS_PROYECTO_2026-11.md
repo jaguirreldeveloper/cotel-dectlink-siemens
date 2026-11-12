@@ -108,7 +108,7 @@ zonas ─< clientes ─< abonados_lineas >─ celdas
 | `work_orders` | 6 | Órdenes de trabajo |
 
 ### Carga de Datos (ETL)
-- **Origen:** CSV consolidado (`F:\CD-INAL-EA\CONSOLIDADO_CELDAS_INALAMBRICAS.csv`)
+- **Origen:** CSV consolidado (ruta parametrizable mediante `$CSV_PATH` o `./CONSOLIDADO_CELDAS_INALAMBRICAS.csv` por defecto)
 - **Comando:** `pnpm run db:load [-- <ruta>] [-- --limpio]`
 - **Características:**
   - Normalización de zonas (typos, abreviaturas, mojibake)
@@ -360,17 +360,17 @@ pnpm run smoke         # Verificación backend
 
 | # | Área | Problema | Impacto | Prioridad | Esfuerzo |
 |---|------|----------|---------|-----------|----------|
-| 1 | **Navegación** | SPA sin router | Recargar pierde la vista activa | ⭐⭐⭐⭐⭐ | Medio |
-| 2 | **Responsividad Móvil** | Sidebar y tablas incompletas | Uso en campo limitado | ⭐⭐⭐⭐⭐ | Medio |
-| 3 | **Secrets en frontend** | `ADMIN_TOKEN` expuesto en scripts | Riesgo de seguridad | ⭐⭐⭐⭐ | Bajo |
-| 4 | **Stubs en nube** | `git/*` y `database/*` no funcionales | Limitaciones en producción | ⭐⭐⭐ | Bajo |
+| 1 | **Navegación** | SPA sin router | Recargar pierde la vista activa | ⭐⭐⭐⭐⭐ | Medio | ✅ **RESUELTO** - React Router v6 implementado |
+| 2 | **Responsividad Móvil** | Sidebar y tablas incompletas | Uso en campo limitado | ⭐⭐⭐⭐⭐ | Medio | ✅ **RESUELTO** - Mobile responsiveness mejorada |
+| 3 | **Secrets en frontend** | `ADMIN_TOKEN` expuesto en scripts | Riesgo de seguridad | ⭐⭐⭐⭐ | Bajo | ✅ **RESUELTO** - Eliminado de .env files |
+| 4 | **Stubs en nube** | `git/*` y `database/*` no funcionales | Limitaciones en producción | ⭐⭐⭐ | Bajo | ✅ **RESUELTO** - Documentados como stubs |
 
 ### 🟡 **Importantes** (Mejoran calidad pero no bloquean)
 
 | # | Área | Problema | Impacto | Prioridad | Esfuerzo |
 |---|------|----------|---------|-----------|----------|
 | 5 | **Documentación** | Algunos archivos desactualizados | Confusión en desarrollo | ⭐⭐⭐ | Bajo |
-| 6 | **Backups** | Ruta absoluta `F:\CD-INAL-EA\...` | Portabilidad limitada | ⭐⭐⭐ | Bajo |
+| 6 | **Backups** | Ruta absoluta `F:\CD-INAL-EA\...` | Portabilidad limitada | ⭐⭐⭐ | Bajo | ✅ **RESUELTO** - Parametrizado con `$CSV_PATH` |
 | 7 | **Dependencies** | Versiones específicas | Posibles conflictos | ⭐⭐ | Bajo |
 | 8 | **CI/CD** | GitHub Actions con SQLite | Tests no reflejan producción | ⭐⭐ | Medio |
 
