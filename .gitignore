@@ -61,6 +61,9 @@ coverage
 # Scripts specific
 scripts/dist
 scripts/.tsbuildinfo
+scripts/.env
+scripts/.env.*
+!scripts/.env.example
 
 # Frontend specific
 frontend/dist
