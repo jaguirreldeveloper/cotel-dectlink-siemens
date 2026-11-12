@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AppSidebar, visibleTabIds } from '@/widgets/AppSidebar';
 import { UnifiedHeader } from '@/widgets/UnifiedHeader';
 import { AppFooter } from '@/widgets/AppFooter';
@@ -36,13 +37,15 @@ import { VisualCharts } from '@/widgets/VisualCharts';
 import { buildSubscribersCsv, subscribersCsvFilename } from '@/entities/subscriber/exportCsv';
 import { useSubscriberData } from '@/entities/subscriber/hooks/useSubscriberData';
 import { useAuth, BrandedLoginView } from '@/features/auth';
-import { AppTabId } from '@/widgets/AppTabs';
+import { AppTabId, getTabIdFromPath, getRouteForTab } from '@/routes';
 import { usePersistentState, useClearNavigationState } from '@/shared/hooks/usePersistentState';
 import { Radio } from 'lucide-react';
 
 export default function App() {
   const auth = useAuth();
   const clearNavigationState = useClearNavigationState();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // La carga del padrón y el SSE solo arrancan con sesión iniciada; en modo
   // demo se usan los datos locales sin llamar a la API.
@@ -52,7 +55,6 @@ export default function App() {
   });
 
   // Persistencia de estado de navegación en sessionStorage
-  const [activeTab, setActiveTab] = usePersistentState<AppTabId>('activeTab', 'gps-calibration');
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState('sidebarCollapsed', false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = usePersistentState('mobileSidebarOpen', false);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
@@ -65,6 +67,14 @@ export default function App() {
 
   // Drill-down desde el Padrón: celda a preseleccionar en "Abonados por Celda".
   const [drilldownCelda, setDrilldownCelda] = usePersistentState<string | null>('drilldownCelda', null);
+
+  // Obtener el tab activo de la URL
+  const activeTab: AppTabId = getTabIdFromPath(location.pathname);
+
+  // Función para navegar a un tab
+  const setActiveTab = (tab: AppTabId) => {
+    navigate(getRouteForTab(tab));
+  };
 
   // Limpiar estado de navegación al cerrar sesión o cambiar de modo
   useEffect(() => {
@@ -81,7 +91,7 @@ export default function App() {
       setActiveTab(visibles[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.operador?.role]);
+  }, [auth.operador?.role, activeTab]);
 
   const handleFilterByZone = (zone: string) => {
     setExternalZoneFilter(zone);

@@ -24,7 +24,7 @@ import {
   Grid3x3,
   Focus,
 } from 'lucide-react';
-import { AppTabId } from './AppTabs';
+import { AppTabId } from '@/routes';
 
 /** Configuración de la navegación por grupos semánticos */
 interface NavGroup {
