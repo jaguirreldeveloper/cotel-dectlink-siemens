@@ -10,9 +10,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Herramientas de base de datos (paridad con los endpoints 5–12 de server.ts).
- * La conmutación de BD (test-connection / apply-connection) queda deshabilitada
- * en la nube: la conexión la fija Laravel Cloud vía variables de entorno.
+ * Endpoints de Base de Datos.
+ * 
+ * Proporciona herramientas para inspeccionar, consultar y exportar datos de la
+ * base de datos PostgreSQL. Algunos endpoints están deshabilitados en Laravel Cloud
+ * ya que la conexión se configura mediante variables de entorno de la plataforma.
  */
 class DatabaseController extends Controller
 {
@@ -265,7 +267,14 @@ class DatabaseController extends Controller
     }
 
     /**
-     * POST /api/database/test-connection — deshabilitado en Laravel Cloud.
+     * POST /api/database/test-connection — STUB
+     * 
+     * Testearía una conexión a BD. Deshabilitado en Laravel Cloud.
+     * 
+     * En Laravel Cloud, la conexión se configura automáticamente mediante las
+     * variables de entorno DB_* proporcionadas por la plataforma.
+     * 
+     * @response 501 {"success": false, "error": "La conmutación de base de datos está deshabilitada..."}
      */
     public function testConnection(): JsonResponse
     {
@@ -276,7 +285,14 @@ class DatabaseController extends Controller
     }
 
     /**
-     * POST /api/database/apply-connection — deshabilitado en Laravel Cloud.
+     * POST /api/database/apply-connection — STUB
+     * 
+     * Aplicaría una nueva conexión a BD. Deshabilitado en Laravel Cloud.
+     * 
+     * En Laravel Cloud, la conexión se configura automáticamente mediante las
+     * variables de entorno DB_* proporcionadas por la plataforma.
+     * 
+     * @response 501 {"success": false, "error": "La conmutación de base de datos está deshabilitada..."}
      */
     public function applyConnection(): JsonResponse
     {
