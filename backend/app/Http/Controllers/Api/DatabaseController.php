@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\ConnectionInfo;
+use App\Support\QueryCache;
 use App\Support\SqlGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,8 @@ class DatabaseController extends Controller
 
     /**
      * GET /api/database/status
+     * 
+     * Estado de la base de datos con estadísticas cacheadas.
      */
     public function status(): JsonResponse
     {
@@ -38,12 +41,9 @@ class DatabaseController extends Controller
                     current_user AS user_name,
                     pg_size_pretty(pg_database_size(current_database())) AS total_size
             ');
-            $counts = DB::selectOne('
-                SELECT
-                    (SELECT COUNT(*) FROM celdas) AS celdas_count,
-                    (SELECT COUNT(*) FROM abonados_lineas) AS abonados_count,
-                    (SELECT COUNT(*) FROM bitacora) AS bitacora_count
-            ');
+            
+            // Usar caché para los conteos
+            $counts = QueryCache::getDatabaseStats();
 
             $latencyMs = (int) round((microtime(true) - $start) * 1000);
             $info = ConnectionInfo::current();
@@ -61,9 +61,16 @@ class DatabaseController extends Controller
                 'size' => $dbInfo->total_size ?? 'N/A',
                 'latencyMs' => $latencyMs,
                 'counts' => [
-                    'celdas' => (int) ($counts->celdas_count ?? 0),
-                    'abonados' => (int) ($counts->abonados_count ?? 0),
-                    'bitacora' => (int) ($counts->bitacora_count ?? 0),
+                    'celdas' => (int) ($counts['celdas'] ?? 0),
+                    'zonas' => (int) ($counts['zonas'] ?? 0),
+                    'clientes' => (int) ($counts['clientes'] ?? 0),
+                    'abonados' => (int) ($counts['abonados'] ?? 0),
+                    'bitacora' => (int) ($counts['bitacora'] ?? 0),
+                    'work_orders' => (int) ($counts['work_orders'] ?? 0),
+                ],
+                'cache' => [
+                    'enabled' => true,
+                    'ttl_seconds' => 300,
                 ],
             ]);
         } catch (\Throwable $err) {
