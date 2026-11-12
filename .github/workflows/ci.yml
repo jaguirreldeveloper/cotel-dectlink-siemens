@@ -203,7 +203,85 @@ jobs:
         working-directory: backend
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Run backend tests (Pest)
+      - name: Run backend tests (Pest) with SQLite
+        working-directory: backend
+        run: php artisan test --compact
+
+  test-backend-postgresql:
+    name: Test Backend with PostgreSQL
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cotel
+          POSTGRES_PASSWORD: cotel123
+          POSTGRES_DB: cotel_dectlink
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: cotel_dectlink
+      DB_USERNAME: cotel
+      DB_PASSWORD: cotel123
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql, pgsql, mbstring, dom, curl
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-pgsql-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-pgsql-
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare backend environment for PostgreSQL
+        working-directory: backend
+        run: |
+          cat > .env <<ENV
+          APP_NAME="COTEL DECTlink"
+          APP_ENV=testing
+          APP_KEY=
+          APP_DEBUG=true
+          APP_URL=http://127.0.0.1:8010
+          LOG_CHANNEL=stack
+          LOG_LEVEL=debug
+          DB_CONNECTION=${DB_CONNECTION}
+          DB_HOST=${DB_HOST}
+          DB_PORT=${DB_PORT}
+          DB_DATABASE=${DB_DATABASE}
+          DB_USERNAME=${DB_USERNAME}
+          DB_PASSWORD=${DB_PASSWORD}
+          SESSION_DRIVER=file
+          CACHE_STORE=file
+          QUEUE_CONNECTION=sync
+          ENV
+          php artisan key:generate --force --no-interaction
+
+      - name: Run migrations
+        working-directory: backend
+        run: php artisan migrate:fresh --force --no-interaction
+
+      - name: Run backend tests (Pest) with PostgreSQL
         working-directory: backend
         run: php artisan test --compact
 
@@ -258,7 +336,7 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: lint-and-typecheck
+    needs: [lint-and-typecheck, test-backend-postgresql]
     env:
       DB_CONNECTION: sqlite
       DB_DATABASE: ${{ github.workspace }}/backend/database/ci.sqlite
@@ -337,6 +415,106 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results
+          path: frontend/test-results/
+          retention-days: 7
+
+  e2e-postgresql:
+    name: E2E Tests with PostgreSQL
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test-backend-postgresql]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cotel
+          POSTGRES_PASSWORD: cotel123
+          POSTGRES_DB: cotel_dectlink
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: cotel_dectlink
+      DB_USERNAME: cotel
+      DB_PASSWORD: cotel123
+      ADMIN_TOKEN: ci-admin-token
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql, pgsql, mbstring, dom, curl
+          coverage: none
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare backend environment for PostgreSQL
+        working-directory: backend
+        run: |
+          cat > .env <<ENV
+          APP_NAME="COTEL DECTlink"
+          APP_ENV=testing
+          APP_KEY=
+          APP_DEBUG=true
+          APP_URL=http://127.0.0.1:8010
+          APP_LOCALE=es
+          APP_FALLBACK_LOCALE=en
+          LOG_CHANNEL=stack
+          LOG_LEVEL=debug
+          DB_CONNECTION=${DB_CONNECTION}
+          DB_HOST=${DB_HOST}
+          DB_PORT=${DB_PORT}
+          DB_DATABASE=${DB_DATABASE}
+          DB_USERNAME=${DB_USERNAME}
+          DB_PASSWORD=${DB_PASSWORD}
+          SESSION_DRIVER=file
+          CACHE_STORE=file
+          QUEUE_CONNECTION=sync
+          ADMIN_TOKEN=${ADMIN_TOKEN}
+          ENV
+          php artisan key:generate --force --no-interaction
+
+      - name: Run migrations and seed
+        working-directory: backend
+        run: |
+          php artisan migrate:fresh --force --no-interaction
+          php artisan db:seed --class=E2eSeeder --force --no-interaction
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter frontend exec playwright install --with-deps chromium
+
+      - name: Run E2E tests with PostgreSQL
+        env:
+          PW_CHANNEL: chromium
+        run: pnpm --filter frontend test:e2e
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-pgsql
           path: frontend/test-results/
           retention-days: 7
 
