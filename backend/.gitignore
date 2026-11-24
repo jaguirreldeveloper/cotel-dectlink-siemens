@@ -17,6 +17,9 @@
 # Build del SPA copiado desde frontend/dist (scripts/copy-dist-to-backend.mjs)
 /public/assets
 /public/index.html
+/public/main-*.js
+/public/manifest.json
+/public/sw.js
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
