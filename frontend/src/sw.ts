@@ -7,6 +7,7 @@
  * - Sincronización automática al recuperar conexión
  */
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- globals de Service Worker fuera de lib.dom
 // @ts-nocheck - Desactivar type checking para Service Worker
 
 // Nombre del cache para recursos estáticos

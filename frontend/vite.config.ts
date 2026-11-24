@@ -49,7 +49,8 @@ export default defineConfig(({ mode }) => {
         },
         // Incluir sw.ts en el build
         input: {
-          main: path.resolve(__dirname, 'src/main.tsx'),
+          // index.html como entrada: Vite lo emite en dist/ y reescribe el script.
+          main: path.resolve(__dirname, 'index.html'),
           sw: path.resolve(__dirname, 'src/sw.ts'),
         },
         output: {
