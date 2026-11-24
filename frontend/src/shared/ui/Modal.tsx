@@ -81,7 +81,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby={title && !header ? 'modal-title' : undefined}
         tabIndex={-1}
-        className={`w-full ${panelClassName} rounded-xl border ${panelBase} shadow-2xl outline-none animate-in zoom-in-95 duration-150`}
+        className={`w-full ${panelClassName} rounded-xl border ${panelBase} shadow-2xl outline-none animate-in zoom-in-95 duration-150${dark ? ' dark' : ''}`}
       >
         {header ? (
           header

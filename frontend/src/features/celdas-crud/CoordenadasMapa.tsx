@@ -32,7 +32,8 @@ export function CoordenadasMapa({ lat, lng, onPick, disabled = false }: Coordena
     const map = L.map(contenedor.current, {
       center: CENTRO,
       zoom: 12,
-      scrollWheelZoom: true,
+      // La rueda debe desplazar el modal, no hacer zoom; el clic fija la coord.
+      scrollWheelZoom: false,
       dragging: !disabled,
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -46,7 +47,10 @@ export function CoordenadasMapa({ lat, lng, onPick, disabled = false }: Coordena
     });
 
     mapa.current = map;
+    // El modal entra con animación de escala: recalcular el tamaño evita tiles cortados.
+    const timer = window.setTimeout(() => map.invalidateSize(), 200);
     return () => {
+      window.clearTimeout(timer);
       map.remove();
       mapa.current = null;
       marcador.current = null;

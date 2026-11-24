@@ -3,7 +3,9 @@ import { defineConfig } from '@playwright/test';
 /**
  * E2E de humo contra el stack real de desarrollo:
  *  - backend Laravel en :8010 (`php artisan serve`, recarga por request)
- *  - frontend Vite en :5173 con proxy /api → :8010
+ *  - frontend Vite en 127.0.0.1:5173 con proxy /api → :8010
+ *    (se usa 127.0.0.1 en vez de localhost: en Windows, localhost resuelve a
+ *    ::1 y puede caer en otro servidor que ocupe ese puerto en IPv6)
  * Si los servidores ya están levantados, se reutilizan (reuseExistingServer).
  *
  * Navegador: Chrome del sistema (channel 'chrome') porque la descarga del
@@ -19,7 +21,7 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://127.0.0.1:5173',
     channel: process.env.PW_CHANNEL || 'chrome',
     headless: true,
     locale: 'es-BO',
@@ -35,9 +37,9 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      command: 'npx vite --port 5173 --strictPort',
+      command: 'npx vite --port 5173 --strictPort --host 127.0.0.1',
       cwd: '.',
-      url: 'http://localhost:5173',
+      url: 'http://127.0.0.1:5173',
       env: { VITE_API_TARGET: 'http://127.0.0.1:8010' },
       reuseExistingServer: true,
       timeout: 60_000,

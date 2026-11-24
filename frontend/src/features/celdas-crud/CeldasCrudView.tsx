@@ -900,7 +900,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         onClose={() => setModalOpen(false)}
         dark
         title={editingId != null ? `Editar Celda RFP ${editingId}` : 'Nueva Celda'}
-        panelClassName='max-w-lg'
+        panelClassName='max-w-lg p-6 max-h-[90vh] overflow-y-auto'
         footer={
           <div className='flex justify-end gap-2'>
             <Button variant='ghost' size='sm' onClick={() => setModalOpen(false)} disabled={saving}>
