@@ -54,6 +54,9 @@ Route::middleware('operator')->group(function (): void {
 
     // Padrón y celdas
     Route::get('subscribers', [SubscribersController::class, 'index']);
+    // Escala (100.000 líneas): paginación y agregados resueltos en SQL.
+    Route::get('subscribers/page', [SubscribersController::class, 'page']);
+    Route::get('subscribers/summary', [SubscribersController::class, 'summary']);
     Route::get('cells', [CellsController::class, 'index']);
     Route::get('cells/{id}/bitacora', [CellsController::class, 'bitacora']);
 

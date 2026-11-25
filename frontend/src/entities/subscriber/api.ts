@@ -40,6 +40,103 @@ export function mapSubscriberDto(d: any): RawSubscriberRecord {
   };
 }
 
+/** Parámetros de la consulta paginada del padrón (nombres camelCase en TS). */
+export interface SubscriberPageParams {
+  page?: number;
+  perPage?: number;
+  q?: string;
+  celdaId?: number;
+  zonaId?: number;
+  estado?: string;
+  sort?: 'nro' | 'nombre' | 'celda' | 'zona' | 'estado' | 'fecha' | 'deuda';
+  dir?: 'asc' | 'desc';
+}
+
+/** Respuesta de GET /api/subscribers/page. */
+export interface SubscriberPage {
+  data: RawSubscriberRecord[];
+  total: number;
+  page: number;
+  perPage: number;
+  lastPage: number;
+}
+
+/** Agregados de GET /api/subscribers/summary (calculados en SQL). */
+export interface SubscriberSummary {
+  total: number;
+  sinGps: number;
+  conDeuda: number;
+  fallas: number;
+  porEstado: Array<{ estado: string; total: number }>;
+  porCelda: Array<{ id: number; nombre: string; total: number }>;
+  porZona: Array<{ id: number | null; nombre: string; total: number }>;
+}
+
+/**
+ * Construye el query string de la consulta paginada con claves snake_case
+ * (contrato del backend). Se exporta para poder probarlo sin red.
+ */
+export function subscriberPageQuery(params: SubscriberPageParams = {}): string {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', String(params.page));
+  if (params.perPage) query.set('per_page', String(params.perPage));
+  if (params.q) query.set('q', params.q);
+  if (params.celdaId != null) query.set('celda_id', String(params.celdaId));
+  if (params.zonaId != null) query.set('zona_id', String(params.zonaId));
+  if (params.estado) query.set('estado', params.estado);
+  if (params.sort) query.set('sort', params.sort);
+  if (params.dir) query.set('dir', params.dir);
+  const cadena = query.toString();
+  return cadena ? `?${cadena}` : '';
+}
+
+/** Página del padrón: el filtro y el orden los aplica PostgreSQL, no el navegador. */
+export async function fetchSubscriberPage(
+  params: SubscriberPageParams = {},
+  timeoutMs = 15_000
+): Promise<SubscriberPage> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await apiFetch(`/api/subscribers/page${subscriberPageQuery(params)}`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return {
+      data: (data.data as unknown[]).map(mapSubscriberDto),
+      total: Number(data.total),
+      page: Number(data.page),
+      perPage: Number(data.perPage),
+      lastPage: Number(data.lastPage),
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** KPIs del padrón ya agregados en servidor (para 100.000 líneas). */
+export async function fetchSubscriberSummary(
+  filtros: Pick<SubscriberPageParams, 'celdaId' | 'zonaId'> = {},
+  timeoutMs = 15_000
+): Promise<SubscriberSummary> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const params = new URLSearchParams();
+    if (filtros.celdaId != null) params.set('celda_id', String(filtros.celdaId));
+    if (filtros.zonaId != null) params.set('zona_id', String(filtros.zonaId));
+    const query = params.toString();
+    const res = await apiFetch(`/api/subscribers/summary${query ? `?${query}` : ''}`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as SubscriberSummary;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Descarga el padrón completo con timeout abortable. El tiempo límite lo
  * controla el hook (más que el pool de la BD: el front nunca se rinde antes

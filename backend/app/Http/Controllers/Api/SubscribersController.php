@@ -235,6 +235,62 @@ class SubscribersController extends Controller
     }
 
     /**
+     * GET /api/subscribers/page — padrón paginado y filtrado en servidor.
+     *
+     * Contrato: {data, total, page, perPage, lastPage}. `data` conserva el
+     * mismo DTO de /api/subscribers para que las vistas no necesiten adaptación.
+     */
+    public function page(Request $request): JsonResponse
+    {
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(200, max(1, (int) $request->query('per_page', 50)));
+        $celdaId = $request->query('celda_id');
+        $zonaId = $request->query('zona_id');
+        $estado = $request->query('estado');
+
+        try {
+            $resultado = SubscriberQuery::paginate(
+                $page,
+                $perPage,
+                (string) $request->query('q', ''),
+                $celdaId !== null && $celdaId !== '' ? (int) $celdaId : null,
+                $estado !== null && $estado !== '' ? (string) $estado : null,
+                $zonaId !== null && $zonaId !== '' ? (int) $zonaId : null,
+                (string) $request->query('sort', 'nro'),
+                (string) $request->query('dir', 'asc')
+            );
+
+            return response()->json([
+                'data' => array_map(SubscriberRow::toListRow(...), $resultado['data']),
+                'total' => $resultado['total'],
+                'page' => $resultado['page'],
+                'perPage' => $resultado['perPage'],
+                'lastPage' => max(1, (int) ceil($resultado['total'] / $resultado['perPage'])),
+            ]);
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Error al consultar el padrón paginado'], 500);
+        }
+    }
+
+    /**
+     * GET /api/subscribers/summary — KPIs agregados en SQL (sin enviar el padrón).
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $celdaId = $request->query('celda_id');
+        $zonaId = $request->query('zona_id');
+
+        try {
+            return response()->json(SubscriberQuery::summary(
+                $celdaId !== null && $celdaId !== '' ? (int) $celdaId : null,
+                $zonaId !== null && $zonaId !== '' ? (int) $zonaId : null
+            ));
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Error al consultar los agregados del padrón'], 500);
+        }
+    }
+
+    /**
      * PATCH /api/subscribers/:nro/status — cambio transaccional de estado + bitácora.
      */
     public function updateStatus(Request $request, string $nro, UpdateSubscriberStatus $action): JsonResponse
