@@ -23,6 +23,8 @@ const FALLBACK: Partial<Record<string, OperadorRole[]>> = {
   'official_sheets.print': ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'DESPACHADOR', 'TECNICO', 'AUDITOR', 'GERENTE_AREA', 'JEFE_DEPARTAMENTO', 'ENCARGADO_AREA'],
   'area.kpis.view': ['SUPERADMIN', 'ADMIN', 'GERENTE_AREA', 'JEFE_DEPARTAMENTO'],
   'audit.log.view': ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'AUDITOR'],
+  'padron.view': ['SUPERADMIN', 'ADMIN'],
+  'database.csv_upload': ['SUPERADMIN'],
   'users.manage': ['SUPERADMIN'],
   'database.sql_console': ['SUPERADMIN'],
 };

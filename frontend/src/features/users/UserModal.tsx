@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, UserCog, Network, ClipboardList, FileCheck2, BarChart3, Building2, LayoutGrid } from 'lucide-react';
+import { Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, UserCog, Network, ClipboardList, FileCheck2, BarChart3, Building2, LayoutGrid } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
+import { Modal } from '@/shared/ui/Modal';
 import { Input } from '@/shared/ui/Input';
 import { OperadorUser, CreateOperadorInput, UpdateOperadorInput } from './types';
 import { OperadorRole } from '../auth/types';
@@ -111,33 +112,39 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
   };
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in'>
-      <div className='w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col text-slate-100'>
-        {/* Cabecera del modal */}
-        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40'>
-          <div className='flex items-center gap-2.5'>
-            <div className='w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400'>
-              <User className='w-4 h-4' />
-            </div>
-            <div>
-              <h3 className='font-bold text-base text-white'>
-                {isEditing ? 'Editar Operador' : 'Registrar Nuevo Operador'}
-              </h3>
-              <p className='text-xs text-slate-400'>
-                Sistema de Planta Externa Siemens DECTlink · COTEL R.L.
-              </p>
-            </div>
+    <form onSubmit={handleSubmit}>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        dark
+        title={isEditing ? 'Editar Operador' : 'Registrar Nuevo Operador'}
+        panelClassName='max-w-2xl p-6 max-h-[90vh] overflow-y-auto'
+        footer={
+          <div className='flex items-center justify-end gap-3'>
+            <Button type='button' variant='secondary' size='md' onClick={onClose} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+            <Button type='submit' variant='primary' size='md' disabled={isSubmitting}>
+              {isSubmitting ? (
+                <span className='flex items-center gap-2'>
+                  <span className='w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin' />
+                  Guardando...
+                </span>
+              ) : (
+                <span className='flex items-center gap-1.5'>
+                  <CheckCircle2 className='w-4 h-4' />
+                  {isEditing ? 'Guardar Cambios' : 'Crear Operador'}
+                </span>
+              )}
+            </Button>
           </div>
-          <button
-            onClick={onClose}
-            className='p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition'
-          >
-            <X className='w-5 h-5' />
-          </button>
-        </div>
+        }
+      >
+        <p className='-mt-2 mb-4 text-xs text-slate-400'>
+          Sistema de Planta Externa Siemens DECTlink · COTEL R.L.
+        </p>
 
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} className='p-6 space-y-5 flex-1 overflow-y-auto'>
+        <div className='space-y-5'>
           {error && (
             <div className='p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs'>
               {error}
@@ -175,12 +182,12 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
             />
           </div>
 
-          {/* Selección de Rol con resumen de accesos */}
+          {/* Selección de Rol con resumen de accesos (9 roles en 3 columnas) */}
           <div>
             <label className='block text-xs font-semibold text-slate-300 mb-2'>
               Rol y Nivel de Acceso <span className='text-rose-400'>*</span>
             </label>
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-2.5'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5'>
               {OPERADOR_ROLES.map(rolKey => {
                 const meta = ROLE_META[rolKey];
                 const Icon = ROLE_ICONS[rolKey];
@@ -208,7 +215,7 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
                         className={roleRadioClasses(rolKey)}
                       />
                     </div>
-                    <p className='text-[10.5px] leading-relaxed text-slate-400'>{meta.descripcion}</p>
+                    <p className='text-[10.5px] leading-relaxed text-slate-400 line-clamp-2'>{meta.descripcion}</p>
                   </label>
                 );
               })}
@@ -233,7 +240,7 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder={isEditing ? 'Sin cambios' : 'Mínimo 8 caracteres'}
-              aria-label="Contraseña de acceso"
+              aria-label='Contraseña de acceso'
             />
           </div>
 
@@ -261,28 +268,8 @@ export function UserModal({ isOpen, onClose, onSave, userToEdit, currentUserId }
               </div>
             </label>
           </div>
-
-          {/* Botones de acción */}
-          <div className='flex items-center justify-end gap-3 pt-3 border-t border-slate-800'>
-            <Button type='button' variant='secondary' size='md' onClick={onClose} disabled={isSubmitting}>
-              Cancelar
-            </Button>
-            <Button type='submit' variant='primary' size='md' disabled={isSubmitting}>
-              {isSubmitting ? (
-                <span className='flex items-center gap-2'>
-                  <span className='w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin' />
-                  Guardando...
-                </span>
-              ) : (
-                <span className='flex items-center gap-1.5'>
-                  <CheckCircle2 className='w-4 h-4' />
-                  {isEditing ? 'Guardar Cambios' : 'Crear Operador'}
-                </span>
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Modal>
+    </form>
   );
 }

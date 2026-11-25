@@ -32,6 +32,10 @@ class PermissionsTest extends TestCase
         $this->assertTrue(Permissions::tiene($auditor, 'audit.log.view'));
         $this->assertTrue(Permissions::tiene($gerente, 'area.kpis.view'));
         $this->assertFalse(Permissions::tiene($gerente, 'work_orders.manage'));
+
+        $admin = Operador::factory()->admin()->create();
+        $this->assertTrue(Permissions::tiene($admin, 'padron.view'));
+        $this->assertFalse(Permissions::tiene($admin, 'database.csv_upload'));
     }
 
     public function test_extras_y_denegados_se_resuelven_con_precedencia_del_denegado(): void

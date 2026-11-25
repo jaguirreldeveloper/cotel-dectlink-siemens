@@ -226,6 +226,12 @@ return [
                     'roles' => [Operador::ROLE_SUPERADMIN],
                 ],
                 [
+                    'clave' => 'padron.view',
+                    'descripcion' => 'Consulta de lotes de carga del padrón',
+                    'detalle' => 'Listado y detalle de cargas; la carga y aplicación siguen siendo exclusivas de Jefatura.',
+                    'roles' => [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN],
+                ],
+                [
                     'clave' => 'database.csv_upload',
                     'descripcion' => 'Carga y consolidación masiva del padrón',
                     'detalle' => 'Actualiza el padrón normalizado desde CSV.',

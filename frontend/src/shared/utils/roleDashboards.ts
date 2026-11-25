@@ -40,7 +40,7 @@ export const TAB_PERMISOS: Partial<Record<AppTabId, string>> = {
   institutional: 'subscribers.view',
   users: 'users.manage',
   infraestructura: 'infraestructura.edit',
-  'padron-cargas': 'database.csv_upload',
+  'padron-cargas': 'padron.view',
   'cell-users': 'cells.view',
   'cell-detail': 'cells.view',
   'celdas-crud': 'cells.view',
