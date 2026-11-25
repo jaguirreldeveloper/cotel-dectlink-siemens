@@ -197,11 +197,11 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
   return (
     <div className='space-y-5'>
       <div className='flex items-center justify-between'>
-        <h2 className='text-xl font-bold text-white flex items-center gap-2'>
-          <Radio className='w-5 h-5 text-brand-400' />
+        <h2 className='text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2'>
+          <Radio className='w-5 h-5 text-brand-500 dark:text-brand-400' />
           Abonados por Celda
         </h2>
-        <span className='text-sm text-slate-400'>
+        <span className='text-sm text-slate-500 dark:text-slate-400'>
           {cells.length} celdas · {records.length} abonados totales
         </span>
       </div>
@@ -216,29 +216,29 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
               onClick={() => setSelectedCellId(info.id)}
               className={`text-left rounded-xl border p-4 transition-all duration-200 ${
                 isActive
-                  ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/10'
-                  : 'border-slate-700 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-800/60'
+                  ? 'border-brand-500 bg-brand-500/10 shadow-lg shadow-brand-500/10 ring-1 ring-brand-500/20'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/60'
               }`}
             >
               <div className='flex items-center justify-between mb-2'>
-                <span className='font-bold text-sm text-white truncate'>{info.nombre}</span>
+                <span className='font-bold text-sm text-slate-900 dark:text-white truncate'>{info.nombre}</span>
                 <span
                   className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                    isActive ? 'bg-brand-500 text-white' : 'bg-slate-700 text-slate-300'
+                    isActive ? 'bg-brand-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   RFP {info.id}
                 </span>
               </div>
-              <div className='flex items-center gap-1.5 text-xs text-slate-400 mb-3'>
+              <div className='flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-3'>
                 <Users className='w-3.5 h-3.5' />
-                <span className='font-semibold text-slate-200'>{total}</span> abonados
-                <span className='text-slate-600'>·</span>
+                <span className='font-semibold text-slate-800 dark:text-slate-200'>{total}</span> abonados
+                <span className='text-slate-400 dark:text-slate-600'>·</span>
                 <span>{zonas.length} zonas</span>
               </div>
               {/* Barra de estados */}
               {total > 0 && (
-                <div className='flex h-1.5 rounded-full overflow-hidden bg-slate-800'>
+                <div className='flex h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800'>
                   {STATUS_ORDER.filter(s => statusCounts[s]).map(s => (
                     <div
                       key={s}
@@ -256,11 +256,11 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
 
       {/* Panel de detalle de la celda seleccionada */}
       {selectedCell && (
-        <div className='rounded-xl border border-slate-700 bg-slate-900/60 overflow-hidden'>
+        <div className='rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm'>
           {/* Metadata de la celda */}
-          <div className='border-b border-slate-700 px-4 py-3 bg-slate-900/80'>
-            <div className='flex flex-wrap items-center gap-4 text-xs text-slate-400'>
-              <span className='font-bold text-sm text-white'>{selectedCell.nombre}</span>
+          <div className='border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50 dark:bg-slate-900/80'>
+            <div className='flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-400'>
+              <span className='font-bold text-sm text-slate-900 dark:text-white'>{selectedCell.nombre}</span>
               {selectedCell.tecnologia && (
                 <span className='flex items-center gap-1'>
                   <Signal className='w-3.5 h-3.5' /> {selectedCell.tecnologia}
@@ -278,7 +278,7 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
                   target='_blank'
                   rel='noopener noreferrer'
                   title='Ver la celda en Google Maps'
-                  className='flex items-center gap-1 hover:text-brand-400 transition'
+                  className='flex items-center gap-1 hover:text-brand-500 dark:hover:text-brand-400 transition'
                 >
                   <MapPin className='w-3.5 h-3.5' />
                   {formatCoords(selectedCell.latitud, selectedCell.longitud)}
@@ -286,7 +286,7 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
                 </a>
               )}
               <span
-                className={`font-semibold ${selectedGeoref === selectedAllSubs.length ? 'text-emerald-400' : 'text-amber-400'}`}
+                className={`font-semibold ${selectedGeoref === selectedAllSubs.length ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}
                 title='Abonados con coordenadas reales en el padrón'
               >
                 {selectedGeoref}/{selectedAllSubs.length} georreferenciados
@@ -300,11 +300,10 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
           </div>
 
           {/* Buscador */}
-          <div className='flex items-center gap-3 px-4 py-3 border-b border-slate-800'>
+          <div className='flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800'>
             <div className='relative flex-1 max-w-sm'>
-              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500' />
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500' />
               <Input
-                dark
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder='Buscar abonado, número, dirección…'
@@ -320,7 +319,7 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
           {/* Tabla de abonados */}
           <div className='overflow-x-auto max-h-[550px]'>
             <table className='w-full text-xs'>
-              <thead className='sticky top-0 z-10 bg-slate-800 text-slate-300'>
+              <thead className='sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700'>
                 <tr>
                   {RESUMEN_COLUMNS.map(col =>
                     col.sortField ? (
@@ -350,12 +349,12 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
                   <tr
                     key={r.nro}
                     onClick={() => onSelectRecord(r)}
-                    className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
+                    className='border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition'
                   >
                     {RESUMEN_COLUMNS.map(col => (
                       <td
                         key={col.key}
-                        className={`px-3 py-2 text-slate-400 ${col.mono ? 'font-mono ' : ''}${
+                        className={`px-3 py-2 text-slate-600 dark:text-slate-400 ${col.mono ? 'font-mono ' : ''}${
                           col.align === 'right' ? 'text-right ' : col.align === 'center' ? 'text-center ' : ''
                         }${col.cellClassName ?? ''}`}
                       >
@@ -385,7 +384,6 @@ export function CellUsersView({ records, onSelectRecord, initialCelda }: CellUse
             total={selectedSubs.length}
             onPageChange={setCurrentPage}
             onPageSizeChange={setPageSize}
-            dark
           />
         </div>
       )}

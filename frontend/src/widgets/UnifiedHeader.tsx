@@ -1,8 +1,9 @@
 import React from 'react';
-import { Database, FileSpreadsheet, RefreshCw, Printer, Cloud, Menu, X, ShieldAlert, LogOut, Upload } from 'lucide-react';
+import { Database, FileSpreadsheet, RefreshCw, Printer, Cloud, Menu, X, ShieldAlert, LogOut, Upload, Sun, Moon } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Operador } from '@/features/auth';
 import { roleBadgeClasses, roleLabel } from '@/shared/utils/roles';
+import { useTheme } from '@/shared/hooks/useTheme';
 
 interface UnifiedHeaderProps {
   dataSource: 'loading' | 'db' | 'csv' | 'demo' | 'empty';
@@ -32,6 +33,7 @@ interface UnifiedHeaderProps {
 
 export function UnifiedHeader(props: UnifiedHeaderProps) {
   const { dataSource, rawCount, loadAttempt, maxLoadAttempts, sidebarCollapsed } = props;
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <header className='bg-slate-900 border-b border-slate-800 text-slate-100 sticky top-0 z-40'>
@@ -142,6 +144,16 @@ export function UnifiedHeader(props: UnifiedHeaderProps) {
             </div>
 
             <div className='flex items-center gap-2 shrink-0'>
+              {/* Botón de alternancia de Modo Oscuro / Claro */}
+              <button
+                type='button'
+                onClick={toggleTheme}
+                title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                className='p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/80 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500'
+              >
+                {isDark ? <Sun className='w-4 h-4 text-amber-400' /> : <Moon className='w-4 h-4 text-indigo-300' />}
+              </button>
 
               {/* Sección de autenticación y operador */}
               {props.operador ? (
