@@ -142,7 +142,21 @@ test('la tabla de operadores pagina en 5, numera y ofrece ver/imprimir', async (
 
   // Con 10 por página, la página 2 continúa en el registro 11.
   await page.getByRole('button', { name: 'Página siguiente' }).click();
-  await expect(filas.first().locator('td').first().locator('span').first()).toHaveText('11');
+  const primerNumero = filas.first().locator('td').first().locator('span').first();
+  await expect(primerNumero).toHaveText('11');
+
+  // Inicio / Fin y salto directo por número.
+  await selector.selectOption('5');
+  await page.getByRole('button', { name: 'Última página' }).click();
+  await expect(filas).toHaveCount(1);
+  await expect(primerNumero).toHaveText('16');
+  await expect(page.getByRole('button', { name: 'Última página' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Primera página' }).click();
+  await expect(primerNumero).toHaveText('1');
+  await expect(page.getByRole('button', { name: 'Primera página' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Página 2', exact: true }).click();
+  await expect(primerNumero).toHaveText('6');
+  await expect(page.getByRole('button', { name: 'Página 2', exact: true })).toHaveAttribute('aria-current', 'page');
 
   // Ver abre la ficha y Escape la cierra.
   await page.getByRole('button', { name: /Ver detalle de/ }).first().click();

@@ -25,6 +25,33 @@ export interface PageRange {
   to: number;
 }
 
+/** Token de la franja numérica: número de página o elipsis. */
+export type PageToken = number | 'ellipsis';
+
+/**
+ * Franja de páginas estilo DataTables: todas si caben (≤ 7), si no,
+ * extremos + vecinos de la actual con elipsis.
+ */
+export function pageNumbers(current: number, total: number): PageToken[] {
+  const paginas = Math.max(1, total);
+  const actual = Math.min(Math.max(1, current), paginas);
+  if (paginas <= 7) {
+    return Array.from({ length: paginas }, (_, indice) => indice + 1);
+  }
+
+  const tokens: PageToken[] = [1];
+  if (actual > 3) tokens.push('ellipsis');
+  const inicio = Math.max(2, actual - 1);
+  const fin = Math.min(paginas - 1, actual + 1);
+  for (let pagina = inicio; pagina <= fin; pagina += 1) {
+    tokens.push(pagina);
+  }
+  if (actual < paginas - 2) tokens.push('ellipsis');
+  tokens.push(paginas);
+
+  return tokens;
+}
+
 /** Rango de registros visibles para una página, acotado al total. */
 export function pageRange(page: number, pageSize: number, total: number): PageRange {
   const totalPages = totalPagesFor(total, pageSize);

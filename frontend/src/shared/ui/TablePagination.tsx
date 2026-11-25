@@ -1,6 +1,6 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Select } from './Select';
-import { PAGE_SIZE_OPTIONS, pageRange } from '../utils/pagination';
+import { PAGE_SIZE_OPTIONS, pageNumbers, pageRange } from '../utils/pagination';
 
 interface TablePaginationProps {
   /** Página actual (1-based). */
@@ -76,27 +76,75 @@ export function TablePagination({
         )}
       </div>
 
-      <div className='flex items-center gap-2'>
+      <div className='flex flex-wrap items-center justify-center gap-1'>
         <button
+          type='button'
+          onClick={() => onPageChange(1)}
+          disabled={disabled || current <= 1}
+          className={`px-2 py-1 rounded border font-medium inline-flex items-center transition disabled:opacity-40 disabled:cursor-not-allowed ${btnTone}`}
+          aria-label='Primera página'
+          title='Ir al inicio'
+        >
+          <ChevronsLeft className='w-3.5 h-3.5' aria-hidden='true' />
+        </button>
+        <button
+          type='button'
           onClick={() => onPageChange(current - 1)}
           disabled={disabled || current <= 1}
           className={`px-2.5 py-1 rounded border font-medium inline-flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${btnTone}`}
           aria-label='Página anterior'
+          title='Página anterior'
         >
           <ChevronLeft className='w-3.5 h-3.5' aria-hidden='true' />
           <span className='hidden sm:inline'>Anterior</span>
         </button>
-        <span className='font-mono px-1'>
-          {current} / {totalPages}
-        </span>
+
+        <div className='flex items-center gap-0.5'>
+          {pageNumbers(current, totalPages).map((token, indice) =>
+            token === 'ellipsis' ? (
+              <span key={`elipsis-${indice}`} className='px-1 text-slate-400' aria-hidden='true'>
+                …
+              </span>
+            ) : (
+              <button
+                key={token}
+                type='button'
+                onClick={() => onPageChange(token)}
+                disabled={disabled}
+                aria-label={`Página ${token}`}
+                aria-current={token === current ? 'page' : undefined}
+                className={`min-w-7 h-7 rounded border font-mono font-semibold inline-flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                  token === current
+                    ? 'border-brand-500 bg-brand-500 text-white shadow-xs'
+                    : `${btnTone} bg-transparent`
+                }`}
+              >
+                {token}
+              </button>
+            )
+          )}
+        </div>
+
         <button
+          type='button'
           onClick={() => onPageChange(current + 1)}
           disabled={disabled || current >= totalPages}
           className={`px-2.5 py-1 rounded border font-medium inline-flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${btnTone}`}
           aria-label='Página siguiente'
+          title='Página siguiente'
         >
           <span className='hidden sm:inline'>Siguiente</span>
           <ChevronRight className='w-3.5 h-3.5' aria-hidden='true' />
+        </button>
+        <button
+          type='button'
+          onClick={() => onPageChange(totalPages)}
+          disabled={disabled || current >= totalPages}
+          className={`px-2 py-1 rounded border font-medium inline-flex items-center transition disabled:opacity-40 disabled:cursor-not-allowed ${btnTone}`}
+          aria-label='Última página'
+          title='Ir al final'
+        >
+          <ChevronsRight className='w-3.5 h-3.5' aria-hidden='true' />
         </button>
       </div>
     </div>

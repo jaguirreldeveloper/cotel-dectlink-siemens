@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE, totalPagesFor, pageRange } from '@/shared/utils/pagination';
+import {
+  PAGE_SIZE_OPTIONS,
+  DEFAULT_PAGE_SIZE,
+  totalPagesFor,
+  pageRange,
+  pageNumbers,
+} from '@/shared/utils/pagination';
 
 describe('constantes de paginación', () => {
   it('ofrece los tamaños 5/10/15/20/25 con defecto 10', () => {
@@ -42,5 +48,26 @@ describe('pageRange', () => {
 
   it('devuelve rango vacío sin registros', () => {
     expect(pageRange(1, 10, 0)).toEqual({ page: 1, totalPages: 1, from: 0, to: 0 });
+  });
+});
+
+describe('pageNumbers', () => {
+  it('muestra todos los números cuando caben', () => {
+    expect(pageNumbers(2, 5)).toEqual([1, 2, 3, 4, 5]);
+    expect(pageNumbers(1, 1)).toEqual([1]);
+  });
+
+  it('usa elipsis en los extremos', () => {
+    expect(pageNumbers(1, 12)).toEqual([1, 2, 'ellipsis', 12]);
+    expect(pageNumbers(12, 12)).toEqual([1, 'ellipsis', 11, 12]);
+  });
+
+  it('muestra los vecinos de la página actual', () => {
+    expect(pageNumbers(6, 12)).toEqual([1, 'ellipsis', 5, 6, 7, 'ellipsis', 12]);
+    expect(pageNumbers(3, 12)).toEqual([1, 2, 3, 4, 'ellipsis', 12]);
+  });
+
+  it('acota una página fuera de rango', () => {
+    expect(pageNumbers(99, 12)).toEqual([1, 'ellipsis', 11, 12]);
   });
 });

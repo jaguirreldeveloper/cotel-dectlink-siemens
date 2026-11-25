@@ -63,7 +63,7 @@ frontend/                     SPA React 19 (FSD: entities/features/shared/widget
   src/widgets/                Navbar, AppTabs, AppSidebar, DataSourceBar, ExecutiveReport, etc.
   src/demo/                   Datos demo de respaldo (fallback offline siempre etiquetado)
   playwright/                 8 specs / 14 tests e2e de humo (backend real; CI con SQLite aislado)
-  tests/                      Vitest: 71 tests en 12 archivos (geo, paginación, filtros, roles, permisos, dashboards, escala, columnas, resumen)
+  tests/                      Vitest: 75 tests en 12 archivos (geo, paginación, filtros, roles, permisos, dashboards, escala, columnas, resumen)
 scripts/                      @cotel/scripts: ETL/verificación (CLI commander)
   src/cli.ts                  Entrada: pnpm --filter scripts db:load|db:check|db:verify|db:clean|smoke
   src/commands/               load-consolidado, db-check, db-verify, cleanup-pruebas, smoke
@@ -323,7 +323,7 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **71 tests** (frontend, 12 archivos) + Pest **143 tests / 640 assertions** (backend); `scripts` sin tests (sale 0).
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **143 tests / 646 assertions** (backend); `scripts` sin tests (sale 0).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.

@@ -496,28 +496,28 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                 <table className='w-full text-left text-xs'>
                   <thead className='sticky top-0 z-10 bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]'>
                     <tr>
-                      <th className='py-3.5 px-3 w-16 text-right tabular-nums'>N°</th>
-                      <th className='py-3.5 px-4'>
+                      <th className='py-3.5 px-3 w-16 text-center tabular-nums'>N°</th>
+                      <th className='py-3.5 px-4 text-center'>
                         <button type='button' onClick={() => alternarOrden('nombre')} className='inline-flex items-center gap-1 hover:text-brand-500'>
                           Operador <ArrowUpDown className='w-3 h-3' />
                         </button>
                       </th>
-                      <th className='py-3.5 px-4'>
+                      <th className='py-3.5 px-4 text-center'>
                         <button type='button' onClick={() => alternarOrden('role')} className='inline-flex items-center gap-1 hover:text-brand-500'>
                           Rol Asignado <ArrowUpDown className='w-3 h-3' />
                         </button>
                       </th>
-                      <th className='py-3.5 px-4'>
+                      <th className='py-3.5 px-4 text-center'>
                         <button type='button' onClick={() => alternarOrden('activo')} className='inline-flex items-center gap-1 hover:text-brand-500'>
                           Estado <ArrowUpDown className='w-3 h-3' />
                         </button>
                       </th>
-                      <th className='py-3.5 px-4'>
+                      <th className='py-3.5 px-4 text-center'>
                         <button type='button' onClick={() => alternarOrden('lastLoginAt')} className='inline-flex items-center gap-1 hover:text-brand-500'>
                           Último Inicio de Sesión <ArrowUpDown className='w-3 h-3' />
                         </button>
                       </th>
-                      <th className='py-3.5 px-4 text-right w-48'>Acciones</th>
+                      <th className='py-3.5 px-4 text-center w-48'>Acciones</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300'>
@@ -527,12 +527,12 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
 
                       return (
                         <tr key={op.id} className='hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors'>
-                          <td className='py-3.5 px-3 text-right'>
+                          <td className='py-3.5 px-3 text-center'>
                             <span className='block font-mono font-semibold tabular-nums text-slate-800 dark:text-slate-200'>{numero}</span>
                             <span className='block font-mono text-[10px] text-slate-400'>ID {op.id}</span>
                           </td>
-                          <td className='py-3.5 px-4'>
-                            <div className='flex items-center gap-3'>
+                          <td className='py-3.5 px-4 text-center'>
+                            <div className='flex items-center justify-center gap-3'>
                               <div
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold border ${
                                   op.role === 'SUPERADMIN'
@@ -544,9 +544,9 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                                   ? op.nombre.charAt(0).toUpperCase()
                                   : op.email.charAt(0).toUpperCase()}
                               </div>
-                              <div>
-                                <div className='flex items-center gap-2'>
-                                  <span className='font-semibold text-white'>
+                              <div className='text-center'>
+                                <div className='flex items-center justify-center gap-2'>
+                                  <span className='font-semibold text-slate-900 dark:text-white'>
                                     {op.nombre || 'Sin nombre registrado'}
                                   </span>
                                   {isCurrent && (
@@ -563,7 +563,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                             </div>
                           </td>
 
-                          <td className='py-3.5 px-4'>
+                          <td className='py-3.5 px-4 text-center'>
                             {(() => {
                               const BadgeIcon = ROLE_ICONS[op.role];
                               return (
@@ -577,7 +577,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                             })()}
                           </td>
 
-                          <td className='py-3.5 px-4'>
+                          <td className='py-3.5 px-4 text-center'>
                             <span
                               className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                                 op.activo
@@ -594,8 +594,8 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                             </span>
                           </td>
 
-                          <td className='py-3.5 px-4'>
-                            <div className='flex items-center gap-1.5 text-slate-400'>
+                          <td className='py-3.5 px-4 text-center'>
+                            <div className='flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400'>
                               <Clock className='w-3.5 h-3.5 text-slate-500' />
                               <span>
                                 {op.lastLoginAt
@@ -608,7 +608,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                             </div>
                           </td>
 
-                          <td className='py-3.5 px-4 text-right'>
+                          <td className='py-3.5 px-4 text-center'>
                             <OperadorActions {...opcionesDe(op)} />
                           </td>
                         </tr>
