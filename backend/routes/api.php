@@ -69,6 +69,7 @@ Route::middleware('operator')->group(function (): void {
     Route::get('subscribers/summary', [SubscribersController::class, 'summary']);
     Route::get('cells', [CellsController::class, 'index']);
     Route::get('cells/{id}/bitacora', [CellsController::class, 'bitacora']);
+    Route::get('cells/{id}/historial-estados', [CellsController::class, 'historialEstados']);
 
     // Órdenes de trabajo, cuadrillas y materiales
     Route::get('work-orders', [WorkOrdersController::class, 'index']);

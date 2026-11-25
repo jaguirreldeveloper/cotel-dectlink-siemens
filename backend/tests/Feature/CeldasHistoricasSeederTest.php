@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Cell;
 use App\Models\InfraestructuraBitacora;
+use App\Models\Operador;
 use App\Support\CellStateMachine;
+use App\Support\OperatorToken;
 use Database\Seeders\CeldasHistoricasSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -45,6 +47,29 @@ class CeldasHistoricasSeederTest extends TestCase
             ->where('tabla', 'celdas')
             ->where('registro_id', $celda->id)
             ->count());
+    }
+
+    public function test_filtros_e_historial_de_estados(): void
+    {
+        $this->seed(CeldasHistoricasSeeder::class);
+        $operador = Operador::factory()->superadmin()->create();
+        $headers = ['Authorization' => 'Bearer '.OperatorToken::generate($operador)];
+
+        $this->getJson('/api/cells?municipio=LA%20PAZ&estado=EN_SERVICIO', $headers)
+            ->assertOk()
+            ->assertJsonCount(20);
+
+        $celda = Cell::query()->where('municipio', 'EL ALTO')->where('numero_celda', 27)->firstOrFail();
+        $this->getJson('/api/cells?municipio=EL%20ALTO&numero=27', $headers)
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.estado', CellStateMachine::RETIRADA);
+
+        $historial = $this->getJson('/api/cells/'.$celda->id.'/historial-estados', $headers)
+            ->assertOk()
+            ->json();
+        $this->assertNotEmpty($historial);
+        $this->assertSame(CellStateMachine::RETIRADA, end($historial)['estado']);
     }
 
     public function test_seeder_es_idempotente(): void

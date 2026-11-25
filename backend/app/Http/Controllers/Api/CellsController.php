@@ -66,6 +66,33 @@ class CellsController extends Controller
     }
 
     /**
+     * GET /api/cells/{id}/historial-estados — línea de tiempo del ciclo de
+     * vida, derivada de la bitácora (sin duplicar información).
+     */
+    public function historialEstados(int $id): JsonResponse
+    {
+        $entradas = json_decode($this->bitacora($id)->getContent(), true) ?: [];
+        $historial = [];
+
+        foreach ($entradas as $entrada) {
+            $payload = $entrada['payload'] ?? [];
+            $despues = $payload['despues'] ?? null;
+            if (! is_array($despues) || ! isset($despues['estado'])) {
+                continue;
+            }
+            $historial[] = [
+                'estado' => (string) $despues['estado'],
+                'fecha' => $entrada['createdAt'] ?? null,
+                'accion' => $entrada['accion'] ?? null,
+                'operador' => $entrada['operador'] ?? null,
+                'motivo' => $payload['motivo'] ?? ($despues['motivo_estado'] ?? null),
+            ];
+        }
+
+        return response()->json(array_reverse($historial));
+    }
+
+    /**
      * PATCH /api/cells/{id}/estado — transición controlada del ciclo de vida.
      * Cada cambio queda en la bitácora; las celdas de baja/retiro no se borran.
      */
@@ -138,8 +165,24 @@ class CellsController extends Controller
     /**
      * GET /api/cells
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $condiciones = [];
+        $bindings = [];
+        if ($request->filled('municipio')) {
+            $condiciones[] = 'c.municipio = ?';
+            $bindings[] = (string) $request->query('municipio');
+        }
+        if ($request->filled('estado')) {
+            $condiciones[] = 'c.estado = ?';
+            $bindings[] = (string) $request->query('estado');
+        }
+        if ($request->filled('numero')) {
+            $condiciones[] = 'c.numero_celda = ?';
+            $bindings[] = (int) $request->query('numero');
+        }
+        $where = $condiciones !== [] ? 'WHERE '.implode(' AND ', $condiciones) : '';
+
         try {
             $rows = DB::select('
                 SELECT c.*, s.nombre AS subcentral_nombre, z.nombre AS zona_nombre,
@@ -147,8 +190,9 @@ class CellsController extends Controller
                 FROM celdas c
                 LEFT JOIN subcentrales s ON s.id = c.id_subcentral
                 LEFT JOIN zonas z ON z.id = c.zona_id
-                ORDER BY c.id ASC
-            ');
+                '.$where.'
+                ORDER BY c.municipio ASC, c.numero_celda ASC, c.id ASC
+            ', $bindings);
 
             return response()->json(array_map(fn (object $row): array => [
                 'id' => (int) $row->id,
