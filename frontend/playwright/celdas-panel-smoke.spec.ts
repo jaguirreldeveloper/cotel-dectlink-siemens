@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { seedAdminSession } from './helpers';
+import { adminToken, loginTestSession, seedAdminToken, seedAdminSession, seedOperatorSession } from './helpers';
 
 /**
  * Humo del Panel de Administración de Celdas: verifica que la vista nueva
@@ -134,4 +134,43 @@ test('botones Recargar y Nueva Celda funcionan', async ({ page, request }) => {
   await expect(dialog).toBeHidden();
 
   expect(erroresPagina, 'sin pageerror al usar los botones').toEqual([]);
+});
+
+/** Asistente de generación por lote (solo SUPERADMIN): preview editable y alta transaccional. */
+test('generar lote de celdas permite previsualizar, editar y crear', async ({ page, request }) => {
+  const sesion = await loginTestSession(request, {
+    email: 'testsuperadmin@cotel.bo',
+    password: 'TestPass123!',
+  });
+  expect(sesion, 'login de SUPERADMIN').not.toBeNull();
+  await seedOperatorSession(page, sesion!.token, sesion!.operador);
+  await seedAdminToken(page);
+
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: /Celdas \(RFP\)/i }).first().click();
+  await page.getByRole('button', { name: 'Generar lote' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Generar lote de celdas RFP')).toBeVisible();
+
+  await dialog.getByLabel('Cantidad').fill('3');
+  await dialog.getByLabel('Prefijo código').fill('RFP-SMOKE');
+  await dialog.getByLabel('Dirección base').fill('Av. SMOKE');
+  await dialog.getByRole('button', { name: /Previsualizar/ }).click();
+
+  const filas = dialog.locator('tbody tr');
+  await expect(filas).toHaveCount(3);
+  await page.screenshot({ path: 'test-results/celdas-lote.png' });
+  await filas.first().getByLabel(/Código/).fill('RFP-SMOKE-EDIT');
+  await dialog.getByRole('button', { name: /Crear 3 celdas/ }).click();
+
+  await expect(page.getByText(/3 celdas creadas exitosamente/)).toBeVisible({ timeout: 15_000 });
+
+  // Limpieza: el lote es datos de prueba en la BD local.
+  const celdas = (await (await request.get('/api/cells', { headers: { 'x-admin-token': adminToken } })).json()) as Array<{ id: number; codigo: string }>;
+  for (const celda of celdas.filter(c => c.codigo.startsWith('RFP-SMOKE'))) {
+    await request.delete(`/api/cells/${celda.id}`, { headers: { 'x-admin-token': adminToken } });
+  }
 });

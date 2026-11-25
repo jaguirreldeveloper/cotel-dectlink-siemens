@@ -95,6 +95,27 @@ class CellsBatchTest extends TestCase
             ->assertJsonValidationErrors(['centro.latitud']);
     }
 
+    public function test_lote_guarda_filas_editadas_en_la_previsualizacion(): void
+    {
+        $parametros = $this->parametros(2);
+        $preview = $this->postJson('/api/cells/lote/preview', $parametros, $this->headersSuperadmin())
+            ->assertOk()
+            ->json('filas');
+
+        $preview[0]['codigo'] = 'RFP-EDITADO-001';
+        $preview[0]['nombre'] = 'CELDA EDITADA A MANO';
+        $preview[0]['latitud'] = -16.51;
+        $parametros['filas'] = $preview;
+
+        $this->postJson('/api/cells/lote', $parametros, $this->headersSuperadmin())->assertCreated();
+
+        $this->assertDatabaseHas('celdas', [
+            'codigo' => 'RFP-EDITADO-001',
+            'nombre' => 'CELDA EDITADA A MANO',
+            'latitud' => -16.51,
+        ]);
+    }
+
     public function test_admin_no_puede_generar_lotes(): void
     {
         $admin = Operador::factory()->admin()->create();

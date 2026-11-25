@@ -1,7 +1,55 @@
 import { apiFetch } from '@/shared/utils/apiFetch';
-import type { CeldaCrud } from './types';
+import type { CeldaCrud, CeldaLoteFila, CeldaLoteParams, ZonaDTO } from './types';
+
+/** Convierte los parámetros camelCase del frontend al contrato snake_case del backend. */
+function cuerpoLote(params: CeldaLoteParams): Record<string, unknown> {
+  return {
+    cantidad: params.cantidad,
+    municipio: params.municipio,
+    zona_id: params.zonaId,
+    prefijo_codigo: params.prefijoCodigo,
+    direccion_base: params.direccionBase,
+    centro: params.centro,
+    radio_km: params.radioKm,
+    capacidad_abonados_prevista: params.capacidadAbonadosPrevista,
+    estado: params.estado,
+    ...(params.filas ? { filas: params.filas } : {}),
+  };
+}
 
 const BASE = '/api/cells';
+
+export async function fetchZonas(): Promise<ZonaDTO[]> {
+  const res = await apiFetch('/api/zonas');
+  if (!res.ok) throw new Error(`Error ${res.status} al obtener zonas`);
+  return res.json();
+}
+
+/** Previsualización del lote: no persiste nada en el servidor. */
+export async function previewLote(
+  params: CeldaLoteParams
+): Promise<{ idInicial: number; total: number; filas: CeldaLoteFila[] }> {
+  const res = await apiFetch(`${BASE}/lote/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cuerpoLote(params)),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || `Error ${res.status} al previsualizar el lote`);
+  return data;
+}
+
+/** Guarda el lote completo en una sola transacción. */
+export async function createLote(params: CeldaLoteParams): Promise<{ message: string; celdas: CeldaLoteFila[] }> {
+  const res = await apiFetch(`${BASE}/lote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cuerpoLote(params)),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || `Error ${res.status} al crear el lote`);
+  return data;
+}
 
 export async function fetchCeldas(): Promise<CeldaCrud[]> {
   const res = await apiFetch(BASE);

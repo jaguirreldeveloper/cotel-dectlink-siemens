@@ -11,6 +11,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   Users,
+  Layers3,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
 import type { Operador } from '@/features/auth/types';
@@ -23,11 +24,12 @@ import { invalidateCellsCache } from '@/entities/cell/useCells';
 import { infraApi } from '@/features/infraestructura/api';
 import type { SubcentralDTO } from '@/features/infraestructura/types';
 import * as api from './api';
+import { CeldasLoteModal } from './CeldasLoteModal';
 import type { EntradaBitacora } from './api';
 import { ACCION_LABEL, cambiosDeEntrada, fechaLegible } from './bitacora';
 import { CoordenadasMapa } from './CoordenadasMapa';
 import { summarizeCeldas, ocupacionCelda, validarFormCelda, UMBRAL_OCUPACION_ALERTA } from './summary';
-import type { CeldaCrud, CeldaFormData } from './types';
+import type { CeldaCrud, CeldaFormData, ZonaDTO } from './types';
 
 interface CeldasCrudViewProps {
   operador?: Operador | null;
@@ -40,6 +42,7 @@ interface CeldasCrudViewProps {
 
 const EMPTY_FORM: CeldaFormData = {
   id: 0,
+  codigo: '',
   nombre: '',
   tecnologia: 'DECT-Link',
   descripcion: '',
@@ -49,6 +52,11 @@ const EMPTY_FORM: CeldaFormData = {
   radio_cobertura_km: '',
   latitud: '',
   longitud: '',
+  municipio: 'EL ALTO',
+  zonaId: '',
+  direccion: '',
+  capacidadAbonadosPrevista: '',
+  estado: 'PLANEADA',
 };
 
 /** Columnas ordenables de la tabla administrativa. */
@@ -138,6 +146,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [filtroCalibracion, setFiltroCalibracion] = useState<'todas' | 'calibradas' | 'sin'>('todas');
   const [filtroSubcentral, setFiltroSubcentral] = useState<'todas' | 'con' | 'sin'>('todas');
   const [filtroAbonados, setFiltroAbonados] = useState<'todos' | 'con' | 'sin'>('todos');
+  const [filtroMunicipio, setFiltroMunicipio] = useState<'todas' | 'EL ALTO' | 'LA PAZ'>('todas');
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
   const [assigningId, setAssigningId] = useState<number | null>(null);
 
@@ -149,6 +158,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
 
   // Confirmación de borrado con Modal (sin window.confirm nativo)
   const [pendienteEliminar, setPendienteEliminar] = useState<CeldaCrud | null>(null);
+  const [loteOpen, setLoteOpen] = useState(false);
+  const [zonas, setZonas] = useState<ZonaDTO[]>([]);
+  const esSuperadmin = operador?.role === 'SUPERADMIN';
 
   // Conteo de abonados por celda
   const abonadosPorCelda = useMemo(() => {
@@ -193,6 +205,22 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     };
   }, [escritura]);
 
+  // Catálogo de zonas para el formulario individual y el asistente de lote.
+  useEffect(() => {
+    let cancelado = false;
+    api
+      .fetchZonas()
+      .then(lista => {
+        if (!cancelado) setZonas(lista);
+      })
+      .catch(() => {
+        /* sin catálogo, los selects quedan vacíos */
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   const resumen = useMemo(() => summarizeCeldas(celdas, abonadosPorCelda), [celdas, abonadosPorCelda]);
 
   // Historial de la celda en detalle (se carga al abrir el panel)
@@ -228,11 +256,12 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
 
     const filtradas = celdas.filter(c => {
       if (q) {
-        const hay = `${c.id} ${c.nombre} ${c.tecnologia ?? ''} ${c.rfpModelo ?? ''} ${
+        const hay = `${c.id} ${c.codigo ?? ''} ${c.nombre} ${c.tecnologia ?? ''} ${c.rfpModelo ?? ''} ${
           c.nombreSubcentral ?? ''
-        }`.toLowerCase();
+        } ${c.municipio ?? ''} ${c.zona ?? ''} ${c.direccion ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
+      if (filtroMunicipio !== 'todas' && c.municipio !== filtroMunicipio) return false;
       const calibrada = c.latitud != null && c.longitud != null;
       if (filtroCalibracion === 'calibradas' && !calibrada) return false;
       if (filtroCalibracion === 'sin' && calibrada) return false;
@@ -276,13 +305,14 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           );
       }
     });
-  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, sort]);
+  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, sort]);
 
   const hayFiltros =
     busqueda !== '' ||
     filtroCalibracion !== 'todas' ||
     filtroSubcentral !== 'todas' ||
-    filtroAbonados !== 'todos';
+    filtroAbonados !== 'todos' ||
+    filtroMunicipio !== 'todas';
 
   /** Celda seleccionada para el panel de detalle. */
   const detalle = detalleId != null ? (celdas.find(c => c.id === detalleId) ?? null) : null;
@@ -292,6 +322,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     setFiltroCalibracion('todas');
     setFiltroSubcentral('todas');
     setFiltroAbonados('todos');
+    setFiltroMunicipio('todas');
   };
 
   const handleSort = (key: SortKey) => {
@@ -317,7 +348,12 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const openCreate = () => {
     // Sugerencia del siguiente RFP libre (max(id) + 1) para no pisar existentes.
     const siguiente = celdas.reduce((max, c) => Math.max(max, c.id), 0) + 1;
-    setForm({ ...EMPTY_FORM, id: siguiente });
+    setForm({
+      ...EMPTY_FORM,
+      id: siguiente,
+      codigo: `RFP-${siguiente}`,
+      zonaId: zonas[0] ? String(zonas[0].id) : '',
+    });
     setEditingId(null);
     setFormError(null);
     setModalOpen(true);
@@ -326,6 +362,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const openEdit = (c: CeldaCrud) => {
     setForm({
       id: c.id,
+      codigo: c.codigo,
       nombre: c.nombre,
       tecnologia: c.tecnologia ?? 'DECT-Link',
       descripcion: c.descripcion ?? '',
@@ -335,6 +372,11 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
       radio_cobertura_km: c.radioCoberturaKm?.toString() ?? '',
       latitud: c.latitud?.toString() ?? '',
       longitud: c.longitud?.toString() ?? '',
+      municipio: c.municipio === 'LA PAZ' ? 'LA PAZ' : 'EL ALTO',
+      zonaId: c.zonaId?.toString() ?? '',
+      direccion: c.direccion ?? '',
+      capacidadAbonadosPrevista: c.capacidadAbonadosPrevista?.toString() ?? '',
+      estado: (c.estado as CeldaFormData['estado']) ?? 'PLANEADA',
     });
     setEditingId(c.id);
     setFormError(null);
@@ -352,6 +394,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     setFormError(null);
     try {
       const body: Record<string, unknown> = {
+        codigo: form.codigo.trim(),
         nombre: form.nombre.trim(),
         tecnologia: form.tecnologia.trim() || null,
         descripcion: form.descripcion.trim() || null,
@@ -361,6 +404,13 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         radio_cobertura_km: form.radio_cobertura_km ? Number(form.radio_cobertura_km) : null,
         latitud: form.latitud ? Number(form.latitud) : null,
         longitud: form.longitud ? Number(form.longitud) : null,
+        municipio: form.municipio,
+        zona_id: form.zonaId ? Number(form.zonaId) : null,
+        direccion: form.direccion.trim() || null,
+        capacidad_abonados_prevista: form.capacidadAbonadosPrevista
+          ? Number(form.capacidadAbonadosPrevista)
+          : null,
+        estado: form.estado,
       };
 
       if (editingId === null) {
@@ -441,6 +491,11 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           <Button variant='soft' size='sm' icon={RefreshCw} onClick={loadCeldas} disabled={loading}>
             Recargar
           </Button>
+          {esSuperadmin && (
+            <Button variant='soft' size='sm' icon={Layers3} onClick={() => setLoteOpen(true)}>
+              Generar lote
+            </Button>
+          )}
           {escritura && (
             <Button variant='primary' size='sm' icon={Plus} onClick={openCreate}>
               Nueva Celda
@@ -509,6 +564,17 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         <Select
           dark
           size='sm'
+          value={filtroMunicipio}
+          onChange={e => setFiltroMunicipio(e.target.value as 'todas' | 'EL ALTO' | 'LA PAZ')}
+          aria-label='Filtrar por municipio'
+        >
+          <option value='todas'>Municipio: todos</option>
+          <option value='EL ALTO'>El Alto</option>
+          <option value='LA PAZ'>La Paz</option>
+        </Select>
+        <Select
+          dark
+          size='sm'
           value={filtroCalibracion}
           onChange={e => setFiltroCalibracion(e.target.value as 'todas' | 'calibradas' | 'sin')}
           aria-label='Filtrar por calibración'
@@ -555,7 +621,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           <thead className='bg-slate-800/60 text-slate-300'>
             <tr>
               <Th label='RFP #' sortKey='id' current={sort.key} dir={sort.dir} onSort={handleSort} />
+              <th className='px-3 py-2 text-left'>Código</th>
               <Th label='Nombre' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
+              <th className='px-3 py-2 text-left'>Municipio / Zona</th>
               <Th
                 label='Subcentral'
                 sortKey='subcentral'
@@ -602,7 +670,12 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                   className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
                 >
                   <td className='px-3 py-2 font-mono font-bold text-brand-400'>{c.id}</td>
+                  <td className='px-3 py-2 font-mono text-slate-400 whitespace-nowrap'>{c.codigo}</td>
                   <td className='px-3 py-2 text-white font-medium'>{c.nombre}</td>
+                  <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>
+                    <div>{c.municipio ?? '—'}</div>
+                    <div className='text-[10px] text-slate-600'>{c.zona ?? c.direccion ?? '—'}</div>
+                  </td>
                   <td className='px-3 py-2' onClick={e => e.stopPropagation()}>
                     {escritura ? (
                       <Select
@@ -656,8 +729,11 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                   </td>
                   <td className='px-3 py-2 text-right'>
                     <span className={`font-mono font-bold ${count > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {count}
+                      {c.usuariosActuales ?? count}
                     </span>
+                    {c.capacidadAbonadosPrevista != null && (
+                      <span className='block text-[10px] text-slate-600'>/ {c.capacidadAbonadosPrevista} previstos</span>
+                    )}
                   </td>
                   <td className='px-3 py-2 text-right whitespace-nowrap' onClick={e => e.stopPropagation()}>
                     {escritura && (
@@ -684,7 +760,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             })}
             {filas.length === 0 && !loading && (
               <tr>
-                <td colSpan={9} className='px-3 py-8 text-center text-slate-500'>
+                <td colSpan={11} className='px-3 py-8 text-center text-slate-500'>
                   {celdas.length === 0 ? (
                     <>
                       No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
@@ -939,6 +1015,19 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
 
           <div>
             <label className='block text-xs font-semibold text-slate-400 mb-1'>
+              Código de la celda <span className='text-rose-400'>*</span>
+            </label>
+            <Input
+              dark
+              value={form.codigo}
+              onChange={e => updateField('codigo', e.target.value.toUpperCase())}
+              placeholder='Ej: RFP-ELA-020'
+              aria-label='Código de la celda'
+            />
+          </div>
+
+          <div>
+            <label className='block text-xs font-semibold text-slate-400 mb-1'>
               Nombre <span className='text-rose-400'>*</span>
             </label>
             <Input
@@ -1015,6 +1104,40 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             </div>
           </div>
 
+          {/* Perfil geográfico y cupo previsto */}
+          <div className='grid grid-cols-2 gap-3'>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Municipio</label>
+              <Select dark value={form.municipio} onChange={e => updateField('municipio', e.target.value)} aria-label='Municipio de la celda'>
+                <option value='EL ALTO'>EL ALTO</option>
+                <option value='LA PAZ'>LA PAZ</option>
+              </Select>
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Zona</label>
+              <Select dark value={form.zonaId} onChange={e => updateField('zonaId', e.target.value)} aria-label='Zona de la celda'>
+                <option value=''>— Sin zona —</option>
+                {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+              </Select>
+            </div>
+            <div className='col-span-2'>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Dirección</label>
+              <Input dark value={form.direccion} onChange={e => updateField('direccion', e.target.value)} placeholder='Ej. Av. 6 de Marzo N° 123' aria-label='Dirección de la celda' />
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Cupo abonados previsto</label>
+              <Input dark type='number' min={0} value={form.capacidadAbonadosPrevista} onChange={e => updateField('capacidadAbonadosPrevista', e.target.value)} placeholder='Ej: 120' aria-label='Cupo de abonados previsto' />
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Estado</label>
+              <Select dark value={form.estado} onChange={e => updateField('estado', e.target.value)} aria-label='Estado de la celda'>
+                <option value='PLANEADA'>PLANEADA</option>
+                <option value='INSTALADA'>INSTALADA</option>
+                <option value='EN_SERVICIO'>EN SERVICIO</option>
+              </Select>
+            </div>
+          </div>
+
           <div className='space-y-2'>
             <label className='block text-xs font-semibold text-slate-400'>
               Coordenadas (clic en el mapa para fijar)
@@ -1060,6 +1183,16 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           </div>
         </div>
       </Modal>
+
+      <CeldasLoteModal
+        isOpen={loteOpen}
+        onClose={() => setLoteOpen(false)}
+        onSaved={message => {
+          setNotice(message);
+          invalidateCellsCache();
+          void loadCeldas();
+        }}
+      />
     </div>
   );
 }

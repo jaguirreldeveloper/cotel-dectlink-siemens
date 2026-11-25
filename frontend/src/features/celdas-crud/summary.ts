@@ -79,6 +79,7 @@ export function summarizeCeldas(
  * error o `null` si el formulario es válido. Función pura.
  */
 export function validarFormCelda(form: CeldaFormData, esEdicion: boolean): string | null {
+  if (!form.codigo.trim()) return 'El código de la celda es obligatorio.';
   if (!form.nombre.trim()) return 'El nombre es obligatorio.';
   if (!esEdicion && (!form.id || form.id < 1)) {
     return 'El ID (número de RFP) es obligatorio para crear una celda.';
@@ -110,6 +111,11 @@ export function validarFormCelda(form: CeldaFormData, esEdicion: boolean): strin
   const cob = num(form.radio_cobertura_km);
   if (cob != null && !Number.isNaN(cob) && cob < 0) {
     return 'La cobertura no puede ser negativa.';
+  }
+
+  const cupo = num(form.capacidadAbonadosPrevista);
+  if (cupo != null && !Number.isNaN(cupo) && cupo < 0) {
+    return 'El cupo de abonados no puede ser negativo.';
   }
 
   return null;

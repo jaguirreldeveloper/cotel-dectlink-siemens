@@ -106,6 +106,7 @@ describe('validarFormCelda', () => {
   function form(overrides: Partial<CeldaFormData> = {}): CeldaFormData {
     return {
       id: 20,
+      codigo: 'RFP-020',
       nombre: 'CELDA A-20',
       tecnologia: 'DECT-Link',
       descripcion: '',
@@ -115,6 +116,11 @@ describe('validarFormCelda', () => {
       radio_cobertura_km: '',
       latitud: '',
       longitud: '',
+      municipio: 'EL ALTO',
+      zonaId: '',
+      direccion: '',
+      capacidadAbonadosPrevista: '',
+      estado: 'PLANEADA',
       ...overrides,
     };
   }

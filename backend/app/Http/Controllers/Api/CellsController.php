@@ -210,7 +210,37 @@ class CellsController extends Controller
     public function loteStore(Request $request): JsonResponse
     {
         $parametros = $this->validarParametrosLote($request);
-        $filas = CellBatchGenerator::generar($parametros);
+        $editadas = $request->validate([
+            'filas' => ['nullable', 'array', 'min:1', 'max:100'],
+            'filas.*.id' => ['required_with:filas', 'integer'],
+            'filas.*.codigo' => ['required_with:filas', 'string', 'max:50'],
+            'filas.*.nombre' => ['required_with:filas', 'string', 'max:255'],
+            'filas.*.direccion' => ['nullable', 'string', 'max:255'],
+            'filas.*.latitud' => ['required_with:filas', 'numeric', 'min:-90', 'max:90'],
+            'filas.*.longitud' => ['required_with:filas', 'numeric', 'min:-180', 'max:180'],
+        ])['filas'] ?? null;
+
+        if ($editadas !== null) {
+            $filas = array_map(fn (array $fila): array => [
+                'id' => (int) $fila['id'],
+                'codigo' => $fila['codigo'],
+                'nombre' => $fila['nombre'],
+                'departamento' => 'LA PAZ',
+                'municipio' => $parametros['municipio'],
+                'zona_id' => $parametros['zona_id'],
+                'zona' => $parametros['zona_nombre'],
+                'direccion' => $fila['direccion'] ?? null,
+                'latitud' => (float) $fila['latitud'],
+                'longitud' => (float) $fila['longitud'],
+                'radio_cobertura_km' => $parametros['radio_km'],
+                'capacidad_abonados_prevista' => $parametros['capacidad_abonados_prevista'],
+                'estado' => $parametros['estado'],
+                'activo' => true,
+            ], $editadas);
+        } else {
+            $filas = CellBatchGenerator::generar($parametros);
+        }
+
         $operador = OperatorToken::resolve($request);
 
         $ids = array_column($filas, 'id');

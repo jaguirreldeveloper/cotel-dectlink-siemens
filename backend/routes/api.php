@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\SheltersController;
 use App\Http\Controllers\Api\SubcentralesController;
 use App\Http\Controllers\Api\SubscribersController;
 use App\Http\Controllers\Api\WorkOrdersController;
+use App\Http\Controllers\Api\ZonasController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -62,6 +63,7 @@ Route::middleware('operator')->group(function (): void {
 
     // Padrón y celdas
     Route::get('subscribers', [SubscribersController::class, 'index']);
+    Route::get('zonas', [ZonasController::class, 'index']);
     // Escala (100.000 líneas): paginación y agregados resueltos en SQL.
     Route::get('subscribers/page', [SubscribersController::class, 'page']);
     Route::get('subscribers/summary', [SubscribersController::class, 'summary']);
