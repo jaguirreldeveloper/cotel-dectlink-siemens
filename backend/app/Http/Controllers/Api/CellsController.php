@@ -7,6 +7,7 @@ use App\Models\Cell;
 use App\Models\InfraestructuraBitacora;
 use App\Models\Zone;
 use App\Support\CellBatchGenerator;
+use App\Support\CellStateMachine;
 use App\Support\OperatorToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -65,6 +66,76 @@ class CellsController extends Controller
     }
 
     /**
+     * PATCH /api/cells/{id}/estado — transición controlada del ciclo de vida.
+     * Cada cambio queda en la bitácora; las celdas de baja/retiro no se borran.
+     */
+    public function cambiarEstado(Request $request, int $id): JsonResponse
+    {
+        $cell = Cell::query()->findOrFail($id);
+        $validado = $request->validate([
+            'estado' => ['required', Rule::in(CellStateMachine::ESTADOS)],
+            'motivo' => ['nullable', 'string', 'max:255'],
+            'fecha' => ['nullable', 'date'],
+        ]);
+
+        $desde = $cell->estado;
+        $hasta = (string) $validado['estado'];
+        if (! CellStateMachine::puede($desde, $hasta)) {
+            return response()->json([
+                'message' => "Transición de estado no permitida: {$desde} → {$hasta}.",
+                'destinos' => CellStateMachine::destinos($desde),
+            ], 422);
+        }
+
+        $operador = OperatorToken::resolve($request);
+        if (CellStateMachine::requiereJefatura($desde, $hasta) && $operador?->rolCanonico() !== 'SUPERADMIN') {
+            return response()->json([
+                'message' => 'La reactivación de una celda de baja/retiro requiere SUPERADMIN.',
+            ], 403);
+        }
+
+        $antes = ['estado' => $desde, 'fecha_estado' => $cell->fecha_estado, 'motivo_estado' => $cell->motivo_estado];
+        $cell->estado = $hasta;
+        $cell->fecha_estado = $validado['fecha'] ?? now();
+        $cell->motivo_estado = $validado['motivo'] ?? null;
+        if (CellStateMachine::esTerminal($hasta)) {
+            $cell->activo = false;
+        } elseif ($hasta === CellStateMachine::EN_SERVICIO) {
+            $cell->activo = true;
+        }
+        $cell->save();
+
+        InfraestructuraBitacora::create([
+            'tabla' => 'celdas',
+            'registro_id' => $id,
+            'accion' => $hasta === CellStateMachine::BAJA || $hasta === CellStateMachine::RETIRADA
+                ? InfraestructuraBitacora::ACCION_DESACTIVAR
+                : InfraestructuraBitacora::ACCION_MODIFICAR,
+            'operador_id' => $operador?->id,
+            'payload' => [
+                'antes' => $antes,
+                'despues' => [
+                    'estado' => $hasta,
+                    'fecha_estado' => $cell->fecha_estado?->toIso8601String(),
+                    'motivo_estado' => $cell->motivo_estado,
+                    'activo' => $cell->activo,
+                ],
+            ],
+        ]);
+
+        return response()->json([
+            'message' => "Celda actualizada a {$hasta}.",
+            'celda' => [
+                'id' => $cell->id,
+                'estado' => $cell->estado,
+                'numeroCelda' => $cell->numero_celda,
+                'activo' => $cell->activo,
+                'fechaEstado' => $cell->fecha_estado?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
      * GET /api/cells
      */
     public function index(): JsonResponse
@@ -101,6 +172,9 @@ class CellsController extends Controller
                 'capacidadAbonadosPrevista' => $row->capacidad_abonados_prevista !== null ? (int) $row->capacidad_abonados_prevista : null,
                 'usuariosActuales' => (int) $row->usuarios_actuales,
                 'estado' => $row->estado,
+                'numeroCelda' => $row->numero_celda !== null ? (int) $row->numero_celda : null,
+                'fechaEstado' => $row->fecha_estado !== null ? CarbonImmutable::parse($row->fecha_estado)->toIso8601String() : null,
+                'motivoEstado' => $row->motivo_estado,
                 'activo' => (bool) $row->activo,
                 'createdAt' => CarbonImmutable::parse($row->created_at)->toIso8601String(),
             ], $rows));
@@ -166,7 +240,7 @@ class CellsController extends Controller
             'centro.longitud' => ['required', 'numeric', 'between:-69.0,-67.9'],
             'radio_km' => ['required', 'numeric', 'min:0.1', 'max:20'],
             'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0', 'max:10000'],
-            'estado' => ['nullable', Rule::in(['PLANEADA', 'INSTALADA', 'EN_SERVICIO'])],
+            'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS)],
         ]);
 
         $zona = Zone::query()->findOrFail((int) $validado['zona_id']);
@@ -307,6 +381,18 @@ class CellsController extends Controller
     {
         $validated = $request->validate([
             'id' => ['required', 'integer', Rule::unique('celdas', 'id')],
+            'numero_celda' => ['nullable', 'integer', 'min:1', function (string $atributo, mixed $valor, callable $fallar) use ($request): void {
+                if ($valor === null) {
+                    return;
+                }
+                $existe = DB::table('celdas')
+                    ->where('numero_celda', $valor)
+                    ->where('municipio', $request->input('municipio'))
+                    ->exists();
+                if ($existe) {
+                    $fallar('El número de celda ya está usado en este municipio.');
+                }
+            }],
             'codigo' => ['nullable', 'string', 'max:50', Rule::unique('celdas', 'codigo')],
             'nombre' => ['required', 'string', 'max:255'],
             'tecnologia' => ['nullable', 'string', 'max:100'],
@@ -322,13 +408,15 @@ class CellsController extends Controller
             'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
-            'estado' => ['nullable', Rule::in(['PLANEADA', 'INSTALADA', 'EN_SERVICIO'])],
+            'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS)],
             'activo' => ['nullable', 'boolean'],
         ]);
 
         $cell = Cell::create([
             'id' => $validated['id'],
             'codigo' => $validated['codigo'] ?? 'RFP-'.$validated['id'],
+            'numero_celda' => $validated['numero_celda'] ?? null,
+            'fecha_estado' => ($validated['estado'] ?? null) !== null ? now() : null,
             'nombre' => $validated['nombre'],
             'tecnologia' => $validated['tecnologia'] ?? 'DECT-Link',
             'descripcion' => $validated['descripcion'] ?? null,
@@ -397,6 +485,20 @@ class CellsController extends Controller
         $antes = $cell->toArray();
 
         $validated = $request->validate([
+            'numero_celda' => ['nullable', 'integer', 'min:1', function (string $atributo, mixed $valor, callable $fallar) use ($request, $id, $cell): void {
+                if ($valor === null) {
+                    return;
+                }
+                $municipio = $request->input('municipio', $cell->municipio);
+                $existe = DB::table('celdas')
+                    ->where('numero_celda', $valor)
+                    ->where('municipio', $municipio)
+                    ->where('id', '!=', $id)
+                    ->exists();
+                if ($existe) {
+                    $fallar('El número de celda ya está usado en este municipio.');
+                }
+            }],
             'codigo' => ['sometimes', 'string', 'max:50', Rule::unique('celdas', 'codigo')->ignore($id)],
             'nombre' => ['sometimes', 'string', 'max:255'],
             'tecnologia' => ['nullable', 'string', 'max:100'],
@@ -412,11 +514,18 @@ class CellsController extends Controller
             'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
-            'estado' => ['nullable', Rule::in(['PLANEADA', 'INSTALADA', 'EN_SERVICIO'])],
+            'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS), function (string $atributo, mixed $valor, callable $fallar) use ($cell): void {
+                if ($valor !== null && $valor !== $cell->estado && ! CellStateMachine::puede($cell->estado, (string) $valor)) {
+                    $fallar('Transición de estado no permitida.');
+                }
+            }],
             'activo' => ['nullable', 'boolean'],
         ]);
 
         $cell->fill($validated);
+        if (isset($validated['estado'])) {
+            $cell->fecha_estado = now();
+        }
         $cell->save();
 
         $operador = OperatorToken::resolve($request);

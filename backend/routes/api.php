@@ -169,6 +169,7 @@ Route::middleware(['role:superadmin,admin', 'throttle:infraestructura-write'])->
 
     // Asignación de la subcentral de servicio de una celda (RFP)
     Route::patch('cells/{id}/subcentral', [CellsController::class, 'asignarSubcentral']);
+    Route::patch('cells/{id}/estado', [CellsController::class, 'cambiarEstado'])->middleware('permission:cells.edit');
 
     // CRUD de celdas (RFP): crear y editar (ADMIN+)
     Route::post('cells', [CellsController::class, 'store'])->middleware('permission:cells.create');

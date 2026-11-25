@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\CellFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,6 +32,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $direccion
  * @property int|null $capacidad_abonados_prevista
  * @property string $estado
+ * @property int|null $numero_celda
+ * @property CarbonImmutable|null $fecha_estado
+ * @property string|null $motivo_estado
  * @property bool $activo
  * @property-read Subcentral|null $subcentral
  * @property-read Zone|null $zona
@@ -39,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'id', 'codigo', 'nombre', 'tecnologia', 'descripcion', 'rfp_modelo', 'banda_frecuencia',
     'capacidad_canales', 'radio_cobertura_km', 'latitud', 'longitud', 'id_subcentral',
     'departamento', 'municipio', 'zona_id', 'direccion', 'capacidad_abonados_prevista',
-    'estado', 'activo',
+    'estado', 'numero_celda', 'fecha_estado', 'motivo_estado', 'activo',
 ])]
 class Cell extends Model
 {
@@ -66,6 +70,8 @@ class Cell extends Model
             'latitud' => 'float',
             'longitud' => 'float',
             'zona_id' => 'integer',
+            'numero_celda' => 'integer',
+            'fecha_estado' => 'immutable_datetime',
             'activo' => 'boolean',
         ];
     }

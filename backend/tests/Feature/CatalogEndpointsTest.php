@@ -28,8 +28,8 @@ class CatalogEndpointsTest extends TestCase
             'id', 'codigo', 'nombre', 'tecnologia', 'descripcion', 'rfpModelo', 'bandaFrecuencia',
             'capacidadCanales', 'radioCoberturaKm', 'latitud', 'longitud',
             'idSubcentral', 'nombreSubcentral', 'departamento', 'municipio', 'zonaId', 'zona',
-            'direccion', 'capacidadAbonadosPrevista', 'usuariosActuales', 'estado', 'activo',
-            'createdAt',
+            'direccion', 'capacidadAbonadosPrevista', 'usuariosActuales', 'estado',
+            'numeroCelda', 'fechaEstado', 'motivoEstado', 'activo', 'createdAt',
         ], array_keys($response->json()[0]));
         $this->assertSame(17, $response->json()[0]['id']);
         $this->assertSame('CELDA A-17 TILATA', $response->json()[0]['nombre']);
