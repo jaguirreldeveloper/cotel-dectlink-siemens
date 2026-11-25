@@ -116,3 +116,51 @@ test('el modal Nuevo Operador tiene scroll interno y se cierra por Escape, X y e
   await page.mouse.click(5, 5);
   await expect(dialog).toBeHidden();
 });
+
+test('la tabla de operadores pagina en 5, numera y ofrece ver/imprimir', async ({ page, request }) => {
+  const session = await loginTestSession(request, SUPERADMIN);
+  test.skip(!session, 'no se pudo autenticar al operador de prueba (BD local)');
+
+  const errores: string[] = [];
+  page.on('pageerror', err => errores.push(String(err)));
+
+  await seedOperatorSession(page, session.token, session.operador);
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: USERS_ROLES_BUTTON }).click();
+
+  const filas = page.locator('table tbody tr');
+  await expect(filas).toHaveCount(5);
+  await expect(page.getByText(/Mostrando\s+1–5\s+de\s+\d+\s+registros/)).toBeVisible();
+  await page.screenshot({ path: 'test-results/usuarios-tabla.png' });
+
+  // Selector de tamaño de página (5/10/15/20/25).
+  const selector = page.getByLabel('Registros por página');
+  await expect(selector).toBeVisible();
+  await selector.selectOption('10');
+  await expect(filas).toHaveCount(10);
+
+  // Con 10 por página, la página 2 continúa en el registro 11.
+  await page.getByRole('button', { name: 'Página siguiente' }).click();
+  await expect(filas.first().locator('td').first().locator('span').first()).toHaveText('11');
+
+  // Ver abre la ficha y Escape la cierra.
+  await page.getByRole('button', { name: /Ver detalle de/ }).first().click();
+  const ficha = page.getByRole('dialog');
+  await expect(ficha.getByText('Detalle del operador')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(ficha).toBeHidden();
+
+  // Imprimir invoca window.print (se stubbea para no abrir el diálogo del navegador).
+  await page.evaluate(() => {
+    const ventana = window as unknown as { __impreso?: boolean; print: () => void };
+    ventana.__impreso = false;
+    ventana.print = () => {
+      ventana.__impreso = true;
+    };
+  });
+  await page.getByRole('button', { name: /Imprimir ficha de/ }).first().click();
+  await expect.poll(async () => page.evaluate(() => (window as unknown as { __impreso?: boolean }).__impreso)).toBe(true);
+
+  expect(errores, 'sin errores de página').toEqual([]);
+});

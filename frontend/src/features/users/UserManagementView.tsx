@@ -6,7 +6,6 @@ import {
   UserCog,
   Search,
   Plus,
-  Edit2,
   Trash2,
   CheckCircle2,
   XCircle,
@@ -23,10 +22,14 @@ import {
   BarChart3,
   Building2,
   LayoutGrid,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
+import { Modal } from '@/shared/ui/Modal';
+import { TablePagination } from '@/shared/ui/TablePagination';
+import { pageRange } from '@/shared/utils/pagination';
 import {
   OperadorUser,
   CreateOperadorInput,
@@ -41,6 +44,8 @@ import {
   fetchPermissionsMatrix
 } from './api';
 import { UserModal } from './UserModal';
+import { OperadorActions } from './OperadorActions';
+import { OperadorDetailModal } from './OperadorDetailModal';
 import { Operador } from '../auth/types';
 import { OperadorRole } from '../auth/types';
 import {
@@ -97,9 +102,23 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
   const [roleFilter, setRoleFilter] = useState<'ALL' | OperadorRole>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
-  // Modal
+  // Modal de alta/edición
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<OperadorUser | null>(null);
+
+  // Paginación y orden (5 registros por defecto en esta tabla)
+  const [pageSize, setPageSize] = useState(5);
+  const [page, setPage] = useState(1);
+  const [orden, setOrden] = useState<{ campo: 'nombre' | 'role' | 'activo' | 'lastLoginAt'; asc: boolean }>({
+    campo: 'nombre',
+    asc: true,
+  });
+
+  // Ficha, impresión, confirmación y resaltado de permisos
+  const [operadorDetalle, setOperadorDetalle] = useState<OperadorUser | null>(null);
+  const [operadorImprimir, setOperadorImprimir] = useState<OperadorUser | null>(null);
+  const [pendienteEliminar, setPendienteEliminar] = useState<OperadorUser | null>(null);
+  const [rolResaltado, setRolResaltado] = useState<OperadorRole | null>(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -141,6 +160,28 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
     });
   }, [operadores, searchQuery, roleFilter, statusFilter]);
 
+  // Cambiar un filtro vuelve a la primera página.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, roleFilter, statusFilter]);
+
+  const operadoresOrdenados = useMemo(() => {
+    const lista = [...filteredOperadores];
+    lista.sort((a, b) => {
+      const valorA = a[orden.campo] ?? '';
+      const valorB = b[orden.campo] ?? '';
+      const comparacion = String(valorA).localeCompare(String(valorB), 'es', { numeric: true });
+      return orden.asc ? comparacion : -comparacion;
+    });
+    return lista;
+  }, [filteredOperadores, orden]);
+
+  const paginacion = pageRange(page, pageSize, operadoresOrdenados.length);
+  const operadoresVisibles = operadoresOrdenados.slice(
+    (paginacion.page - 1) * pageSize,
+    (paginacion.page - 1) * pageSize + pageSize
+  );
+
   // Métricas
   const metrics = useMemo(() => {
     return {
@@ -173,11 +214,10 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleDeleteUser = async (op: OperadorUser) => {
-    if (!window.confirm(`¿Está seguro de que desea eliminar al operador ${op.email}? Esta acción no se puede deshacer.`)) {
-      return;
-    }
-
+  const confirmarEliminar = async () => {
+    const op = pendienteEliminar;
+    if (!op) return;
+    setPendienteEliminar(null);
     try {
       const res = await deleteOperador(op.id);
       setNotification({ type: 'success', message: res.message });
@@ -190,8 +230,62 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
     }
   };
 
+  const opcionesDe = (op: OperadorUser) => ({
+    operador: op,
+    puedeEditar: isAdmin,
+    esPropio: currentOperador?.id === op.id,
+    onVer: () => setOperadorDetalle(op),
+    onEditar: () => handleOpenEdit(op),
+    onImprimir: () => {
+      setOperadorImprimir(op);
+      setTimeout(() => window.print(), 200);
+    },
+    onPermisos: () => {
+      setRolResaltado(op.role);
+      setOperadorDetalle(null);
+      setActiveTab('permisos');
+    },
+    onCopiarCorreo: async () => {
+      try {
+        await navigator.clipboard.writeText(op.email);
+        setNotification({ type: 'success', message: `Correo de ${op.email} copiado al portapapeles.` });
+        setTimeout(() => setNotification(null), 3000);
+      } catch {
+        setNotification({ type: 'error', message: 'No se pudo copiar el correo.' });
+      }
+    },
+    onToggleActivo: async () => {
+      try {
+        const res = await updateOperador(op.id, { activo: !op.activo });
+        setNotification({ type: 'success', message: res.message });
+        await loadData();
+        setTimeout(() => setNotification(null), 4000);
+      } catch (err: unknown) {
+        setNotification({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'No se pudo cambiar el estado de la cuenta.',
+        });
+      }
+    },
+    onEliminar: () => setPendienteEliminar(op),
+  });
+
+  const alternarOrden = (campo: typeof orden.campo) => {
+    setOrden(prev => ({ campo, asc: prev.campo === campo ? !prev.asc : true }));
+    setPage(1);
+  };
+
+  const permisosImpresion = operadorImprimir
+    ? (permissionsMatrix?.modulos ?? []).flatMap(modulo =>
+        modulo.permisos
+          .filter(permiso => permiso.roles[operadorImprimir.role] === true)
+          .map(permiso => permiso.clave)
+      )
+    : [];
+
   return (
-    <div className='space-y-6'>
+    <>
+      <div className='space-y-6 print:hidden'>
       {/* Encabezado del Módulo */}
       <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-6'>
         <div className='flex items-center gap-4'>
@@ -381,7 +475,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
           </div>
 
           {/* Tabla de Operadores */}
-          <div className='bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg'>
+          <div className='bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm dark:shadow-lg'>
             {isLoading ? (
               <div className='p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3'>
                 <RefreshCw className='w-6 h-6 animate-spin text-brand-500' />
@@ -400,21 +494,43 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
             ) : (
               <div className='overflow-x-auto'>
                 <table className='w-full text-left text-xs'>
-                  <thead className='bg-slate-950/70 border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]'>
+                  <thead className='sticky top-0 z-10 bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]'>
                     <tr>
-                      <th className='py-3.5 px-4'>Operador</th>
-                      <th className='py-3.5 px-4'>Rol Asignado</th>
-                      <th className='py-3.5 px-4'>Estado</th>
-                      <th className='py-3.5 px-4'>Último Inicio de Sesión</th>
-                      <th className='py-3.5 px-4 text-right'>Acciones</th>
+                      <th className='py-3.5 px-3 w-16 text-right tabular-nums'>N°</th>
+                      <th className='py-3.5 px-4'>
+                        <button type='button' onClick={() => alternarOrden('nombre')} className='inline-flex items-center gap-1 hover:text-brand-500'>
+                          Operador <ArrowUpDown className='w-3 h-3' />
+                        </button>
+                      </th>
+                      <th className='py-3.5 px-4'>
+                        <button type='button' onClick={() => alternarOrden('role')} className='inline-flex items-center gap-1 hover:text-brand-500'>
+                          Rol Asignado <ArrowUpDown className='w-3 h-3' />
+                        </button>
+                      </th>
+                      <th className='py-3.5 px-4'>
+                        <button type='button' onClick={() => alternarOrden('activo')} className='inline-flex items-center gap-1 hover:text-brand-500'>
+                          Estado <ArrowUpDown className='w-3 h-3' />
+                        </button>
+                      </th>
+                      <th className='py-3.5 px-4'>
+                        <button type='button' onClick={() => alternarOrden('lastLoginAt')} className='inline-flex items-center gap-1 hover:text-brand-500'>
+                          Último Inicio de Sesión <ArrowUpDown className='w-3 h-3' />
+                        </button>
+                      </th>
+                      <th className='py-3.5 px-4 text-right w-48'>Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className='divide-y divide-slate-800/60 text-slate-300'>
-                    {filteredOperadores.map(op => {
+                  <tbody className='divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300'>
+                    {operadoresVisibles.map((op, indice) => {
                       const isCurrent = currentOperador && currentOperador.id === op.id;
+                      const numero = (paginacion.page - 1) * pageSize + indice + 1;
 
                       return (
-                        <tr key={op.id} className='hover:bg-slate-800/40 transition-colors'>
+                        <tr key={op.id} className='hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors'>
+                          <td className='py-3.5 px-3 text-right'>
+                            <span className='block font-mono font-semibold tabular-nums text-slate-800 dark:text-slate-200'>{numero}</span>
+                            <span className='block font-mono text-[10px] text-slate-400'>ID {op.id}</span>
+                          </td>
                           <td className='py-3.5 px-4'>
                             <div className='flex items-center gap-3'>
                               <div
@@ -493,39 +609,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                           </td>
 
                           <td className='py-3.5 px-4 text-right'>
-                            <div className='inline-flex items-center gap-1.5'>
-                              <button
-                                onClick={() => handleOpenEdit(op)}
-                                disabled={!isAdmin}
-                                title={isAdmin ? 'Editar operador' : 'Requiere permisos de Administrador'}
-                                className={`p-1.5 rounded-lg border transition ${
-                                  isAdmin
-                                    ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700'
-                                    : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
-                                }`}
-                              >
-                                <Edit2 className='w-3.5 h-3.5' />
-                              </button>
-
-                              <button
-                                onClick={() => handleDeleteUser(op)}
-                                disabled={!isAdmin || Boolean(isCurrent)}
-                                title={
-                                  !isAdmin
-                                    ? 'Requiere permisos de Administrador'
-                                    : isCurrent
-                                    ? 'No puedes eliminar tu propia cuenta'
-                                    : 'Eliminar operador'
-                                }
-                                className={`p-1.5 rounded-lg border transition ${
-                                  isAdmin && !isCurrent
-                                    ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-500/30'
-                                    : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
-                                }`}
-                              >
-                                <Trash2 className='w-3.5 h-3.5' />
-                              </button>
-                            </div>
+                            <OperadorActions {...opcionesDe(op)} />
                           </td>
                         </tr>
                       );
@@ -534,6 +618,17 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                 </table>
               </div>
             )}
+
+            <TablePagination
+              page={paginacion.page}
+              pageSize={pageSize}
+              total={operadoresOrdenados.length}
+              onPageChange={setPage}
+              onPageSizeChange={size => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
           </div>
         </div>
       )}
@@ -559,7 +654,12 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
               };
               const styles = cardStyles[rid];
               return (
-                <div key={rid} className={`p-5 rounded-2xl ${styles.split(' ')[0]} border relative overflow-hidden`}>
+                <div
+                  key={rid}
+                  className={`p-5 rounded-2xl ${styles.split(' ')[0]} border relative overflow-hidden ${
+                    rolResaltado === rid ? 'ring-2 ring-brand-400 shadow-lg' : ''
+                  }`}
+                >
                   <div className='flex items-center justify-between mb-3'>
                     <div className='flex items-center gap-2.5'>
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${styles}`}>
@@ -655,6 +755,88 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
         userToEdit={userToEdit}
         currentUserId={currentOperador?.id}
       />
-    </div>
+      </div>
+
+      {/* Ficha de solo lectura */}
+      <OperadorDetailModal
+        operador={operadorDetalle}
+        isOpen={operadorDetalle != null}
+        onClose={() => setOperadorDetalle(null)}
+        onEditar={() => {
+          if (operadorDetalle) handleOpenEdit(operadorDetalle);
+          setOperadorDetalle(null);
+        }}
+        onVerPermisos={() => {
+          if (operadorDetalle) setRolResaltado(operadorDetalle.role);
+          setOperadorDetalle(null);
+          setActiveTab('permisos');
+        }}
+        permisosMatrix={permissionsMatrix}
+        puedeEditar={isAdmin}
+      />
+
+      {/* Confirmación de borrado */}
+      <Modal
+        isOpen={pendienteEliminar != null}
+        onClose={() => setPendienteEliminar(null)}
+        dark
+        title='Eliminar operador'
+        panelClassName='max-w-md p-6'
+        footer={
+          <div className='flex justify-end gap-2'>
+            <Button variant='ghost' size='sm' onClick={() => setPendienteEliminar(null)}>
+              Cancelar
+            </Button>
+            <Button variant='primary' size='sm' icon={Trash2} onClick={() => void confirmarEliminar()}>
+              Eliminar definitivamente
+            </Button>
+          </div>
+        }
+      >
+        {pendienteEliminar && (
+          <div className='space-y-2 text-sm'>
+            <p className='text-slate-300'>
+              ¿Eliminar al operador <strong className='text-white'>{pendienteEliminar.email}</strong>?
+            </p>
+            <p className='text-xs text-slate-500'>
+              Esta acción no se puede deshacer y revoca sus sesiones activas.
+            </p>
+          </div>
+        )}
+      </Modal>
+
+      {/* Ficha imprimible (solo aparece en print) */}
+      {operadorImprimir && (
+        <section className='hidden print:block bg-white text-slate-900 p-10 max-w-3xl mx-auto'>
+          <header className='flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-6'>
+            <div>
+              <p className='font-bold text-lg'>COTEL R.L.</p>
+              <p className='text-xs'>Siemens DECTlink · Gestión de Planta Externa</p>
+            </div>
+            <p className='text-xs'>Ficha de operador · {new Date().toLocaleDateString('es-BO')}</p>
+          </header>
+          <h1 className='text-xl font-bold mb-4'>
+            {operadorImprimir.nombre || 'Sin nombre registrado'}
+          </h1>
+          <dl className='grid grid-cols-2 gap-3 text-sm border border-slate-300 rounded p-4'>
+            <div><dt className='text-xs text-slate-500'>Correo</dt><dd className='font-mono'>{operadorImprimir.email}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Rol</dt><dd>{roleLabel(operadorImprimir.role)}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Nivel</dt><dd>{ROLE_META[operadorImprimir.role].nivel}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Estado</dt><dd>{operadorImprimir.activo ? 'Activo' : 'Inactivo'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Último acceso</dt><dd>{operadorImprimir.lastLoginAt ? new Date(operadorImprimir.lastLoginAt).toLocaleString('es-BO') : 'Sin registro'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>ID de registro</dt><dd className='font-mono'>{operadorImprimir.id}</dd></div>
+          </dl>
+          <h2 className='text-sm font-bold mt-6 mb-2'>Permisos del rol</h2>
+          <ul className='grid grid-cols-2 gap-1 text-xs'>
+            {permisosImpresion.map(clave => (
+              <li key={clave} className='border border-slate-300 rounded px-2 py-1 font-mono'>{clave}</li>
+            ))}
+          </ul>
+          <footer className='mt-8 border-t border-slate-300 pt-3 text-[10px] text-slate-500'>
+            Documento generado por el sistema COTEL DECTlink · Uso interno · {currentOperador?.email}
+          </footer>
+        </section>
+      )}
+    </>
   );
 }

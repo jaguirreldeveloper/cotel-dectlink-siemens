@@ -62,7 +62,7 @@ frontend/                     SPA React 19 (FSD: entities/features/shared/widget
   src/entities/subscriber/    columns.tsx (registro RESUMEN ⊂ DETALLE), summary.ts, analysis.ts, exportCsv
   src/widgets/                Navbar, AppTabs, AppSidebar, DataSourceBar, ExecutiveReport, etc.
   src/demo/                   Datos demo de respaldo (fallback offline siempre etiquetado)
-  playwright/                 8 specs / 12 tests e2e de humo (backend real; CI con SQLite aislado)
+  playwright/                 8 specs / 14 tests e2e de humo (backend real; CI con SQLite aislado)
   tests/                      Vitest: 71 tests en 12 archivos (geo, paginación, filtros, roles, permisos, dashboards, escala, columnas, resumen)
 scripts/                      @cotel/scripts: ETL/verificación (CLI commander)
   src/cli.ts                  Entrada: pnpm --filter scripts db:load|db:check|db:verify|db:clean|smoke
@@ -328,7 +328,7 @@ Hay dos entornos con sus propios `.env`:
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
 - `pnpm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 pnpm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
-- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **12 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda), visibilidad por rol de los 12 operadores demo, portal «Mi línea» y fallback demo. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
+- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **14 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda), visibilidad por rol de los 12 operadores demo, portal «Mi línea», modal de Nuevo Operador y tabla de usuarios paginada con ver/imprimir. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
 - `pnpm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
 - La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, lectura del padrón sin sesión → `401` y con token de operador → `200`. El frontend nunca lee secretos de `import.meta.env`: usa el token de la sesión (`sessionStorage` por defecto; `localStorage` solo con «Recordarme»).
