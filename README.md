@@ -98,7 +98,7 @@ zonas ─< clientes ─< abonados_lineas >─ celdas
 
 | Tabla | Contenido | Registros (BD local, 2026-11-10) |
 |-------|-----------|:----------------:|
-| `celdas` | Estaciones base RFP Siemens. Perfil: `codigo` único, `numero_celda` 1–30 por municipio (`UNIQUE(municipio, numero_celda)`), `departamento='LA PAZ'`, `zona_id`, `direccion`, `capacidad_abonados_prevista`, `estado` (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `BAJA`, `RETIRADA`), `fecha_estado`, `motivo_estado` y `activo`. Las celdas de baja/retiro **se conservan** por auditoría; `usuarios_actuales` se calcula con `COUNT(abonados_lineas)` | 60 históricas (30 El Alto + 30 La Paz) + generadas por lote |
+| `celdas` | Estaciones base RFP Siemens. Perfil: `codigo` único, `numero_celda` 1–30 por municipio (`UNIQUE(municipio, numero_celda)`), `departamento='LA PAZ'`, `zona_id`, `direccion`, `capacidad_abonados_prevista`, `estado` (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `BAJA`, `RETIRADA`), `fecha_estado`, `motivo_estado` y `activo`. Las celdas de baja/retiro **se conservan** por auditoría; `usuarios_actuales` se calcula con `COUNT(abonados_lineas)` | 60 históricas (30 El Alto + 30 La Paz): 5 reales (ids/números 4, 5, 11, 15, 17 con sus nombres de campo) y 55 referencias `CELDA INEXISTENTE …` + generadas por lote |
 | `zonas` | Barrios/urbanizaciones canónicos (normalizados desde 55 variantes crudas del CSV) | 48 |
 | `clientes` | Titulares deduplicados por `(nombre_completo, direccion)`; 1 cliente → N líneas | 235 |
 | `abonados_lineas` | Padrón maestro de líneas: `nro` serial global (identificador de negocio), teléfono y contrato únicos, estados con CHECK, señal/calidad/GPS nullable, y `zona_origen`/`nro_registro_origen` como **procedencia** del CSV | 244 |

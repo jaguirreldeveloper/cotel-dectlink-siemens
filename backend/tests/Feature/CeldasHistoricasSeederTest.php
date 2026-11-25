@@ -72,6 +72,34 @@ class CeldasHistoricasSeederTest extends TestCase
         $this->assertSame(CellStateMachine::RETIRADA, end($historial)['estado']);
     }
 
+    public function test_conserva_nombres_reales_y_marca_las_inexistentes(): void
+    {
+        $this->seed(CeldasHistoricasSeeder::class);
+
+        foreach ([
+            4 => 'CELDA A-04 MERCURIO / INGAVI',
+            5 => 'CELDA A-05 MERCEDARIO',
+            11 => 'CELDA A-11 COSMOS 79',
+            15 => 'CELDA A-15 SENKATA',
+            17 => 'CELDA A-17 TILATA',
+        ] as $numero => $nombre) {
+            $celda = Cell::query()->where('municipio', 'EL ALTO')->where('numero_celda', $numero)->firstOrFail();
+            $this->assertSame($numero, $celda->id);
+            $this->assertSame($nombre, $celda->nombre);
+            $this->assertSame(sprintf('RFP-ELA-%03d', $numero), $celda->codigo);
+            $this->assertTrue($celda->activo);
+        }
+
+        $ingavi = Cell::query()->findOrFail(4);
+        $this->assertSame(-16.51, round((float) $ingavi->latitud, 2));
+        $this->assertSame(-68.196, round((float) $ingavi->longitud, 3));
+
+        $this->assertSame(5, Cell::query()->where('nombre', 'LIKE', 'CELDA A-%')->count());
+        $this->assertSame(55, Cell::query()->where('nombre', 'LIKE', 'CELDA INEXISTENTE %')->count());
+        $this->assertSame(30, Cell::query()->where('nombre', 'LIKE', 'CELDA INEXISTENTE LP %')->count());
+        $this->assertSame(0, (int) Cell::query()->where('nombre', 'LIKE', 'CELDA INEXISTENTE %')->sum('capacidad_abonados_prevista'));
+    }
+
     public function test_seeder_es_idempotente(): void
     {
         $this->seed(CeldasHistoricasSeeder::class);

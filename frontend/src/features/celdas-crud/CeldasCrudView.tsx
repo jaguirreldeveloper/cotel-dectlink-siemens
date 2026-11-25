@@ -153,6 +153,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [filtroAbonados, setFiltroAbonados] = useState<'todos' | 'con' | 'sin'>('todos');
   const [filtroMunicipio, setFiltroMunicipio] = useState<'todas' | 'EL ALTO' | 'LA PAZ'>('todas');
   const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoCelda>('todos');
+  const [filtroRegistro, setFiltroRegistro] = useState<'todos' | 'reales' | 'referencias'>('todos');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
@@ -273,6 +274,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
       }
       if (filtroMunicipio !== 'todas' && c.municipio !== filtroMunicipio) return false;
       if (filtroEstado !== 'todos' && c.estado !== filtroEstado) return false;
+      const referencia = c.nombre.startsWith('CELDA INEXISTENTE');
+      if (filtroRegistro === 'reales' && referencia) return false;
+      if (filtroRegistro === 'referencias' && !referencia) return false;
       const calibrada = c.latitud != null && c.longitud != null;
       if (filtroCalibracion === 'calibradas' && !calibrada) return false;
       if (filtroCalibracion === 'sin' && calibrada) return false;
@@ -316,14 +320,14 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           );
       }
     });
-  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, sort]);
+  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroRegistro, sort]);
 
   const paginacion = pageRange(page, pageSize, filas.length);
   const filasVisibles = filas.slice((paginacion.page - 1) * pageSize, (paginacion.page - 1) * pageSize + pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado]);
+  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroRegistro]);
 
   const hayFiltros =
     busqueda !== '' ||
@@ -331,7 +335,8 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     filtroSubcentral !== 'todas' ||
     filtroAbonados !== 'todos' ||
     filtroMunicipio !== 'todas' ||
-    filtroEstado !== 'todos';
+    filtroEstado !== 'todos' ||
+    filtroRegistro !== 'todos';
 
   /** Celda seleccionada para el panel de detalle. */
   const detalle = detalleId != null ? (celdas.find(c => c.id === detalleId) ?? null) : null;
@@ -343,6 +348,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     setFiltroAbonados('todos');
     setFiltroMunicipio('todas');
     setFiltroEstado('todos');
+    setFiltroRegistro('todos');
   };
 
   const handleSort = (key: SortKey) => {
@@ -608,6 +614,17 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         <Select
           dark
           size='sm'
+          value={filtroRegistro}
+          onChange={e => setFiltroRegistro(e.target.value as 'todos' | 'reales' | 'referencias')}
+          aria-label='Filtrar por registro'
+        >
+          <option value='todos'>Registro: todos</option>
+          <option value='reales'>Solo celdas reales</option>
+          <option value='referencias'>Solo inexistentes</option>
+        </Select>
+        <Select
+          dark
+          size='sm'
           value={filtroCalibracion}
           onChange={e => setFiltroCalibracion(e.target.value as 'todas' | 'calibradas' | 'sin')}
           aria-label='Filtrar por calibración'
@@ -710,7 +727,14 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                   </td>
                   <td className='px-3 py-2 font-mono font-bold text-brand-400'>{c.id}</td>
                   <td className='px-3 py-2 text-center font-mono text-slate-400 whitespace-nowrap'>{c.codigo}</td>
-                  <td className='px-3 py-2 text-center text-white font-medium'>{c.nombre}</td>
+                  <td className='px-3 py-2 text-center text-white font-medium'>
+                    <span>{c.nombre}</span>
+                    {c.nombre.startsWith('CELDA INEXISTENTE') && (
+                      <span className='mt-0.5 block text-[9px] font-bold uppercase tracking-wider text-slate-500'>
+                        Sin registro
+                      </span>
+                    )}
+                  </td>
                   <td className='px-3 py-2 text-center text-slate-400 whitespace-nowrap'>
                     <div>{c.municipio ?? '—'}</div>
                     <div className='text-[10px] text-slate-600'>{c.zona ?? c.direccion ?? '—'}</div>

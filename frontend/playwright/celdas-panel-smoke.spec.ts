@@ -187,7 +187,13 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   const filas = page.locator('table').first().locator('tbody tr');
   await expect(filas).toHaveCount(5);
   await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
+  await expect(filas.first()).toContainText('CELDA A-04 MERCURIO / INGAVI');
   await page.screenshot({ path: 'test-results/celdas-datatable.png' });
+
+  await page.getByLabel('Filtrar por registro').selectOption('referencias');
+  await expect(filas).toHaveCount(5);
+  await expect(page.getByText('CELDA A-04 MERCURIO / INGAVI')).toHaveCount(0);
+  await page.getByRole('button', { name: /Limpiar filtros/ }).click();
 
   await page.getByLabel('Filtrar por estado').selectOption('RETIRADA');
   await expect(filas).toHaveCount(2);

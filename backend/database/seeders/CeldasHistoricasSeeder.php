@@ -24,16 +24,41 @@ class CeldasHistoricasSeeder extends Seeder
         'LA PAZ' => ['latitud' => -16.4897, 'longitud' => -68.1193, 'prefijo' => 'LP', 'ciudad' => 'LA PAZ'],
     ];
 
+    /**
+     * Únicas celdas con registro real en campo. El resto de la numeración son
+     * referencias para completar 1..30 por ciudad, no estaciones instaladas.
+     *
+     * @var array<string, array<int, array{nombre: string, descripcion: string, latitud: float|null, longitud: float|null}>>
+     */
+    private const REALES = [
+        'EL ALTO' => [
+            4 => ['nombre' => 'CELDA A-04 MERCURIO / INGAVI', 'descripcion' => 'Estación base A-04 (Mercurio / Villa Ingavi)', 'latitud' => -16.51, 'longitud' => -68.196],
+            5 => ['nombre' => 'CELDA A-05 MERCEDARIO', 'descripcion' => 'Estación base A-05 (Mercedario)', 'latitud' => null, 'longitud' => null],
+            11 => ['nombre' => 'CELDA A-11 COSMOS 79', 'descripcion' => 'Estación base A-11 (Cosmos 79)', 'latitud' => null, 'longitud' => null],
+            15 => ['nombre' => 'CELDA A-15 SENKATA', 'descripcion' => 'Estación base A-15 (Senkata)', 'latitud' => null, 'longitud' => null],
+            17 => ['nombre' => 'CELDA A-17 TILATA', 'descripcion' => 'Estación base A-17 (Tilata)', 'latitud' => null, 'longitud' => null],
+        ],
+    ];
+
     public function run(): void
     {
-        $siguienteId = (int) DB::table('celdas')->max('id') + 1;
+        // Los IDs 1..30 se reservan para la numeración real por municipio;
+        // las referencias generadas empiezan en 31 para no colisionar.
+        $siguienteId = max((int) DB::table('celdas')->max('id'), 30) + 1;
         $operadorId = Operador::query()->where('role', 'SUPERADMIN')->value('id');
 
         foreach (self::CENTROS as $municipio => $centro) {
             for ($numero = 1; $numero <= 30; $numero += 1) {
-                $estado = $this->estadoPara($numero);
-                $latitud = round($centro['latitud'] + ($numero % 7 - 3) * 0.004, 6);
-                $longitud = round($centro['longitud'] + ($numero % 5 - 2) * 0.005, 6);
+                $real = self::REALES[$municipio][$numero] ?? null;
+                $estado = $real !== null
+                    ? CellStateMachine::EN_SERVICIO
+                    : $this->estadoPara($numero);
+                $latitud = $real !== null
+                    ? $real['latitud']
+                    : round($centro['latitud'] + ($numero % 7 - 3) * 0.004, 6);
+                $longitud = $real !== null
+                    ? $real['longitud']
+                    : round($centro['longitud'] + ($numero % 5 - 2) * 0.005, 6);
                 $codigo = sprintf('RFP-%s-%03d', $centro['prefijo'], $numero);
                 $fechaAlta = CarbonImmutable::now()->subMonths(30)->addDays($numero * 2);
 
@@ -41,31 +66,37 @@ class CeldasHistoricasSeeder extends Seeder
                     'municipio' => $municipio,
                     'numero_celda' => $numero,
                 ]);
-                $esNueva = $celda->id === null;
-                if ($esNueva) {
-                    $celda->id = $siguienteId++;
+                if ($celda->id === null) {
+                    if ($real !== null) {
+                        $celda->id = $numero;
+                        $siguienteId = max($siguienteId, $numero + 1);
+                    } else {
+                        $celda->id = $siguienteId++;
+                    }
                 }
                 $celda->fill([
                     'codigo' => $codigo,
-                    'nombre' => sprintf('CELDA %s %03d', $centro['ciudad'], $numero),
+                    'nombre' => $real['nombre'] ?? sprintf('CELDA INEXISTENTE %s %03d', $centro['prefijo'], $numero),
                     'tecnologia' => 'DECT-Link',
-                    'descripcion' => sprintf('RFP histórica %s · registro %03d', $centro['ciudad'], $numero),
+                    'descripcion' => $real['descripcion'] ?? 'Referencia de numeración; sin registro real en campo',
                     'rfp_modelo' => 'Siemens C500',
                     'banda_frecuencia' => '1880 - 1900 MHz (DECT GAP)',
-                    'capacidad_canales' => 12,
-                    'capacidad_abonados_prevista' => 120,
-                    'radio_cobertura_km' => 2.5,
+                    'capacidad_canales' => $celda->capacidad_canales ?? 12,
+                    'capacidad_abonados_prevista' => $real !== null
+                        ? ($celda->capacidad_abonados_prevista ?? 120)
+                        : 0,
+                    'radio_cobertura_km' => $celda->radio_cobertura_km ?? 2.5,
                     'latitud' => $latitud,
                     'longitud' => $longitud,
                     'departamento' => 'LA PAZ',
                     'estado' => $estado,
                     'fecha_estado' => $fechaAlta->copy()->addMonths(8),
-                    'motivo_estado' => $estado === CellStateMachine::EN_SERVICIO
-                        ? 'Puesta en servicio tras calibración'
-                        : 'Registro histórico de planta externa',
-                    'activo' => ! CellStateMachine::esTerminal($estado) && $estado !== CellStateMachine::SUSPENDIDA,
+                    'motivo_estado' => $real !== null
+                        ? 'Estación base identificada en campo'
+                        : 'Referencia de numeración; sin registro real en campo',
+                    'activo' => $real !== null,
                 ]);
-                $celda->created_at = $fechaAlta;
+                $celda->created_at = $celda->created_at ?? $fechaAlta;
                 $celda->save();
 
                 $this->regenerarHistorial($celda, $estado, $fechaAlta, $operadorId);
