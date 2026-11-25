@@ -1,7 +1,7 @@
 import type { OperadorRole } from '@/features/auth/types';
 
 /**
- * Metadatos de los 6 roles jerárquicos de COTEL DECTlink.
+ * Metadatos de los 9 roles funcionales de COTEL DECTlink.
  *
  * Centraliza etiquetas, niveles y clases de color de Tailwind para que el
  * header, el modal de usuarios, el listado y la matriz de accesos usen una
@@ -24,6 +24,9 @@ export const OPERADOR_ROLES: OperadorRole[] = [
   'DESPACHADOR',
   'TECNICO',
   'AUDITOR',
+  'GERENTE_AREA',
+  'JEFE_DEPARTAMENTO',
+  'ENCARGADO_AREA',
 ];
 
 export interface RoleMeta {
@@ -32,7 +35,7 @@ export interface RoleMeta {
   titulo: string;
   descripcion: string;
   nivel: string;
-  color: 'amber' | 'rose' | 'violet' | 'indigo' | 'sky' | 'slate';
+  color: 'amber' | 'rose' | 'violet' | 'indigo' | 'sky' | 'slate' | 'emerald' | 'cyan' | 'orange';
 }
 
 export const ROLE_META: Record<OperadorRole, RoleMeta> = {
@@ -86,9 +89,36 @@ export const ROLE_META: Record<OperadorRole, RoleMeta> = {
     nombre: 'Consulta',
     titulo: 'Auditor Regulatorio ATT & Consulta Comercial',
     descripcion:
-      'Consulta regulatoria y comercial: padrón, fichas oficiales, mapas GIS y reportes para la ATT.',
+      'Consulta regulatoria y comercial: padrón, bitácora, fichas oficiales, mapas GIS y reportes para la ATT.',
     nivel: 'Nivel 6 · Consulta',
     color: 'slate',
+  },
+  GERENTE_AREA: {
+    id: 'GERENTE_AREA',
+    nombre: 'Gerencia',
+    titulo: 'Gerente de Área (GAF/GC/GPP/GT/GS)',
+    descripcion:
+      'KPIs, reportes y exportación de su área. Acceso de solo lectura, sin acciones de escritura.',
+    nivel: 'Nivel 2 · Gerencia',
+    color: 'emerald',
+  },
+  JEFE_DEPARTAMENTO: {
+    id: 'JEFE_DEPARTAMENTO',
+    nombre: 'Jefatura de Departamento',
+    titulo: 'Responsable de Departamento',
+    descripcion:
+      'Aprueba y supervisa órdenes de trabajo; ve métricas y cuadrillas de todo su departamento.',
+    nivel: 'Nivel 3 · Departamento',
+    color: 'cyan',
+  },
+  ENCARGADO_AREA: {
+    id: 'ENCARGADO_AREA',
+    nombre: 'Encargado de Área',
+    titulo: 'Responsable de Área',
+    descripcion:
+      'Gestiona cuadrillas, materiales y actividades operativas dentro de su área y zona.',
+    nivel: 'Nivel 4 · Área',
+    color: 'orange',
   },
 };
 
@@ -107,6 +137,12 @@ export function roleBadgeClasses(role: OperadorRole): string {
       return 'bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 border border-sky-300 dark:border-sky-700/60';
     case 'AUDITOR':
       return 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700';
+    case 'GERENTE_AREA':
+      return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700/60';
+    case 'JEFE_DEPARTAMENTO':
+      return 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-900 dark:text-cyan-200 border border-cyan-300 dark:border-cyan-700/60';
+    case 'ENCARGADO_AREA':
+      return 'bg-orange-50 dark:bg-orange-950/40 text-orange-900 dark:text-orange-200 border border-orange-300 dark:border-orange-700/60';
     default:
       return 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-300 dark:border-slate-700';
   }
@@ -121,6 +157,9 @@ export function roleCardClasses(role: OperadorRole, active: boolean): string {
     DESPACHADOR: 'border-indigo-500/80 bg-indigo-500/10',
     TECNICO: 'border-sky-500/80 bg-sky-500/10',
     AUDITOR: 'border-slate-500/80 bg-slate-500/10',
+    GERENTE_AREA: 'border-emerald-500/80 bg-emerald-500/10',
+    JEFE_DEPARTAMENTO: 'border-cyan-500/80 bg-cyan-500/10',
+    ENCARGADO_AREA: 'border-orange-500/80 bg-orange-500/10',
   };
   return active ? map[role] : 'border-slate-800 bg-slate-950/60';
 }
@@ -150,6 +189,12 @@ export function roleIconClasses(role: OperadorRole): string {
       return 'text-sky-400';
     case 'AUDITOR':
       return 'text-slate-400';
+    case 'GERENTE_AREA':
+      return 'text-emerald-400';
+    case 'JEFE_DEPARTAMENTO':
+      return 'text-cyan-400';
+    case 'ENCARGADO_AREA':
+      return 'text-orange-400';
     default:
       return 'text-slate-400';
   }
@@ -170,6 +215,12 @@ export function roleRadioClasses(role: OperadorRole): string {
       return 'text-sky-500 focus:ring-sky-500';
     case 'AUDITOR':
       return 'text-slate-500 focus:ring-slate-500';
+    case 'GERENTE_AREA':
+      return 'text-emerald-500 focus:ring-emerald-500';
+    case 'JEFE_DEPARTAMENTO':
+      return 'text-cyan-500 focus:ring-cyan-500';
+    case 'ENCARGADO_AREA':
+      return 'text-orange-500 focus:ring-orange-500';
     default:
       return 'text-slate-500 focus:ring-slate-500';
   }
@@ -190,6 +241,12 @@ export function roleAccentClasses(role: OperadorRole): string {
       return 'bg-sky-500/10 border-sky-500/30 text-sky-300';
     case 'AUDITOR':
       return 'bg-slate-500/10 border-slate-500/30 text-slate-300';
+    case 'GERENTE_AREA':
+      return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300';
+    case 'JEFE_DEPARTAMENTO':
+      return 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300';
+    case 'ENCARGADO_AREA':
+      return 'bg-orange-500/10 border-orange-500/30 text-orange-300';
     default:
       return 'bg-slate-500/10 border-slate-500/30 text-slate-300';
   }

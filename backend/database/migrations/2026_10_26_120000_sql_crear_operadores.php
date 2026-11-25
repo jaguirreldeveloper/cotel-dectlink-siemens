@@ -26,7 +26,7 @@ return new class extends Migration
             password TEXT NOT NULL,
             nombre TEXT,
             role TEXT NOT NULL DEFAULT 'TECNICO'
-                CHECK (role IN ('SUPERADMIN','SUPERVISOR','DESPACHADOR','TECNICO','AUDITOR','ADMIN','OPERADOR')),
+                CHECK (role IN ('SUPERADMIN','SUPERVISOR','DESPACHADOR','TECNICO','AUDITOR','ADMIN','OPERADOR','GERENTE_AREA','JEFE_DEPARTAMENTO','ENCARGADO_AREA')),
             activo INTEGER NOT NULL DEFAULT 1,
             remember_token TEXT,
             last_login_at TEXT,

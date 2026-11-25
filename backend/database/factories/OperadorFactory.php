@@ -61,4 +61,19 @@ class OperadorFactory extends Factory
     {
         return $this->state(fn (): array => ['role' => Operador::ROLE_AUDITOR]);
     }
+
+    public function gerenteDeArea(): static
+    {
+        return $this->state(fn (): array => ['role' => Operador::ROLE_GERENTE_AREA]);
+    }
+
+    public function jefeDeDepartamento(): static
+    {
+        return $this->state(fn (): array => ['role' => Operador::ROLE_JEFE_DEPARTAMENTO]);
+    }
+
+    public function encargadoDeArea(): static
+    {
+        return $this->state(fn (): array => ['role' => Operador::ROLE_ENCARGADO_AREA]);
+    }
 }

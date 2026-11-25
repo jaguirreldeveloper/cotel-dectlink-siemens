@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, UserCog, Network, ClipboardList, FileCheck2 } from 'lucide-react';
+import { X, Wrench, Lock, Mail, User, CheckCircle2, ShieldCheck, UserCog, Network, ClipboardList, FileCheck2, BarChart3, Building2, LayoutGrid } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { OperadorUser, CreateOperadorInput, UpdateOperadorInput } from './types';
@@ -13,6 +13,9 @@ const ROLE_ICONS: Record<OperadorRole, React.ComponentType<{ className?: string 
   DESPACHADOR: ClipboardList,
   TECNICO: Wrench,
   AUDITOR: FileCheck2,
+  GERENTE_AREA: BarChart3,
+  JEFE_DEPARTAMENTO: Building2,
+  ENCARGADO_AREA: LayoutGrid,
 };
 
 interface UserModalProps {

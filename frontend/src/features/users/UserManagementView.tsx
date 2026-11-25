@@ -20,6 +20,9 @@ import {
   FileCheck2,
   Network,
   ClipboardList,
+  BarChart3,
+  Building2,
+  LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -55,6 +58,9 @@ const ROLE_ICONS: Record<OperadorRole, ComponentType<{ className?: string }>> = 
   DESPACHADOR: ClipboardList,
   TECNICO: Wrench,
   AUDITOR: FileCheck2,
+  GERENTE_AREA: BarChart3,
+  JEFE_DEPARTAMENTO: Building2,
+  ENCARGADO_AREA: LayoutGrid,
 };
 
 interface UserManagementViewProps {
@@ -535,7 +541,7 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
       {/* SUB-VISTA 2: MATRIZ DE ACCESOS Y RESTRICCIONES (LO QUE PUEDEN Y NO PUEDEN HACER) */}
       {activeTab === 'permisos' && (
         <div className='space-y-6'>
-          {/* Tarjetas comparativas de roles (5 roles jerárquicos) */}
+          {/* Tarjetas comparativas de roles (9 roles funcionales) */}
           <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
             {OPERADOR_ROLES.map(rid => {
               const meta = ROLE_META[rid];
@@ -547,6 +553,9 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                 DESPACHADOR: 'bg-brand-500/5 border-brand-500/20 text-brand-400',
                 TECNICO: 'bg-sky-500/5 border-sky-500/20 text-sky-400',
                 AUDITOR: 'bg-slate-500/5 border-slate-500/20 text-slate-400',
+                GERENTE_AREA: 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400',
+                JEFE_DEPARTAMENTO: 'bg-cyan-500/5 border-cyan-500/20 text-cyan-400',
+                ENCARGADO_AREA: 'bg-orange-500/5 border-orange-500/20 text-orange-400',
               };
               const styles = cardStyles[rid];
               return (

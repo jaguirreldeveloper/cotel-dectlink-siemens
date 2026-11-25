@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Operador;
 use App\Support\OperatorToken;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,9 +35,9 @@ class OperadoresController extends Controller
                 'nombre' => $op->nombre,
                 'role' => $op->rolCanonico(),
                 'activo' => (bool) $op->activo,
-                'lastLoginAt' => ($v = $op->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
-                'createdAt' => $op->created_at instanceof \Carbon\CarbonInterface ? $op->created_at->toISOString() : null,
-                'updatedAt' => $op->updated_at instanceof \Carbon\CarbonInterface ? $op->updated_at->toISOString() : null,
+                'lastLoginAt' => ($v = $op->getAttribute('last_login_at')) !== null ? Carbon::parse($v)->toISOString() : null,
+                'createdAt' => $op->created_at instanceof CarbonInterface ? $op->created_at->toISOString() : null,
+                'updatedAt' => $op->updated_at instanceof CarbonInterface ? $op->updated_at->toISOString() : null,
             ]);
 
         return response()->json($operadores);
@@ -80,7 +82,7 @@ class OperadoresController extends Controller
                 'role' => $operador->rolCanonico(),
                 'activo' => (bool) $operador->activo,
                 'lastLoginAt' => null,
-                'createdAt' => $operador->created_at instanceof \Carbon\CarbonInterface ? $operador->created_at->toISOString() : null,
+                'createdAt' => $operador->created_at instanceof CarbonInterface ? $operador->created_at->toISOString() : null,
             ],
         ], 201);
     }
@@ -154,8 +156,8 @@ class OperadoresController extends Controller
                 'nombre' => $operador->nombre,
                 'role' => $operador->rolCanonico(),
                 'activo' => (bool) $operador->activo,
-                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
-                'updatedAt' => $operador->updated_at instanceof \Carbon\CarbonInterface ? $operador->updated_at->toISOString() : null,
+                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? Carbon::parse($v)->toISOString() : null,
+                'updatedAt' => $operador->updated_at instanceof CarbonInterface ? $operador->updated_at->toISOString() : null,
             ],
         ]);
     }
@@ -231,9 +233,30 @@ class OperadoresController extends Controller
                 [
                     'id' => Operador::ROLE_AUDITOR,
                     'nombre' => 'Auditor Regulatorio ATT & Consulta Comercial',
-                    'descripcion' => 'Consulta regulatoria y comercial: padrón, fichas oficiales, mapas GIS y reportes para la ATT.',
+                    'descripcion' => 'Consulta regulatoria y comercial: padrón, bitácora, fichas oficiales, mapas GIS y reportes para la ATT.',
                     'nivel' => 'Nivel 6 · Consulta',
                     'color' => 'slate',
+                ],
+                [
+                    'id' => Operador::ROLE_GERENTE_AREA,
+                    'nombre' => 'Gerente de Área (GAF/GC/GPP/GT/GS)',
+                    'descripcion' => 'KPIs, reportes y exportación de su área. Acceso de solo lectura, sin acciones de escritura.',
+                    'nivel' => 'Nivel 2 · Gerencia',
+                    'color' => 'emerald',
+                ],
+                [
+                    'id' => Operador::ROLE_JEFE_DEPARTAMENTO,
+                    'nombre' => 'Responsable de Departamento',
+                    'descripcion' => 'Aprueba y supervisa órdenes de trabajo; ve métricas y cuadrillas de todo su departamento.',
+                    'nivel' => 'Nivel 3 · Departamento',
+                    'color' => 'cyan',
+                ],
+                [
+                    'id' => Operador::ROLE_ENCARGADO_AREA,
+                    'nombre' => 'Responsable de Área',
+                    'descripcion' => 'Gestiona cuadrillas, materiales y actividades operativas dentro de su área y zona.',
+                    'nivel' => 'Nivel 4 · Área',
+                    'color' => 'orange',
                 ],
             ],
             'modulos' => [

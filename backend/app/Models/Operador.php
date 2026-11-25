@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\OperadorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -34,16 +37,29 @@ use Illuminate\Notifications\Notifiable;
  * @property string $email
  * @property string|null $nombre
  * @property string $role
+ * @property string|null $puesto
+ * @property string|null $especialidad
+ * @property string|null $area
+ * @property string|null $departamento
+ * @property int|null $zona_id
+ * @property string|null $turno
+ * @property int|null $supervisor_id
+ * @property list<string> $permisos_extra
+ * @property list<string> $permisos_denegados
  * @property bool $activo
  * @property string $password
  * @property string|null $remember_token
  * @property string|null $last_login_at
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  *
  * @method static \App\Models\Operador create(array<string, mixed> $attributes = [])
  */
-#[Fillable(['email', 'password', 'nombre', 'role', 'activo'])]
+#[Fillable([
+    'email', 'password', 'nombre', 'role', 'activo',
+    'puesto', 'especialidad', 'area', 'departamento', 'zona_id', 'turno', 'supervisor_id',
+    'permisos_extra', 'permisos_denegados',
+])]
 #[Hidden(['password', 'remember_token'])]
 class Operador extends Authenticatable
 {
@@ -63,6 +79,15 @@ class Operador extends Authenticatable
 
     public const ROLE_AUDITOR = 'AUDITOR';
 
+    /** Gerencia de área: KPIs y reportes de solo lectura (GAF/GC/GPP/GT/GS). */
+    public const ROLE_GERENTE_AREA = 'GERENTE_AREA';
+
+    /** Responsable de departamento: aprueba OTs y ve métricas del departamento. */
+    public const ROLE_JEFE_DEPARTAMENTO = 'JEFE_DEPARTAMENTO';
+
+    /** Responsable de área: gestiona cuadrillas y actividades de su área. */
+    public const ROLE_ENCARGADO_AREA = 'ENCARGADO_AREA';
+
     /** Alias históricos (el CHECK de la BD aún los acepta). */
     public const ROLE_OPERADOR = 'OPERADOR';
 
@@ -74,13 +99,22 @@ class Operador extends Authenticatable
         self::ROLE_DESPACHADOR,
         self::ROLE_TECNICO,
         self::ROLE_AUDITOR,
+        self::ROLE_GERENTE_AREA,
+        self::ROLE_JEFE_DEPARTAMENTO,
+        self::ROLE_ENCARGADO_AREA,
     ];
 
-    /** Nivel de privilegio por rol (1 = mayor). Los alias heredan el nivel. */
+    /**
+     * Nivel organizacional (1 = mayor). No equivale a privilegios: la
+     * autorización se resuelve por permisos, nunca por comparar niveles.
+     */
     private const NIVELES = [
         self::ROLE_SUPERADMIN => 1,
         self::ROLE_ADMIN => 2,
+        self::ROLE_GERENTE_AREA => 2,
+        self::ROLE_JEFE_DEPARTAMENTO => 3,
         self::ROLE_SUPERVISOR => 3,
+        self::ROLE_ENCARGADO_AREA => 4,
         self::ROLE_DESPACHADOR => 4,
         self::ROLE_TECNICO => 5,
         self::ROLE_AUDITOR => 6,
@@ -102,6 +136,8 @@ class Operador extends Authenticatable
         return [
             'password' => 'hashed',
             'activo' => 'boolean',
+            'permisos_extra' => 'array',
+            'permisos_denegados' => 'array',
         ];
     }
 
@@ -161,7 +197,11 @@ class Operador extends Authenticatable
      */
     public function esAdmin(): bool
     {
-        return $this->esAlMenos(self::ROLE_SUPERVISOR);
+        return in_array($this->rolCanonico(), [
+            self::ROLE_SUPERADMIN,
+            self::ROLE_ADMIN,
+            self::ROLE_SUPERVISOR,
+        ], true);
     }
 
     /**
@@ -169,6 +209,31 @@ class Operador extends Authenticatable
      */
     public function puedeDespachar(): bool
     {
-        return $this->esAlMenos(self::ROLE_DESPACHADOR);
+        return in_array($this->rolCanonico(), [
+            self::ROLE_SUPERADMIN,
+            self::ROLE_ADMIN,
+            self::ROLE_SUPERVISOR,
+            self::ROLE_DESPACHADOR,
+            self::ROLE_JEFE_DEPARTAMENTO,
+            self::ROLE_ENCARGADO_AREA,
+        ], true);
+    }
+
+    /** Zona geográfica asignada (plantas externas). */
+    public function zona(): BelongsTo
+    {
+        return $this->belongsTo(Zone::class, 'zona_id');
+    }
+
+    /** Operador al que reporta este usuario (cadena de mando). */
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'supervisor_id');
+    }
+
+    /** Operadores a cargo de este usuario. */
+    public function subordinados(): HasMany
+    {
+        return $this->hasMany(self::class, 'supervisor_id');
     }
 }
