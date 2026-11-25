@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cell;
 use App\Models\InfraestructuraBitacora;
+use App\Models\Zone;
+use App\Support\CellBatchGenerator;
 use App\Support\OperatorToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -144,6 +146,113 @@ class CellsController extends Controller
         } catch (\Throwable) {
             return response()->json(['error' => 'Error al consultar la bitácora de la celda'], 500);
         }
+    }
+
+    /**
+     * Valida los parámetros comunes del lote y prepara el generador.
+     *
+     * @return array<string, mixed>
+     */
+    private function validarParametrosLote(Request $request): array
+    {
+        $validado = $request->validate([
+            'cantidad' => ['required', 'integer', 'min:1', 'max:100'],
+            'municipio' => ['required', Rule::in(['EL ALTO', 'LA PAZ'])],
+            'zona_id' => ['required', 'integer', Rule::exists('zonas', 'id')],
+            'prefijo_codigo' => ['required', 'string', 'max:30', 'regex:/^[A-Z0-9-]+$/'],
+            'direccion_base' => ['nullable', 'string', 'max:255'],
+            'centro' => ['required', 'array'],
+            'centro.latitud' => ['required', 'numeric', 'between:-17.2,-16.2'],
+            'centro.longitud' => ['required', 'numeric', 'between:-69.0,-67.9'],
+            'radio_km' => ['required', 'numeric', 'min:0.1', 'max:20'],
+            'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'estado' => ['nullable', Rule::in(['PLANEADA', 'INSTALADA', 'EN_SERVICIO'])],
+        ]);
+
+        $zona = Zone::query()->findOrFail((int) $validado['zona_id']);
+
+        return [
+            'id_inicial' => (int) DB::table('celdas')->max('id') + 1,
+            'cantidad' => (int) $validado['cantidad'],
+            'municipio' => (string) $validado['municipio'],
+            'zona_id' => (int) $validado['zona_id'],
+            'zona_nombre' => (string) $zona->nombre,
+            'prefijo_codigo' => strtoupper((string) $validado['prefijo_codigo']),
+            'direccion_base' => $validado['direccion_base'] ?? null,
+            'latitud' => (float) $validado['centro']['latitud'],
+            'longitud' => (float) $validado['centro']['longitud'],
+            'radio_km' => (float) $validado['radio_km'],
+            'capacidad_abonados_prevista' => $validado['capacidad_abonados_prevista'] !== null
+                ? (int) $validado['capacidad_abonados_prevista']
+                : null,
+            'estado' => (string) ($validado['estado'] ?? 'PLANEADA'),
+        ];
+    }
+
+    /**
+     * POST /api/cells/lote/preview — filas sugeridas sin persistir.
+     */
+    public function lotePreview(Request $request): JsonResponse
+    {
+        $parametros = $this->validarParametrosLote($request);
+        $filas = CellBatchGenerator::generar($parametros);
+
+        return response()->json([
+            'idInicial' => $parametros['id_inicial'],
+            'total' => count($filas),
+            'filas' => $filas,
+        ]);
+    }
+
+    /**
+     * POST /api/cells/lote — crea todas las celdas en una transacción.
+     */
+    public function loteStore(Request $request): JsonResponse
+    {
+        $parametros = $this->validarParametrosLote($request);
+        $filas = CellBatchGenerator::generar($parametros);
+        $operador = OperatorToken::resolve($request);
+
+        $ids = array_column($filas, 'id');
+        $codigos = array_column($filas, 'codigo');
+        $existentes = DB::table('celdas')
+            ->whereIn('id', $ids)
+            ->orWhereIn('codigo', $codigos)
+            ->count();
+        if ($existentes > 0) {
+            return response()->json([
+                'message' => 'Algunos IDs o códigos del lote ya existen. Vuelve a generar la previsualización.',
+            ], 422);
+        }
+
+        $creadas = DB::transaction(function () use ($filas, $operador): array {
+            $resultado = [];
+            foreach ($filas as $fila) {
+                $celda = Cell::query()->create($fila);
+                InfraestructuraBitacora::create([
+                    'tabla' => 'celdas',
+                    'registro_id' => $celda->id,
+                    'accion' => InfraestructuraBitacora::ACCION_CREAR,
+                    'operador_id' => $operador?->id,
+                    'payload' => $fila,
+                ]);
+                $resultado[] = [
+                    'id' => $celda->id,
+                    'codigo' => $celda->codigo,
+                    'nombre' => $celda->nombre,
+                    'municipio' => $celda->municipio,
+                    'latitud' => $celda->latitud,
+                    'longitud' => $celda->longitud,
+                ];
+            }
+
+            return $resultado;
+        });
+
+        return response()->json([
+            'message' => count($creadas).' celdas creadas exitosamente.',
+            'celdas' => $creadas,
+        ], 201);
     }
 
     /**

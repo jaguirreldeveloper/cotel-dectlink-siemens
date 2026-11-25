@@ -179,6 +179,8 @@ Route::middleware('role:superadmin')->group(function (): void {
     Route::delete('subcentrales/{subcentral}', [SubcentralesController::class, 'destroy']);
     Route::delete('shelters/{shelter}', [SheltersController::class, 'destroy']);
     Route::delete('armarios/{armario}', [ArmariosController::class, 'destroy']);
+    Route::post('cells/lote/preview', [CellsController::class, 'lotePreview'])->middleware('permission:cells.create');
+    Route::post('cells/lote', [CellsController::class, 'loteStore'])->middleware('permission:cells.create');
     Route::delete('cells/{id}', [CellsController::class, 'destroy'])->middleware('permission:cells.delete');
 });
 
