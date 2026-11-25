@@ -13,7 +13,8 @@ import {
   Users,
 } from 'lucide-react';
 import { EnrichedSubscriberRecord } from '@/entities/subscriber/types';
-import type { Operador, OperadorRole } from '@/features/auth/types';
+import type { Operador } from '@/features/auth/types';
+import { can } from '@/shared/utils/permissions';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
@@ -36,9 +37,6 @@ interface CeldasCrudViewProps {
   /** Navegación genérica a otra pestaña del shell (p. ej. el mapa GIS). */
   onGoToTab?: (tab: string) => void;
 }
-
-const PUEDE_ESCRIBIR: OperadorRole[] = ['SUPERADMIN', 'ADMIN'];
-const PUEDE_ELIMINAR: OperadorRole[] = ['SUPERADMIN'];
 
 const EMPTY_FORM: CeldaFormData = {
   id: 0,
@@ -118,9 +116,10 @@ function Th({
 }
 
 export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: CeldasCrudViewProps) {
-  const rol = operador?.role as OperadorRole | undefined;
-  const escritura = !!rol && PUEDE_ESCRIBIR.includes(rol);
-  const borrado = !!rol && PUEDE_ELIMINAR.includes(rol);
+  // Autorización efectiva del backend (rol + overrides), con fallback por rol
+  // para sesiones antiguas. El servidor vuelve a validar cada escritura.
+  const escritura = can(operador, 'cells.create');
+  const borrado = can(operador, 'cells.delete');
 
   const [celdas, setCeldas] = useState<CeldaCrud[]>([]);
   const [subcentrales, setSubcentrales] = useState<SubcentralDTO[]>([]);

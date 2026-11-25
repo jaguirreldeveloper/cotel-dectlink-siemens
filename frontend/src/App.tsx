@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AppSidebar, visibleTabIds } from '@/widgets/AppSidebar';
+import { landingTab } from '@/shared/utils/roleDashboards';
+import { PortalMiLineaView } from '@/features/portal/PortalMiLineaView';
 import { UnifiedHeader } from '@/widgets/UnifiedHeader';
 import { AppFooter } from '@/widgets/AppFooter';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -86,12 +88,13 @@ export default function App() {
   // Si el tab activo no es visible para el rol de la sesión (o la sesión es
   // de solo lectura), redirigir al primer módulo visible y sin 403 a ciegas.
   useEffect(() => {
-    const visibles = visibleTabIds(auth.operador?.role);
+    const visibles = visibleTabIds(auth.operador);
+    // Cada rol entra por su propio tablero; un deep-link sin permiso cae ahí.
     if (!visibles.includes(activeTab) && visibles.length > 0) {
-      setActiveTab(visibles[0]);
+      setActiveTab(landingTab(auth.operador));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.operador?.role, activeTab]);
+  }, [auth.operador?.role, auth.operador?.permisos, activeTab]);
 
   const handleFilterByZone = (zone: string) => {
     setExternalZoneFilter(zone);
@@ -291,6 +294,11 @@ export default function App() {
     );
   }
 
+  // Portal del abonado: vista autónoma, sin shell ni permisos de operador.
+  if (new URLSearchParams(location.search).get('portal') === '1') {
+    return <PortalMiLineaView />;
+  }
+
   return (
     <ErrorBoundary>
       <div className='min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans'>
@@ -327,6 +335,7 @@ export default function App() {
             recordCount={data.records.length}
             auditIssueCount={data.auditIssues.length}
             operadorRole={auth.operador?.role ?? null}
+            operador={auth.operador}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
             mobileOpen={mobileSidebarOpen}

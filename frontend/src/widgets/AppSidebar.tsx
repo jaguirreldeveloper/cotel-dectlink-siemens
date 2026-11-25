@@ -25,6 +25,8 @@ import {
   Focus,
 } from 'lucide-react';
 import { AppTabId } from '@/routes';
+import type { Operador } from '@/features/auth/types';
+import { puedeVerTab } from '@/shared/utils/roleDashboards';
 
 /** Configuración de la navegación por grupos semánticos */
 interface NavGroup {
@@ -108,10 +110,10 @@ const NAV_GROUPS: NavGroup[] = [
 
 /** IDs de tabs visibles para un rol (misma lógica que el filtrado del sidebar). */
 // eslint-disable-next-line react-refresh/only-export-components
-export function visibleTabIds(operadorRole: string | null | undefined): AppTabId[] {
+export function visibleTabIds(operador: Operador | null | undefined): AppTabId[] {
   return NAV_GROUPS
     .flatMap(g => g.tabs)
-    .filter(tab => !tab.roles || (operadorRole ? tab.roles.includes(operadorRole) : false))
+    .filter(tab => puedeVerTab(operador, tab.id))
     .map(tab => tab.id);
 }
 
@@ -121,6 +123,8 @@ export interface AppSidebarProps {
   recordCount: number;
   auditIssueCount: number;
   operadorRole?: string | null;
+  /** Operador completo (rol + permisos efectivos) para filtrar por permiso. */
+  operador?: Operador | null;
   className?: string;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -134,6 +138,7 @@ export function AppSidebar({
   recordCount,
   auditIssueCount,
   operadorRole,
+  operador,
   className = '',
   collapsed: propCollapsed,
   onToggleCollapse,
@@ -158,12 +163,12 @@ export function AppSidebar({
       : [...prev, groupId]);
   };
 
-  // Módulos visibles según el rol del operador autenticado (matriz RBAC).
-  // Un tab sin `roles` es visible para todos los roles autenticados.
+  // Módulos visibles según los permisos efectivos del operador (misma regla
+  // que visibleTabIds y que el backend: nunca solo una lista de roles).
   const gruposVisibles = useMemo(() => NAV_GROUPS.map(group => ({
     ...group,
-    tabs: group.tabs.filter(tab => !tab.roles || (operadorRole ? tab.roles.includes(operadorRole) : false)),
-  })).filter(group => group.tabs.length > 0), [operadorRole]);
+    tabs: group.tabs.filter(tab => puedeVerTab(operador, tab.id)),
+  })).filter(group => group.tabs.length > 0), [operador]);
 
   // Persistir estado colapsado cuando no se controla externamente
   useEffect(() => {

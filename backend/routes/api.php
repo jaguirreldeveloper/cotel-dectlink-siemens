@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\LogsController;
 use App\Http\Controllers\Api\MaterialesController;
 use App\Http\Controllers\Api\OperadoresController;
 use App\Http\Controllers\Api\PadronCargasController;
+use App\Http\Controllers\Api\PortalController;
 use App\Http\Controllers\Api\SheltersController;
 use App\Http\Controllers\Api\SubcentralesController;
 use App\Http\Controllers\Api\SubscribersController;
@@ -41,6 +42,13 @@ Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('throt
 // como query param (?token=...). El controlador valida ese token o las
 // cabeceras habituales y responde 401 si no hay sesión válida.
 Route::get('events', [EventsController::class, 'stream']);
+
+// Portal del usuario final: token propio, sin sesión de operador y con scope
+// de fila por abonado_nro resuelto en servidor.
+Route::prefix('portal')->middleware('throttle:20,1')->group(function (): void {
+    Route::get('mi-linea', [PortalController::class, 'miLinea']);
+    Route::get('mis-ots', [PortalController::class, 'misOts']);
+});
 
 // ===========================================================================
 // LECTURAS AUTENTICADAS
