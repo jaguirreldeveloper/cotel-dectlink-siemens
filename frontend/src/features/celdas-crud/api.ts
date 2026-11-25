@@ -86,6 +86,37 @@ export async function deleteCelda(id: number): Promise<{ message: string }> {
   return { message: data?.message || 'Celda eliminada.' };
 }
 
+/** Transición controlada del ciclo de vida de una celda. */
+export async function cambiarEstadoCelda(
+  id: number,
+  estado: string,
+  motivo?: string
+): Promise<{ message: string }> {
+  const res = await apiFetch(`${BASE}/${id}/estado`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estado, motivo: motivo || null }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || `Error ${res.status} al cambiar el estado`);
+  return { message: data?.message || 'Estado actualizado.' };
+}
+
+/** Entrada de la línea de tiempo de estados de una celda. */
+export interface EstadoHistorial {
+  estado: string;
+  fecha: string | null;
+  accion: string | null;
+  operador: string | null;
+  motivo: string | null;
+}
+
+export async function fetchHistorialEstados(id: number): Promise<EstadoHistorial[]> {
+  const res = await apiFetch(`${BASE}/${id}/historial-estados`);
+  if (!res.ok) throw new Error(`Error ${res.status} al obtener el historial de estados`);
+  return res.json();
+}
+
 /** Entrada del historial de cambios de una celda (infraestructura_bitacora). */
 export interface EntradaBitacora {
   id: number;

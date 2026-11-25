@@ -19,12 +19,17 @@ import { can } from '@/shared/utils/permissions';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Modal } from '@/shared/ui/Modal';
+import { TablePagination } from '@/shared/ui/TablePagination';
+import { pageRange } from '@/shared/utils/pagination';
 import { Select } from '@/shared/ui/Select';
 import { invalidateCellsCache } from '@/entities/cell/useCells';
 import { infraApi } from '@/features/infraestructura/api';
 import type { SubcentralDTO } from '@/features/infraestructura/types';
 import * as api from './api';
 import { CeldasLoteModal } from './CeldasLoteModal';
+import { CeldaActions } from './CeldaActions';
+import { CambiarEstadoModal } from './CambiarEstadoModal';
+import { ESTADOS_CELDA, ETIQUETA_ESTADO, type EstadoCelda } from './estados';
 import type { EntradaBitacora } from './api';
 import { ACCION_LABEL, cambiosDeEntrada, fechaLegible } from './bitacora';
 import { CoordenadasMapa } from './CoordenadasMapa';
@@ -91,14 +96,14 @@ function Th({
   current,
   dir,
   onSort,
-  align = 'left',
+  align = 'center',
 }: {
   label: string;
   sortKey: SortKey;
   current: SortKey;
   dir: SortDir;
   onSort: (k: SortKey) => void;
-  align?: 'left' | 'right';
+  align?: 'left' | 'center' | 'right';
 }) {
   const activa = current === sortKey;
   const Icon = !activa ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
@@ -106,7 +111,7 @@ function Th({
     <th
       aria-sort={activa ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
       className={`px-3 py-2 select-none ${
-        align === 'right' ? 'text-right' : 'text-left'
+        align === 'right' ? 'text-right' : align === 'left' ? 'text-left' : 'text-center'
       } ${activa ? 'text-white' : ''}`}
     >
       <button
@@ -147,6 +152,9 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [filtroSubcentral, setFiltroSubcentral] = useState<'todas' | 'con' | 'sin'>('todas');
   const [filtroAbonados, setFiltroAbonados] = useState<'todos' | 'con' | 'sin'>('todos');
   const [filtroMunicipio, setFiltroMunicipio] = useState<'todas' | 'EL ALTO' | 'LA PAZ'>('todas');
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoCelda>('todos');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
   const [assigningId, setAssigningId] = useState<number | null>(null);
 
@@ -160,6 +168,8 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [pendienteEliminar, setPendienteEliminar] = useState<CeldaCrud | null>(null);
   const [loteOpen, setLoteOpen] = useState(false);
   const [zonas, setZonas] = useState<ZonaDTO[]>([]);
+  const [estadoModalCelda, setEstadoModalCelda] = useState<CeldaCrud | null>(null);
+  const [celdaImprimir, setCeldaImprimir] = useState<CeldaCrud | null>(null);
   const esSuperadmin = operador?.role === 'SUPERADMIN';
 
   // Conteo de abonados por celda
@@ -262,6 +272,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         if (!hay.includes(q)) return false;
       }
       if (filtroMunicipio !== 'todas' && c.municipio !== filtroMunicipio) return false;
+      if (filtroEstado !== 'todos' && c.estado !== filtroEstado) return false;
       const calibrada = c.latitud != null && c.longitud != null;
       if (filtroCalibracion === 'calibradas' && !calibrada) return false;
       if (filtroCalibracion === 'sin' && calibrada) return false;
@@ -305,14 +316,22 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           );
       }
     });
-  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, sort]);
+  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, sort]);
+
+  const paginacion = pageRange(page, pageSize, filas.length);
+  const filasVisibles = filas.slice((paginacion.page - 1) * pageSize, (paginacion.page - 1) * pageSize + pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado]);
 
   const hayFiltros =
     busqueda !== '' ||
     filtroCalibracion !== 'todas' ||
     filtroSubcentral !== 'todas' ||
     filtroAbonados !== 'todos' ||
-    filtroMunicipio !== 'todas';
+    filtroMunicipio !== 'todas' ||
+    filtroEstado !== 'todos';
 
   /** Celda seleccionada para el panel de detalle. */
   const detalle = detalleId != null ? (celdas.find(c => c.id === detalleId) ?? null) : null;
@@ -323,6 +342,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     setFiltroSubcentral('todas');
     setFiltroAbonados('todos');
     setFiltroMunicipio('todas');
+    setFiltroEstado('todos');
   };
 
   const handleSort = (key: SortKey) => {
@@ -481,7 +501,8 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   };
 
   return (
-    <div className='space-y-5'>
+    <>
+      <div className='space-y-5 print:hidden'>
       <div className='flex items-center justify-between'>
         <h2 className='text-xl font-bold text-white flex items-center gap-2'>
           <Radio className='w-5 h-5 text-brand-400' />
@@ -575,6 +596,18 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         <Select
           dark
           size='sm'
+          value={filtroEstado}
+          onChange={e => setFiltroEstado(e.target.value as 'todos' | EstadoCelda)}
+          aria-label='Filtrar por estado'
+        >
+          <option value='todos'>Estado: todos</option>
+          {ESTADOS_CELDA.map(estado => (
+            <option key={estado} value={estado}>{ETIQUETA_ESTADO[estado]}</option>
+          ))}
+        </Select>
+        <Select
+          dark
+          size='sm'
           value={filtroCalibracion}
           onChange={e => setFiltroCalibracion(e.target.value as 'todas' | 'calibradas' | 'sin')}
           aria-label='Filtrar por calibración'
@@ -620,10 +653,11 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         <table className='w-full text-xs'>
           <thead className='bg-slate-800/60 text-slate-300'>
             <tr>
+              <th className='px-3 py-2 text-center'>N°</th>
               <Th label='RFP #' sortKey='id' current={sort.key} dir={sort.dir} onSort={handleSort} />
-              <th className='px-3 py-2 text-left'>Código</th>
+              <th className='px-3 py-2 text-center'>Código</th>
               <Th label='Nombre' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
-              <th className='px-3 py-2 text-left'>Municipio / Zona</th>
+              <th className='px-3 py-2 text-center'>Municipio / Zona</th>
               <Th
                 label='Subcentral'
                 sortKey='subcentral'
@@ -631,14 +665,14 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                 dir={sort.dir}
                 onSort={handleSort}
               />
-              <th className='px-3 py-2 text-left'>Tecnología</th>
+              <th className='px-3 py-2 text-center'>Tecnología</th>
               <Th
                 label='Capacidad'
                 sortKey='capacidad'
                 current={sort.key}
                 dir={sort.dir}
                 onSort={handleSort}
-                align='right'
+                align='center'
               />
               <Th
                 label='Ocupación'
@@ -646,33 +680,38 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                 current={sort.key}
                 dir={sort.dir}
                 onSort={handleSort}
-                align='right'
+                align='center'
               />
-              <th className='px-3 py-2 text-left'>Coordenadas</th>
+              <th className='px-3 py-2 text-center'>Coordenadas</th>
               <Th
                 label='Abonados'
                 sortKey='abonados'
                 current={sort.key}
                 dir={sort.dir}
                 onSort={handleSort}
-                align='right'
+                align='center'
               />
               <th className='px-3 py-2 text-right'>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filas.map(c => {
+            {filasVisibles.map((c, indice) => {
               const count = abonadosPorCelda.get(c.id) ?? 0;
+              const numero = (paginacion.page - 1) * pageSize + indice + 1;
               return (
                 <tr
                   key={c.id}
                   onClick={() => setDetalleId(c.id)}
                   className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'
                 >
+                  <td className='px-3 py-2 text-center'>
+                    <span className='block font-mono font-semibold tabular-nums text-slate-200'>{numero}</span>
+                    <span className='block font-mono text-[10px] text-slate-500'>ID {c.id}</span>
+                  </td>
                   <td className='px-3 py-2 font-mono font-bold text-brand-400'>{c.id}</td>
-                  <td className='px-3 py-2 font-mono text-slate-400 whitespace-nowrap'>{c.codigo}</td>
-                  <td className='px-3 py-2 text-white font-medium'>{c.nombre}</td>
-                  <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>
+                  <td className='px-3 py-2 text-center font-mono text-slate-400 whitespace-nowrap'>{c.codigo}</td>
+                  <td className='px-3 py-2 text-center text-white font-medium'>{c.nombre}</td>
+                  <td className='px-3 py-2 text-center text-slate-400 whitespace-nowrap'>
                     <div>{c.municipio ?? '—'}</div>
                     <div className='text-[10px] text-slate-600'>{c.zona ?? c.direccion ?? '—'}</div>
                   </td>
@@ -704,20 +743,20 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                       </span>
                     )}
                   </td>
-                  <td className='px-3 py-2 text-slate-400'>
+                  <td className='px-3 py-2 text-center text-slate-400'>
                     <div>{c.tecnologia ?? '—'}</div>
                     <div className='text-[10px] text-slate-600 whitespace-nowrap'>
                       {c.bandaFrecuencia ?? ''}
                     </div>
                   </td>
-                  <td className='px-3 py-2 text-right text-slate-400'>
+                  <td className='px-3 py-2 text-center text-slate-400'>
                     <div>{c.capacidadCanales != null ? `${c.capacidadCanales} ch` : '—'}</div>
                     <div className='text-[10px] text-slate-600'>
                       {c.radioCoberturaKm != null ? `${c.radioCoberturaKm} km` : 'sin cobertura'}
                     </div>
                   </td>
-                  <td className='px-3 py-2'>{celdaOcupacion(c)}</td>
-                  <td className='px-3 py-2 text-slate-400 whitespace-nowrap'>
+                  <td className='px-3 py-2 text-center'>{celdaOcupacion(c)}</td>
+                  <td className='px-3 py-2 text-center text-slate-400 whitespace-nowrap'>
                     {c.latitud != null && c.longitud != null ? (
                       <span className='inline-flex items-center gap-1 text-emerald-400'>
                         <MapPin className='w-3 h-3' />
@@ -727,7 +766,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                       <span className='text-slate-600'>Sin calibrar</span>
                     )}
                   </td>
-                  <td className='px-3 py-2 text-right'>
+                  <td className='px-3 py-2 text-center'>
                     <span className={`font-mono font-bold ${count > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
                       {c.usuariosActuales ?? count}
                     </span>
@@ -735,32 +774,29 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                       <span className='block text-[10px] text-slate-600'>/ {c.capacidadAbonadosPrevista} previstos</span>
                     )}
                   </td>
-                  <td className='px-3 py-2 text-right whitespace-nowrap' onClick={e => e.stopPropagation()}>
-                    {escritura && (
-                      <button
-                        onClick={() => openEdit(c)}
-                        className='p-1.5 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-slate-800 transition inline-flex items-center'
-                        aria-label={`Editar ${c.nombre}`}
-                      >
-                        <Pencil className='w-3.5 h-3.5' />
-                      </button>
-                    )}
-                    {borrado && (
-                      <button
-                        onClick={() => setPendienteEliminar(c)}
-                        className='p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-slate-800 transition inline-flex items-center ml-1'
-                        aria-label={`Eliminar ${c.nombre}`}
-                      >
-                        <Trash2 className='w-3.5 h-3.5' />
-                      </button>
-                    )}
+                  <td className='px-3 py-2 text-center whitespace-nowrap' onClick={e => e.stopPropagation()}>
+                    <CeldaActions
+                      celda={c}
+                      puedeEditar={escritura}
+                      puedeBorrar={borrado}
+                      onVer={() => setDetalleId(c.id)}
+                      onEditar={() => openEdit(c)}
+                      onImprimir={() => {
+                        setCeldaImprimir(c);
+                        setTimeout(() => window.print(), 200);
+                      }}
+                      onHistorial={() => setDetalleId(c.id)}
+                      onCambiarEstado={() => setEstadoModalCelda(c)}
+                      onBaja={() => setEstadoModalCelda(c)}
+                      onEliminar={() => setPendienteEliminar(c)}
+                    />
                   </td>
                 </tr>
               );
             })}
             {filas.length === 0 && !loading && (
               <tr>
-                <td colSpan={11} className='px-3 py-8 text-center text-slate-500'>
+                <td colSpan={12} className='px-3 py-8 text-center text-slate-500'>
                   {celdas.length === 0 ? (
                     <>
                       No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
@@ -791,6 +827,17 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           </div>
         )}
       </div>
+
+      <TablePagination
+        page={paginacion.page}
+        pageSize={pageSize}
+        total={filas.length}
+        onPageChange={setPage}
+        onPageSizeChange={size => {
+          setPageSize(size);
+          setPage(1);
+        }}
+      />
 
       {/* Panel de detalle de la celda (ficha + drill-down + historial) */}
       <Modal
@@ -1193,7 +1240,48 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           void loadCeldas();
         }}
       />
-    </div>
+      </div>
+
+      <CambiarEstadoModal
+        celda={estadoModalCelda}
+        isOpen={estadoModalCelda != null}
+        onClose={() => setEstadoModalCelda(null)}
+        esSuperadmin={esSuperadmin}
+        onSave={async (estado, motivo) => {
+          const r = await api.cambiarEstadoCelda(estadoModalCelda!.id, estado, motivo);
+          setNotice(r.message);
+          invalidateCellsCache();
+          await loadCeldas();
+          setEstadoModalCelda(null);
+        }}
+      />
+
+      {celdaImprimir && (
+        <section className='hidden print:block bg-white text-slate-900 p-10 max-w-3xl mx-auto'>
+          <header className='flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-6'>
+            <div>
+              <p className='font-bold text-lg'>COTEL R.L.</p>
+              <p className='text-xs'>Siemens DECTlink · Panel de Celdas RFP</p>
+            </div>
+            <p className='text-xs'>Ficha de celda · {new Date().toLocaleDateString('es-BO')}</p>
+          </header>
+          <h1 className='text-xl font-bold mb-4'>{celdaImprimir.nombre}</h1>
+          <dl className='grid grid-cols-2 gap-3 text-sm border border-slate-300 rounded p-4'>
+            <div><dt className='text-xs text-slate-500'>RFP / ID</dt><dd className='font-mono'>{celdaImprimir.id}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Código</dt><dd className='font-mono'>{celdaImprimir.codigo}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Número / municipio</dt><dd>{celdaImprimir.numeroCelda ?? '—'} · {celdaImprimir.municipio ?? '—'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Estado</dt><dd>{ETIQUETA_ESTADO[celdaImprimir.estado as EstadoCelda] ?? celdaImprimir.estado}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Zona / dirección</dt><dd>{celdaImprimir.zona ?? '—'} · {celdaImprimir.direccion ?? '—'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Coordenadas</dt><dd>{celdaImprimir.latitud != null ? `${celdaImprimir.latitud}, ${celdaImprimir.longitud}` : 'Sin calibrar'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Capacidad</dt><dd>{celdaImprimir.capacidadCanales ?? '—'} canales · {celdaImprimir.capacidadAbonadosPrevista ?? '—'} abonados previstos</dd></div>
+            <div><dt className='text-xs text-slate-500'>Usuarios actuales</dt><dd>{celdaImprimir.usuariosActuales ?? 0}</dd></div>
+          </dl>
+          <footer className='mt-8 border-t border-slate-300 pt-3 text-[10px] text-slate-500'>
+            Documento generado por COTEL DECTlink · Uso interno · {operador?.email}
+          </footer>
+        </section>
+      )}
+    </>
   );
 }
 

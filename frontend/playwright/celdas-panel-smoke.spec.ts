@@ -174,3 +174,43 @@ test('generar lote de celdas permite previsualizar, editar y crear', async ({ pa
     await request.delete(`/api/cells/${celda.id}`, { headers: { 'x-admin-token': adminToken } });
   }
 });
+
+/** Tabla tipo datatable con las 60 celdas históricas (30 por ciudad). */
+test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/imprimir', async ({ page, request }) => {
+  const sesion = await seedAdminSession(page, request);
+  expect(sesion, 'login de prueba').not.toBeNull();
+
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: /Celdas \(RFP\)/i }).first().click();
+
+  const filas = page.locator('table').first().locator('tbody tr');
+  await expect(filas).toHaveCount(5);
+  await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
+  await page.screenshot({ path: 'test-results/celdas-datatable.png' });
+
+  await page.getByLabel('Filtrar por estado').selectOption('RETIRADA');
+  await expect(filas).toHaveCount(2);
+  await expect(page.getByText(/Mostrando\s+1–2\s+de\s+2\s+registros/)).toBeVisible();
+  await page.getByRole('button', { name: /Limpiar filtros/ }).click();
+  await expect(filas).toHaveCount(5);
+
+  await page.getByRole('button', { name: 'Última página' }).click();
+  const primerNumero = filas.first().locator('td').first().locator('span').first();
+  await expect(primerNumero).toHaveText('56');
+
+  // Menú de acciones y ficha imprimible.
+  await filas.first().getByRole('button', { name: /Ver celda/ }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await page.evaluate(() => {
+    const ventana = window as unknown as { __impreso?: boolean; print: () => void };
+    ventana.__impreso = false;
+    ventana.print = () => {
+      ventana.__impreso = true;
+    };
+  });
+  await filas.first().getByRole('button', { name: /Imprimir celda/ }).click();
+  await expect.poll(async () => page.evaluate(() => (window as unknown as { __impreso?: boolean }).__impreso)).toBe(true);
+});

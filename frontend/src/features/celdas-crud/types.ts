@@ -23,6 +23,9 @@ export interface CeldaCrud extends Record<string, unknown> {
   capacidadAbonadosPrevista: number | null;
   usuariosActuales: number;
   estado: string;
+  numeroCelda: number | null;
+  fechaEstado: string | null;
+  motivoEstado: string | null;
   activo: boolean;
 }
 
