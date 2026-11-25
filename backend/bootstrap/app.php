@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureOperator;
+use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\VerifyAdminToken;
 use Illuminate\Foundation\Application;
@@ -20,8 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         //   ->middleware('role:superadmin,supervisor,despachador')
         $middleware->alias([
             'role' => RequireRole::class,
+            'permission' => RequirePermission::class,
             'operator' => EnsureOperator::class,
-            'x-admin-token' => \App\Http\Middleware\VerifyAdminToken::class,
+            'x-admin-token' => VerifyAdminToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

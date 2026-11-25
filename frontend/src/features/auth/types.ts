@@ -15,6 +15,15 @@ export interface Operador {
   nombre: string;
   role: OperadorRole;
   activo: boolean;
+  /** Permisos efectivos entregados por /api/auth/me (rol + overrides). */
+  permisos?: string[];
+  puesto?: string | null;
+  especialidad?: string | null;
+  area?: string | null;
+  departamento?: string | null;
+  zonaId?: number | null;
+  turno?: string | null;
+  supervisorId?: number | null;
   lastLoginAt?: string | null;
 }
 

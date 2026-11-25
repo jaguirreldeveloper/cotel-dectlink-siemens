@@ -193,214 +193,28 @@ class OperadoresController extends Controller
      */
     public function permissions(): JsonResponse
     {
-        $matrix = [
-            'roles' => [
-                [
-                    'id' => Operador::ROLE_SUPERADMIN,
-                    'nombre' => 'Jefatura Técnica & Sistemas',
-                    'descripcion' => 'Control total del sistema: gestión de operadores, consola SQL, calibración de planta externa y despacho de OTs.',
-                    'nivel' => 'Nivel 1 · Acceso Total',
-                    'color' => 'amber',
-                ],
-                [
-                    'id' => Operador::ROLE_ADMIN,
-                    'nombre' => 'Administración Operativa',
-                    'descripcion' => 'Administración de lo implementado: operadores de la red, calibración de planta externa, despacho de cuadrillas y seguimiento de OTs. Sin acceso a consola SQL ni módulos en desarrollo.',
-                    'nivel' => 'Nivel 2 · Administración',
-                    'color' => 'rose',
-                ],
-                [
-                    'id' => Operador::ROLE_SUPERVISOR,
-                    'nombre' => 'Ingeniero de Red DECTlink & Regulación ATT',
-                    'descripcion' => 'Ingeniería de red: calibración GPS, estados de servicio, despacho de OTs y auditoría técnica de planta externa.',
-                    'nivel' => 'Nivel 3 · Ingeniería',
-                    'color' => 'violet',
-                ],
-                [
-                    'id' => Operador::ROLE_DESPACHADOR,
-                    'nombre' => 'Coordinador de Cuadrillas & Despacho de OTs',
-                    'descripcion' => 'Despacho operativo: creación y seguimiento de órdenes de trabajo, gestión de cuadrillas y materiales.',
-                    'nivel' => 'Nivel 4 · Operativo',
-                    'color' => 'indigo',
-                ],
-                [
-                    'id' => Operador::ROLE_TECNICO,
-                    'nombre' => 'Técnico de Planta Externa & Instalador FAU',
-                    'descripcion' => 'Acceso operativo y de consulta: mapas GIS, simulación de enlaces RF, visualización del padrón y fichas ATT.',
-                    'nivel' => 'Nivel 5 · Campo',
-                    'color' => 'sky',
-                ],
-                [
-                    'id' => Operador::ROLE_AUDITOR,
-                    'nombre' => 'Auditor Regulatorio ATT & Consulta Comercial',
-                    'descripcion' => 'Consulta regulatoria y comercial: padrón, bitácora, fichas oficiales, mapas GIS y reportes para la ATT.',
-                    'nivel' => 'Nivel 6 · Consulta',
-                    'color' => 'slate',
-                ],
-                [
-                    'id' => Operador::ROLE_GERENTE_AREA,
-                    'nombre' => 'Gerente de Área (GAF/GC/GPP/GT/GS)',
-                    'descripcion' => 'KPIs, reportes y exportación de su área. Acceso de solo lectura, sin acciones de escritura.',
-                    'nivel' => 'Nivel 2 · Gerencia',
-                    'color' => 'emerald',
-                ],
-                [
-                    'id' => Operador::ROLE_JEFE_DEPARTAMENTO,
-                    'nombre' => 'Responsable de Departamento',
-                    'descripcion' => 'Aprueba y supervisa órdenes de trabajo; ve métricas y cuadrillas de todo su departamento.',
-                    'nivel' => 'Nivel 3 · Departamento',
-                    'color' => 'cyan',
-                ],
-                [
-                    'id' => Operador::ROLE_ENCARGADO_AREA,
-                    'nombre' => 'Responsable de Área',
-                    'descripcion' => 'Gestiona cuadrillas, materiales y actividades operativas dentro de su área y zona.',
-                    'nivel' => 'Nivel 4 · Área',
-                    'color' => 'orange',
-                ],
-            ],
-            'modulos' => [
-                [
-                    'categoria' => 'Planta Externa & Abonados DECTlink',
-                    'permisos' => [
-                        $this->permiso(
-                            'subscribers.view',
-                            'Consulta y búsqueda en el padrón maestro de abonados (216 líneas)',
-                            'Visualización de datos técnicos de contrato, celular, modelo FAU y señal DECT.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'subscribers.export',
-                            'Exportación de datos de abonados a CSV y reportes técnicos',
-                            'Descarga de datos tabulares para análisis externo.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'subscribers.status',
-                            'Modificación de estados de servicio y operativos (C/SERV, FALLA, etc.)',
-                            'Impacta la bitácora transaccional y el estado comercial de la línea en Supabase.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR]
-                        ),
-                        $this->permiso(
-                            'subscribers.gps',
-                            'Calibración y registro de nuevas coordenadas GPS en mapa',
-                            'Recalcula distancia geodésica y azimut a la celda RFP Siemens.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR]
-                        ),
-                    ],
-                ],
-                [
-                    'categoria' => 'Cuadrillas de Campo & Órdenes de Trabajo',
-                    'permisos' => [
-                        $this->permiso(
-                            'work_orders.view',
-                            'Visualización del tablero Kanban de órdenes de trabajo en tiempo real (SSE)',
-                            'Seguimiento de OTs pendientes, en proceso y completadas en el área EAI.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'work_orders.manage',
-                            'Creación, asignación, modificación y cierre de órdenes de trabajo',
-                            'Despacho formal de cuadrillas a terreno con asignación de materiales.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
-                        ),
-                        $this->permiso(
-                            'cuadrillas.manage',
-                            'Administración del catálogo de cuadrillas de planta externa',
-                            'Alta, baja y actualización de vehículos y técnicos asignados.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
-                        ),
-                        $this->permiso(
-                            'materiales.manage',
-                            'Control de inventario y catálogo de materiales (cables, antenas, conectores)',
-                            'Registro de insumos de telecomunicaciones y control de existencias.',
-                            [Operador::ROLE_SUPERADMIN, Operador::ROLE_ADMIN, Operador::ROLE_SUPERVISOR, Operador::ROLE_DESPACHADOR]
-                        ),
-                    ],
-                ],
-                [
-                    'categoria' => 'Herramientas de Ingeniería RF & Regulación',
-                    'permisos' => [
-                        $this->permiso(
-                            'rf.simulate',
-                            'Simulador de Línea de Vista RF (ITU-R P.525, zona de Fresnel, FSL)',
-                            'Cálculo de propagación electromagnética para enlaces en banda 1880–1900 MHz.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'tech_migration.simulate',
-                            'Planificador y calculador financiero de migración a GPON / LTE',
-                            'Modelado de CAPEX, OPEX y retorno de inversión por abonado.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'official_sheets.print',
-                            'Generación de fichas oficiales ATT con código IPEI Siemens y QR',
-                            'Documentación técnica oficial exigida por la entidad regulatoria.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'gis.coverage',
-                            'Visualización de cobertura GIS de celdas RFP Siemens y exportación KML/GeoJSON',
-                            'Inspección de radios de cobertura de celdas Mercedario, Cosmos 79, Senkata y Tilata.',
-                            Operador::ROLES
-                        ),
-                    ],
-                ],
-                [
-                    'categoria' => 'Base de Datos & Seguridad del Sistema',
-                    'permisos' => [
-                        $this->permiso(
-                            'database.schema_view',
-                            'Exploración de tablas, columnas e información del esquema PostgreSQL',
-                            'Inspección técnica de metadatos de Supabase Cloud.',
-                            Operador::ROLES
-                        ),
-                        $this->permiso(
-                            'database.sql_console',
-                            'Consola interactiva SQL (consultas protegidas por SqlGuard)',
-                            'Solo SUPERADMIN para diagnósticos directos sobre el esquema COTEL.',
-                            [Operador::ROLE_SUPERADMIN]
-                        ),
-                        $this->permiso(
-                            'database.csv_upload',
-                            'Carga y consolidación masiva de padrón desde archivo CSV',
-                            'Actualiza el padrón completo normalizando zonas y titulares.',
-                            [Operador::ROLE_SUPERADMIN]
-                        ),
-                        $this->permiso(
-                            'users.manage',
-                            'Módulo de Usuarios: crear operadores, asignar roles y restablecer claves',
-                            'Administración de cuentas con acceso al sistema COTEL DECTlink.',
-                            [Operador::ROLE_SUPERADMIN]
-                        ),
-                    ],
-                ],
-            ],
-        ];
-
-        return response()->json($matrix);
-    }
-
-    /**
-     * Construye un ítem de permiso con el mapa de roles permitido/bloqueado.
-     *
-     * @param  array<int, string>  $permitidos
-     * @return array{clave: string, descripcion: string, detalle: string, roles: array<string, bool>}
-     */
-    private function permiso(string $clave, string $descripcion, string $detalle, array $permitidos): array
-    {
-        $roles = array_fill_keys(Operador::ROLES, false);
-        foreach ($permitidos as $rol) {
-            $roles[$rol] = true;
+        $modulos = [];
+        foreach (config('permissions.modulos', []) as $modulo) {
+            $permisos = [];
+            foreach ($modulo['permisos'] as $permiso) {
+                $mapa = array_fill_keys(Operador::ROLES, false);
+                foreach ($permiso['roles'] as $rol) {
+                    $mapa[$rol] = true;
+                }
+                $permisos[] = [
+                    'clave' => $permiso['clave'],
+                    'descripcion' => $permiso['descripcion'],
+                    'detalle' => $permiso['detalle'],
+                    'roles' => $mapa,
+                ];
+            }
+            $modulos[] = ['categoria' => $modulo['categoria'], 'permisos' => $permisos];
         }
 
-        return [
-            'clave' => $clave,
-            'descripcion' => $descripcion,
-            'detalle' => $detalle,
-            'roles' => $roles,
-        ];
+        return response()->json([
+            'roles' => config('permissions.roles', []),
+            'modulos' => $modulos,
+        ]);
     }
 
     /**

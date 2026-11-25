@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Operador;
 use App\Support\OperatorToken;
+use App\Support\Permissions;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -53,14 +55,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'operador' => [
-                'id' => $operador->id,
-                'email' => $operador->email,
-                'nombre' => $operador->nombre ?? 'Operador',
-                'role' => $operador->rolCanonico(),
-                'activo' => $operador->activo,
-                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
-            ],
+            'operador' => $this->perfil($operador),
             'message' => 'Inicio de sesión exitoso.',
         ]);
     }
@@ -79,15 +74,34 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'operador' => [
-                'id' => $operador->id,
-                'email' => $operador->email,
-                'nombre' => $operador->nombre ?? 'Operador',
-                'role' => $operador->rolCanonico(),
-                'activo' => $operador->activo,
-                'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? \Carbon\Carbon::parse($v)->toISOString() : null,
-            ],
+            'operador' => $this->perfil($operador),
         ]);
+    }
+
+    /**
+     * Perfil público del operador: identidad, ámbito organizacional y
+     * permisos efectivos (rol + excepciones), para que el frontend use `can()`.
+     *
+     * @return array<string, mixed>
+     */
+    private function perfil(Operador $operador): array
+    {
+        return [
+            'id' => $operador->id,
+            'email' => $operador->email,
+            'nombre' => $operador->nombre ?? 'Operador',
+            'role' => $operador->rolCanonico(),
+            'activo' => $operador->activo,
+            'puesto' => $operador->puesto,
+            'especialidad' => $operador->especialidad,
+            'area' => $operador->area,
+            'departamento' => $operador->departamento,
+            'zonaId' => $operador->zona_id,
+            'turno' => $operador->turno,
+            'supervisorId' => $operador->supervisor_id,
+            'permisos' => Permissions::para($operador),
+            'lastLoginAt' => ($v = $operador->getAttribute('last_login_at')) !== null ? Carbon::parse($v)->toISOString() : null,
+        ];
     }
 
     /**

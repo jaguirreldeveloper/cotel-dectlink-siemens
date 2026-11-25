@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Operador, AuthState } from './types';
+import { can as tienePermiso } from '@/shared/utils/permissions';
 import {
   getStoredOperatorToken,
   setStoredOperatorToken,
@@ -153,5 +154,6 @@ export function useAuth() {
     logout,
     enterDemoMode,
     refreshSession: verifySession,
+    can: (permiso: string): boolean => tienePermiso(state.operador, permiso),
   };
 }

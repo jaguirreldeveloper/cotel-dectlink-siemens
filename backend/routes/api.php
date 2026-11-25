@@ -93,8 +93,10 @@ Route::middleware('operator')->group(function (): void {
 // Calibración GPS y estados de servicio: Jefatura / Administración Operativa / Ingeniería.
 // Rate limiting: 10 solicitudes/minuto para cambios de estado y coordenadas
 Route::middleware(['role:superadmin,admin,supervisor', 'throttle:padron-write'])->group(function (): void {
-    Route::patch('subscribers/{nro}/status', [SubscribersController::class, 'updateStatus']);
-    Route::patch('subscribers/{nro}/coordinates', [SubscribersController::class, 'updateCoordinates']);
+    Route::patch('subscribers/{nro}/status', [SubscribersController::class, 'updateStatus'])
+        ->middleware('permission:subscribers.status');
+    Route::patch('subscribers/{nro}/coordinates', [SubscribersController::class, 'updateCoordinates'])
+        ->middleware('permission:subscribers.gps');
 });
 
 // Despacho de cuadrillas, órdenes de trabajo y materiales: Jefatura / Administración Operativa / Ingeniería / Despacho.
@@ -118,13 +120,13 @@ Route::middleware(['role:superadmin,admin,supervisor,despachador', 'throttle:res
 // Gestión de usuarios, consola SQL, conexión y Git: exclusivo de SUPERADMIN.
 // Rate limiting: 8/min para operadores, 5/min para consultas SQL
 Route::middleware(['role:superadmin', 'throttle:operadores-write'])->group(function (): void {
-    Route::post('operadores', [OperadoresController::class, 'store']);
-    Route::patch('operadores/{id}', [OperadoresController::class, 'update']);
-    Route::delete('operadores/{id}', [OperadoresController::class, 'destroy']);
+    Route::post('operadores', [OperadoresController::class, 'store'])->middleware('permission:users.manage');
+    Route::patch('operadores/{id}', [OperadoresController::class, 'update'])->middleware('permission:users.manage');
+    Route::delete('operadores/{id}', [OperadoresController::class, 'destroy'])->middleware('permission:users.manage');
 });
 
 Route::middleware(['role:superadmin', 'throttle:database-query'])->group(function (): void {
-    Route::post('database/query', [DatabaseController::class, 'query']);
+    Route::post('database/query', [DatabaseController::class, 'query'])->middleware('permission:database.sql_console');
     Route::post('database/test-connection', [DatabaseController::class, 'testConnection']);
     Route::post('database/apply-connection', [DatabaseController::class, 'applyConnection']);
 
@@ -159,8 +161,8 @@ Route::middleware(['role:superadmin,admin', 'throttle:infraestructura-write'])->
     Route::patch('cells/{id}/subcentral', [CellsController::class, 'asignarSubcentral']);
 
     // CRUD de celdas (RFP): crear y editar (ADMIN+)
-    Route::post('cells', [CellsController::class, 'store']);
-    Route::patch('cells/{id}', [CellsController::class, 'update']);
+    Route::post('cells', [CellsController::class, 'store'])->middleware('permission:cells.create');
+    Route::patch('cells/{id}', [CellsController::class, 'update'])->middleware('permission:cells.edit');
 });
 
 // Borrado físico de infraestructura: exclusivo de SUPERADMIN (jamás ADMIN).
@@ -169,7 +171,7 @@ Route::middleware('role:superadmin')->group(function (): void {
     Route::delete('subcentrales/{subcentral}', [SubcentralesController::class, 'destroy']);
     Route::delete('shelters/{shelter}', [SheltersController::class, 'destroy']);
     Route::delete('armarios/{armario}', [ArmariosController::class, 'destroy']);
-    Route::delete('cells/{id}', [CellsController::class, 'destroy']);
+    Route::delete('cells/{id}', [CellsController::class, 'destroy'])->middleware('permission:cells.delete');
 });
 
 // ===========================================================================
@@ -202,5 +204,5 @@ Route::middleware(['role:superadmin,admin', 'throttle:padron-cargas'])->group(fu
 
 // Aplicar el lote: exclusivo de SUPERADMIN.
 Route::middleware(['role:superadmin', 'throttle:padron-cargas'])->group(function (): void {
-    Route::post('padron/cargas/{id}/apply', [PadronCargasController::class, 'apply']);
+    Route::post('padron/cargas/{id}/apply', [PadronCargasController::class, 'apply'])->middleware('permission:padron.apply');
 });
