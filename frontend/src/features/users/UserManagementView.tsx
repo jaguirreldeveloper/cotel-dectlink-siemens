@@ -532,32 +532,37 @@ export function UserManagementView({ currentOperador }: UserManagementViewProps)
                             <span className='block font-mono text-[10px] text-slate-400'>ID {op.id}</span>
                           </td>
                           <td className='py-3.5 px-4 text-center'>
-                            <div className='flex items-center justify-center gap-3'>
-                              <div
-                                className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold border ${
-                                  op.role === 'SUPERADMIN'
-                                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                                    : 'bg-brand-500/10 border-brand-500/30 text-brand-300'
-                                }`}
-                              >
-                                {op.nombre
-                                  ? op.nombre.charAt(0).toUpperCase()
-                                  : op.email.charAt(0).toUpperCase()}
-                              </div>
-                              <div className='text-center'>
-                                <div className='flex items-center justify-center gap-2'>
-                                  <span className='font-semibold text-slate-900 dark:text-white'>
-                                    {op.nombre || 'Sin nombre registrado'}
-                                  </span>
-                                  {isCurrent && (
-                                    <span className='text-[10px] px-1.5 py-0.2 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30 font-semibold'>
-                                      Tú
-                                    </span>
-                                  )}
+                            {/* Bloque centrado con ancho fijo y texto interno alineado:
+                                evita que el nombre/correo "floten" según su longitud. */}
+                            <div className='inline-flex w-56 sm:w-64 max-w-full items-center gap-3 text-left'>
+                              <div className='relative shrink-0'>
+                                <div
+                                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold border ${roleBadgeClasses(op.role)}`}
+                                  title={roleLabel(op.role)}
+                                >
+                                  {op.nombre
+                                    ? op.nombre.charAt(0).toUpperCase()
+                                    : op.email.charAt(0).toUpperCase()}
                                 </div>
-                                <span className='text-slate-400 flex items-center gap-1 text-[11px] mt-0.5'>
-                                  <Mail className='w-3 h-3 text-slate-500' />
-                                  {op.email}
+                                {isCurrent && (
+                                  <span className='absolute -bottom-1.5 -right-1.5 rounded-full bg-brand-500 px-1.5 py-[1px] text-[9px] font-bold text-white shadow ring-2 ring-white dark:ring-slate-900'>
+                                    Tú
+                                  </span>
+                                )}
+                              </div>
+                              <div className='min-w-0 flex-1'>
+                                <span
+                                  className='block truncate font-semibold text-slate-900 dark:text-white'
+                                  title={op.nombre || 'Sin nombre registrado'}
+                                >
+                                  {op.nombre || 'Sin nombre registrado'}
+                                </span>
+                                <span
+                                  className='mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400'
+                                  title={op.email}
+                                >
+                                  <Mail className='w-3 h-3 shrink-0 text-slate-400' />
+                                  <span className='truncate'>{op.email}</span>
                                 </span>
                               </div>
                             </div>

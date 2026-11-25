@@ -176,5 +176,10 @@ test('la tabla de operadores pagina en 5, numera y ofrece ver/imprimir', async (
   await page.getByRole('button', { name: /Imprimir ficha de/ }).first().click();
   await expect.poll(async () => page.evaluate(() => (window as unknown as { __impreso?: boolean }).__impreso)).toBe(true);
 
+  // El badge «Tú» aparece solo en la fila del operador en sesión.
+  await page.getByLabel('Buscar operadores').fill('testsuperadmin@cotel.bo');
+  await expect(filas).toHaveCount(1);
+  await expect(page.getByText('Tú', { exact: true })).toHaveCount(1);
+
   expect(errores, 'sin errores de página').toEqual([]);
 });
