@@ -98,7 +98,7 @@ zonas ─< clientes ─< abonados_lineas >─ celdas
 
 | Tabla | Contenido | Registros (BD local, 2026-11-10) |
 |-------|-----------|:----------------:|
-| `celdas` | Estaciones base RFP Siemens. Perfil: `codigo` único, `departamento='LA PAZ'`, `municipio` (`EL ALTO`/`LA PAZ`), `zona_id`, `direccion`, `capacidad_abonados_prevista`, `estado` (`PLANEADA`/`INSTALADA`/`EN_SERVICIO`) y `activo`. `latitud/longitud` se capturan en el mapa y se validan en campo; `usuarios_actuales` se calcula con `COUNT(abonados_lineas)`, nunca se almacena | 5 + generadas por lote |
+| `celdas` | Estaciones base RFP Siemens. Perfil: `codigo` único, `numero_celda` 1–30 por municipio (`UNIQUE(municipio, numero_celda)`), `departamento='LA PAZ'`, `zona_id`, `direccion`, `capacidad_abonados_prevista`, `estado` (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `BAJA`, `RETIRADA`), `fecha_estado`, `motivo_estado` y `activo`. Las celdas de baja/retiro **se conservan** por auditoría; `usuarios_actuales` se calcula con `COUNT(abonados_lineas)` | 60 históricas (30 El Alto + 30 La Paz) + generadas por lote |
 | `zonas` | Barrios/urbanizaciones canónicos (normalizados desde 55 variantes crudas del CSV) | 48 |
 | `clientes` | Titulares deduplicados por `(nombre_completo, direccion)`; 1 cliente → N líneas | 235 |
 | `abonados_lineas` | Padrón maestro de líneas: `nro` serial global (identificador de negocio), teléfono y contrato únicos, estados con CHECK, señal/calidad/GPS nullable, y `zona_origen`/`nro_registro_origen` como **procedencia** del CSV | 244 |
@@ -177,6 +177,9 @@ Implementados en Laravel (`backend/routes/api.php`, **66 rutas**) con **paths y 
 | `POST`/`PATCH`/`DELETE` | `/api/cuadrillas` · `/api/materiales` | SUPERADMIN, ADMIN, SUPERVISOR, DESPACHADOR |
 | `POST`/`PATCH`/`DELETE` | `/api/operadores` | Solo SUPERADMIN |
 | `POST` | `/api/cells/lote/preview` · `/api/cells/lote` | Generación por lote de celdas: solo SUPERADMIN (preview no persiste; `lote` es transaccional) |
+| `GET` | `/api/cells?municipio=&estado=&numero=` | Filtros del panel de celdas |
+| `GET` | `/api/cells/{id}/historial-estados` | Línea de tiempo del ciclo de vida (derivada de bitácora) |
+| `PATCH` | `/api/cells/{id}/estado` | Transición controlada: `PLANEADA → INSTALADA → EN_SERVICIO ⇄ SUSPENDIDA → BAJA → RETIRADA` |
 | `POST` | `/api/database/query` · `test-connection` · `apply-connection`, `git/init` · `git/remote` | Solo SUPERADMIN |
 
 ### Infraestructura jerárquica (centrales → subcentrales → shelters → armarios)
@@ -325,12 +328,12 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **151 tests / 692 assertions** (backend); `scripts` sin tests (sale 0).
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **159 tests / 730 assertions** (backend); `scripts` sin tests (sale 0).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
 - `pnpm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 pnpm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
-- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **15 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda y asistente de lote), visibilidad por rol de los 12 operadores demo, portal «Mi línea», modal de Nuevo Operador y tabla de usuarios paginada con ver/imprimir. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
+- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **16 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda, asistente de lote y datatable de 60 registros con filtro/estado/impresión), visibilidad por rol de los 12 operadores demo, portal «Mi línea», modal de Nuevo Operador y tabla de usuarios paginada. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
 - `pnpm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
 - La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, lectura del padrón sin sesión → `401` y con token de operador → `200`. El frontend nunca lee secretos de `import.meta.env`: usa el token de la sesión (`sessionStorage` por defecto; `localStorage` solo con «Recordarme»).
@@ -340,6 +343,11 @@ Hay dos entornos con sus propios `.env`:
 © 2026 COTEL R.L. · Todos los derechos reservados.
 
 ## 🛠️ Cambios recientes
+
+**2026-11-27 — Ciclo de vida completo y 60 celdas históricas:**
+- `numero_celda` 1–30 por municipio con `UNIQUE(municipio, numero_celda)`; `PATCH /api/cells/{id}/estado` con máquina de estados y bitácora; reactivación de baja/retiro solo para SUPERADMIN.
+- `CeldasHistoricasSeeder`: 30 El Alto + 30 La Paz con estados variados y eventos fechados de 2024–2026 (`origen=seed`) para auditoría; las 5 celdas previas se actualizan por su número, no se duplican.
+- `GET /api/cells?municipio=&estado=&numero=` y `/historial-estados`; tabla de celdas con 5 filas por defecto, Inicio/Fin/números, `N°`+ID, columnas centradas, filtro por estado, Ver/Imprimir y menú con Cambiar estado/Baja/Eliminar.
 
 **2026-11-26 — Generación de celdas RFP en El Alto/La Paz:**
 - Campos nuevos en `celdas`: `codigo` único, `departamento`, `municipio`, `zona_id`, `direccion`, `capacidad_abonados_prevista`, `estado` y `activo`; backfill de las 5 celdas existentes y conteo derivado `usuariosActuales` en `GET /api/cells`.
