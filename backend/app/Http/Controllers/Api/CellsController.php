@@ -55,6 +55,7 @@ class CellsController extends Controller
             'message' => 'Subcentral asignada a la celda exitosamente.',
             'celda' => [
                 'id' => $cell->id,
+                'codigo' => $cell->codigo,
                 'nombre' => $cell->nombre,
                 'idSubcentral' => $cell->id_subcentral,
             ],
@@ -68,14 +69,17 @@ class CellsController extends Controller
     {
         try {
             $rows = DB::select('
-                SELECT c.*, s.nombre AS subcentral_nombre
+                SELECT c.*, s.nombre AS subcentral_nombre, z.nombre AS zona_nombre,
+                       (SELECT COUNT(*) FROM abonados_lineas al WHERE al.id_celda = c.id) AS usuarios_actuales
                 FROM celdas c
                 LEFT JOIN subcentrales s ON s.id = c.id_subcentral
+                LEFT JOIN zonas z ON z.id = c.zona_id
                 ORDER BY c.id ASC
             ');
 
             return response()->json(array_map(fn (object $row): array => [
                 'id' => (int) $row->id,
+                'codigo' => $row->codigo,
                 'nombre' => $row->nombre,
                 'tecnologia' => $row->tecnologia,
                 'descripcion' => $row->descripcion,
@@ -87,6 +91,15 @@ class CellsController extends Controller
                 'longitud' => $row->longitud !== null ? (float) $row->longitud : null,
                 'idSubcentral' => $row->id_subcentral !== null ? (int) $row->id_subcentral : null,
                 'nombreSubcentral' => $row->subcentral_nombre ?? null,
+                'departamento' => $row->departamento,
+                'municipio' => $row->municipio,
+                'zonaId' => $row->zona_id !== null ? (int) $row->zona_id : null,
+                'zona' => $row->zona_nombre ?? null,
+                'direccion' => $row->direccion,
+                'capacidadAbonadosPrevista' => $row->capacidad_abonados_prevista !== null ? (int) $row->capacidad_abonados_prevista : null,
+                'usuariosActuales' => (int) $row->usuarios_actuales,
+                'estado' => $row->estado,
+                'activo' => (bool) $row->activo,
                 'createdAt' => CarbonImmutable::parse($row->created_at)->toIso8601String(),
             ], $rows));
         } catch (\Throwable) {
@@ -155,28 +168,44 @@ class CellsController extends Controller
     {
         $validated = $request->validate([
             'id' => ['required', 'integer', Rule::unique('celdas', 'id')],
+            'codigo' => ['nullable', 'string', 'max:50', Rule::unique('celdas', 'codigo')],
             'nombre' => ['required', 'string', 'max:255'],
             'tecnologia' => ['nullable', 'string', 'max:100'],
             'descripcion' => ['nullable', 'string'],
             'rfp_modelo' => ['nullable', 'string', 'max:255'],
             'banda_frecuencia' => ['nullable', 'string', 'max:100'],
             'capacidad_canales' => ['nullable', 'integer', 'min:0'],
+            'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0'],
             'radio_cobertura_km' => ['nullable', 'numeric', 'min:0'],
             'latitud' => ['nullable', 'numeric', 'min:-90', 'max:90'],
             'longitud' => ['nullable', 'numeric', 'min:-180', 'max:180'],
+            'departamento' => ['nullable', 'string', 'max:40'],
+            'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
+            'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'estado' => ['nullable', Rule::in(['PLANEADA', 'INSTALADA', 'EN_SERVICIO'])],
+            'activo' => ['nullable', 'boolean'],
         ]);
 
         $cell = Cell::create([
             'id' => $validated['id'],
+            'codigo' => $validated['codigo'] ?? 'RFP-'.$validated['id'],
             'nombre' => $validated['nombre'],
             'tecnologia' => $validated['tecnologia'] ?? 'DECT-Link',
             'descripcion' => $validated['descripcion'] ?? null,
             'rfp_modelo' => $validated['rfp_modelo'] ?? null,
             'banda_frecuencia' => $validated['banda_frecuencia'] ?? '1880 - 1900 MHz (DECT GAP)',
             'capacidad_canales' => $validated['capacidad_canales'] ?? null,
+            'capacidad_abonados_prevista' => $validated['capacidad_abonados_prevista'] ?? null,
             'radio_cobertura_km' => $validated['radio_cobertura_km'] ?? null,
             'latitud' => $validated['latitud'] ?? null,
             'longitud' => $validated['longitud'] ?? null,
+            'departamento' => $validated['departamento'] ?? 'LA PAZ',
+            'municipio' => $validated['municipio'] ?? null,
+            'zona_id' => $validated['zona_id'] ?? null,
+            'direccion' => $validated['direccion'] ?? null,
+            'estado' => $validated['estado'] ?? 'PLANEADA',
+            'activo' => $validated['activo'] ?? true,
         ]);
 
         $operador = OperatorToken::resolve($request);
@@ -192,6 +221,7 @@ class CellsController extends Controller
             'message' => 'Celda creada exitosamente.',
             'celda' => [
                 'id' => $cell->id,
+                'codigo' => $cell->codigo,
                 'nombre' => $cell->nombre,
                 'tecnologia' => $cell->tecnologia,
                 'descripcion' => $cell->descripcion,
@@ -228,15 +258,23 @@ class CellsController extends Controller
         $antes = $cell->toArray();
 
         $validated = $request->validate([
+            'codigo' => ['sometimes', 'string', 'max:50', Rule::unique('celdas', 'codigo')->ignore($id)],
             'nombre' => ['sometimes', 'string', 'max:255'],
             'tecnologia' => ['nullable', 'string', 'max:100'],
             'descripcion' => ['nullable', 'string'],
             'rfp_modelo' => ['nullable', 'string', 'max:255'],
             'banda_frecuencia' => ['nullable', 'string', 'max:100'],
             'capacidad_canales' => ['nullable', 'integer', 'min:0'],
+            'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0'],
             'radio_cobertura_km' => ['nullable', 'numeric', 'min:0'],
             'latitud' => ['nullable', 'numeric', 'min:-90', 'max:90'],
             'longitud' => ['nullable', 'numeric', 'min:-180', 'max:180'],
+            'departamento' => ['nullable', 'string', 'max:40'],
+            'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
+            'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'estado' => ['nullable', Rule::in(['PLANEADA', 'INSTALADA', 'EN_SERVICIO'])],
+            'activo' => ['nullable', 'boolean'],
         ]);
 
         $cell->fill($validated);
@@ -255,6 +293,7 @@ class CellsController extends Controller
             'message' => 'Celda actualizada exitosamente.',
             'celda' => [
                 'id' => $cell->id,
+                'codigo' => $cell->codigo,
                 'nombre' => $cell->nombre,
                 'tecnologia' => $cell->tecnologia,
                 'descripcion' => $cell->descripcion,

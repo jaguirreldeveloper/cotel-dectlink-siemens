@@ -25,9 +25,11 @@ class CatalogEndpointsTest extends TestCase
         $response = $this->getJson('/api/cells')->assertOk();
 
         $this->assertSame([
-            'id', 'nombre', 'tecnologia', 'descripcion', 'rfpModelo', 'bandaFrecuencia',
+            'id', 'codigo', 'nombre', 'tecnologia', 'descripcion', 'rfpModelo', 'bandaFrecuencia',
             'capacidadCanales', 'radioCoberturaKm', 'latitud', 'longitud',
-            'idSubcentral', 'nombreSubcentral', 'createdAt',
+            'idSubcentral', 'nombreSubcentral', 'departamento', 'municipio', 'zonaId', 'zona',
+            'direccion', 'capacidadAbonadosPrevista', 'usuariosActuales', 'estado', 'activo',
+            'createdAt',
         ], array_keys($response->json()[0]));
         $this->assertSame(17, $response->json()[0]['id']);
         $this->assertSame('CELDA A-17 TILATA', $response->json()[0]['nombre']);

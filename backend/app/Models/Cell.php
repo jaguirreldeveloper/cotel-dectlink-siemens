@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * y no es autoincremental.
  *
  * @property int $id
+ * @property string $codigo
  * @property string $nombre
  * @property string $tecnologia
  * @property string|null $descripcion
@@ -24,11 +25,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float|null $latitud
  * @property float|null $longitud
  * @property int|null $id_subcentral
- * @property-read \App\Models\Subcentral|null $subcentral
+ * @property string $departamento
+ * @property string|null $municipio
+ * @property int|null $zona_id
+ * @property string|null $direccion
+ * @property int|null $capacidad_abonados_prevista
+ * @property string $estado
+ * @property bool $activo
+ * @property-read Subcentral|null $subcentral
+ * @property-read Zone|null $zona
  */
 #[Fillable([
-    'id', 'nombre', 'tecnologia', 'descripcion', 'rfp_modelo', 'banda_frecuencia',
+    'id', 'codigo', 'nombre', 'tecnologia', 'descripcion', 'rfp_modelo', 'banda_frecuencia',
     'capacidad_canales', 'radio_cobertura_km', 'latitud', 'longitud', 'id_subcentral',
+    'departamento', 'municipio', 'zona_id', 'direccion', 'capacidad_abonados_prevista',
+    'estado', 'activo',
 ])]
 class Cell extends Model
 {
@@ -50,9 +61,12 @@ class Cell extends Model
     {
         return [
             'capacidad_canales' => 'integer',
+            'capacidad_abonados_prevista' => 'integer',
             'radio_cobertura_km' => 'float',
             'latitud' => 'float',
             'longitud' => 'float',
+            'zona_id' => 'integer',
+            'activo' => 'boolean',
         ];
     }
 
@@ -72,5 +86,11 @@ class Cell extends Model
     public function subcentral(): BelongsTo
     {
         return $this->belongsTo(Subcentral::class, 'id_subcentral');
+    }
+
+    /** Zona/carril de planta externa a la que sirve esta RFP. */
+    public function zona(): BelongsTo
+    {
+        return $this->belongsTo(Zone::class, 'zona_id');
     }
 }

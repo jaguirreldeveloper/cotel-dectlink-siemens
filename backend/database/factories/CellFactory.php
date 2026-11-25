@@ -24,6 +24,7 @@ class CellFactory extends Factory
 
         return [
             'id' => $id,
+            'codigo' => "RFP-{$id}",
             'nombre' => "CELDA RFP {$id}",
             'tecnologia' => 'DECT-Link',
             'rfp_modelo' => 'Siemens C500',
