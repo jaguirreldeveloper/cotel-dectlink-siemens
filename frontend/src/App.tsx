@@ -266,6 +266,12 @@ export default function App() {
     }
   };
 
+  // Portal del abonado: vista autónoma, sin shell ni permisos de operador.
+  // Va antes del bloque de login: el cliente no tiene sesión de operador.
+  if (new URLSearchParams(location.search).get('portal') === '1') {
+    return <PortalMiLineaView />;
+  }
+
   if (auth.isLoading) {
     return (
       <div className='min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 p-6'>
@@ -292,11 +298,6 @@ export default function App() {
         />
       </ErrorBoundary>
     );
-  }
-
-  // Portal del abonado: vista autónoma, sin shell ni permisos de operador.
-  if (new URLSearchParams(location.search).get('portal') === '1') {
-    return <PortalMiLineaView />;
   }
 
   return (

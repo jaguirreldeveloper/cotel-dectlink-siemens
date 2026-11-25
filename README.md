@@ -12,7 +12,32 @@ Red inalámbrica de acceso fijo (WLL) **Siemens DECTlink** operando en la banda 
 - **Backend**: **Laravel 13** (PHP 8.4) en `backend/` — migración con **paridad total** de la API Express original (mismos paths y payloads camelCase, para no tocar el frontend). Sirve el build de Vite desde `public/` (SPA con catch-all) y expone **Server-Sent Events (SSE)** para sincronización en tiempo real entre operadores y cuadrillas (pub/sub en Valkey/Redis, canal `cotel-events`).
 - **Capa de datos**: SQL directo (facade `DB` de Laravel, driver `pgsql`). En desarrollo local apunta a **PostgreSQL local `cotel_dectlink`** (`127.0.0.1:5432`, user `cotel`); en la nube, a **Supabase Cloud** (PostgreSQL 17, pooler IPv4). El **padrón real** se carga con `pnpm run db:load` (ETL Drizzle/TS en `scripts/` sobre el CSV consolidado; `supabase/seed.sql` es solo informativo).
 - **Monorepo pnpm**: `frontend/` (SPA React), `backend/` (Laravel), `scripts/` (herramientas ETL/verificación como CLI) y `packages/types` (tipos TS compartidos `@cotel/types`). El runtime de producción es Laravel; el backend Express original se retiró tras la migración.
+- **Autorización**: catálogo único en `backend/config/permissions.php`; permisos efectivos = rol ∪ extras − denegados, resueltos en servidor y expuestos en `/api/auth/me`. Middleware `permission:` complementa a `role:`; el frontend solo usa `can()` para mostrar/ocultar, nunca decide acceso.
+- **Escala del padrón** (100.000 clientes/líneas): consulta paginada `GET /api/subscribers/page` y agregados `GET /api/subscribers/summary`, ambos en SQL; índices versionados en `supabase/migrations/20261125000000_subscriber_scale_indexes.sql`.
+- **Portal del abonado**: actor externo en `portal_abonados` (nunca en `operadores`), con token hasheado y scope de fila por `abonado_nro` en backend; vista «Mi línea» fuera del shell.
 - **Migraciones**: las 6 migraciones históricas viven en `backend/database/sql/` y se ejecutan envueltas por `backend/database/migrations/` (stampeadas como aplicadas en la BD viva); el DDL versionado está en `supabase/migrations/`.
+
+---
+
+## 👥 Roles, permisos y usuarios de prueba
+
+**9 roles funcionales** (los 6 históricos + 3 organizacionales). El nivel organizacional no equivale a privilegio: un GERENTE_AREA ve KPIs de su área pero no puede escribir.
+
+| Rol | Responsabilidad | Pestaña de entrada |
+|---|---|---|
+| `SUPERADMIN` | Desarrolla y controla el sistema (SQL, usuarios, cargas, borrado) | Base de Datos |
+| `ADMIN` | Administra lo implementado (celdas, infra, OTs; sin SQL ni borrado) | Celdas (RFP) |
+| `AUDITOR` | Audita: bitácora, padrón, fichas y exportación; solo lectura | Auditoría |
+| `GERENTE_AREA` | KPIs y reportes de `GAF`/`GC`/`GPP`/`GT`/`GS` | Diagnóstico Ejecutivo |
+| `JEFE_DEPARTAMENTO` | Responsable de departamento; aprueba OTs | Cuadrillas & Kanban |
+| `ENCARGADO_AREA` | Responsable de área; gestiona cuadrillas y materiales | Cuadrillas & Kanban |
+| `SUPERVISOR` | Ingeniería de red: GPS, estados, simulación RF | Calibración GPS |
+| `DESPACHADOR` | Coordinación de cuadrillas y OTs | Cuadrillas & Kanban |
+| `TECNICO` | Responsable de la actividad en campo (OT asignada) | Cobertura GIS |
+
+Atributos de `operadores`: `puesto`, `especialidad`, `area`, `departamento`, `zona_id`, `turno`, `supervisor_id`, `permisos_extra[]` y `permisos_denegados[]`. `work_orders.responsable_id` asigna al técnico responsable de cada actividad.
+
+**Cuentas demo** (`php artisan db:seed --class=RolesDemoSeeder`, password `TestPass123!`): `desarrollo@`, `admin@`, `auditor@`, `gerente.gaf@`, `gerente.gc@`, `gerente.gpp@`, `gerente.gt@`, `gerente.gs@`, `jefe.depto@`, `encargado.area@`, `tecnico.campo@`, `despacho@` — todas `@cotel.bo`. Las históricas `testadmin@` y `testsuperadmin@` no se modifican. Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 
 ---
 
@@ -29,7 +54,7 @@ backend/                      Backend Laravel 13 (runtime de producción)
   database/migrations/        6 migraciones que ejecutan el SQL histórico (ya aplicadas en la BD viva)
   database/sql/               SQL copiado de supabase/migrations/ (fuente de las migraciones)
   public/                     Build del frontend (index.html + assets con hash)
-  tests/                      Feature/Unit (Pest): 120 tests de paridad y seguridad
+  tests/                      Feature/Unit (Pest): 143 tests de paridad, seguridad, roles y escala
 frontend/                     SPA React 19 (FSD: entities/features/shared/widgets)
   src/entities/               cell, crew, subscriber, workOrder (tipos y lógica de dominio)
   src/features/               23 módulos (vistas y modales; ver «Módulos funcionales»)
@@ -37,8 +62,8 @@ frontend/                     SPA React 19 (FSD: entities/features/shared/widget
   src/entities/subscriber/    columns.tsx (registro RESUMEN ⊂ DETALLE), summary.ts, analysis.ts, exportCsv
   src/widgets/                Navbar, AppTabs, AppSidebar, DataSourceBar, ExecutiveReport, etc.
   src/demo/                   Datos demo de respaldo (fallback offline siempre etiquetado)
-  playwright/                 6 specs / 8 tests e2e de humo (backend real; CI con SQLite aislado)
-  tests/                      Vitest: 38 tests en 7 archivos (geo, paginación, filtros, roles, columnas, resumen)
+  playwright/                 8 specs / 12 tests e2e de humo (backend real; CI con SQLite aislado)
+  tests/                      Vitest: 71 tests en 12 archivos (geo, paginación, filtros, roles, permisos, dashboards, escala, columnas, resumen)
 scripts/                      @cotel/scripts: ETL/verificación (CLI commander)
   src/cli.ts                  Entrada: pnpm --filter scripts db:load|db:check|db:verify|db:clean|smoke
   src/commands/               load-consolidado, db-check, db-verify, cleanup-pruebas, smoke
@@ -120,7 +145,10 @@ Implementados en Laravel (`backend/routes/api.php`, **66 rutas**) con **paths y 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/api/events` | Stream SSE (eventos `subscriber_updated`, `database_switched`, `work_order_updated`) |
-| `GET` | `/api/subscribers` | Padrón completo de abonados |
+| `GET` | `/api/subscribers` | Padrón completo de abonados (legacy: usar `/page` con 100k líneas) |
+| `GET` | `/api/subscribers/page` | Padrón paginado: `page`, `per_page`, `q`, `celda_id`, `zona_id`, `estado`, `sort`, `dir` |
+| `GET` | `/api/subscribers/summary` | KPIs agregados en SQL: totales, sin GPS, con deuda, fallas y grupos por estado/celda/zona |
+| `GET` | `/api/portal/mi-linea` · `/api/portal/mis-ots` | Portal del abonado con `x-portal-token` (scope por `abonado_nro`) |
 | `GET` | `/api/cells` | Estaciones base RFP (celdas DECT) |
 | `GET` | `/api/logs` | Últimas 50 entradas de bitácora |
 | `GET` | `/api/work-orders` | Órdenes de trabajo |
@@ -135,10 +163,10 @@ Implementados en Laravel (`backend/routes/api.php`, **66 rutas**) con **paths y 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `POST` | `/api/auth/login` | Login con `email` + `password`; devuelve token y perfil |
-| `GET` | `/api/auth/me` | Perfil del operador autenticado |
+| `GET` | `/api/auth/me` | Perfil + ámbito (rol, puesto, área, zona, turno) y `permisos[]` efectivos |
 | `POST` | `/api/auth/logout` | Cierra sesión **y revoca en el servidor** todos los tokens de la cuenta |
 | `GET` | `/api/operadores` | Directorio de operadores (roles canónicos) |
-| `GET` | `/api/operadores/permissions` | Matriz RBAC: permiso × 6 roles |
+| `GET` | `/api/operadores/permissions` | Matriz RBAC: permiso × 9 roles (fuente: `config/permissions.php`) |
 
 ### Por rol (`role:...`: Bearer token de operador)
 | Método | Ruta | Roles |
@@ -168,7 +196,7 @@ Lectura pública (`GET /api/centrales`, `/subcentrales`, `/shelters`, `/armarios
    - El restablecimiento de contraseña (`PATCH /api/operadores/:id`) también rota el nonce (revoca sesiones activas).
    - Desactivar un operador (`activo=false`) bloquea el token sin rotar nada (la resolución exige cuenta activa).
    - Tokens sin `nonce` (emitidos antes de esta mejora) quedan **rechazados**.
-4. **RBAC jerárquico**: 6 roles canónicos `SUPERADMIN > ADMIN > SUPERVISOR > DESPACHADOR > TECNICO > AUDITOR`. El alias histórico `OPERADOR` se traduce a `TECNICO` vía `Operador::rolCanonico()`. El middleware `RequireRole` compara por **nivel de privilegio** (`Operador::esAlMenos()`), no por identidad de rol.
+4. **RBAC por permisos**: 9 roles canónicos (`SUPERADMIN`, `ADMIN`, `AUDITOR`, `GERENTE_AREA`, `JEFE_DEPARTAMENTO`, `ENCARGADO_AREA`, `SUPERVISOR`, `DESPACHADOR`, `TECNICO`). El alias histórico `OPERADOR` se traduce a `TECNICO`. `RequireRole` sigue protegiendo grupos de rutas por identidad de rol; **`RequirePermission` (middleware `permission:`)** aplica permisos granulares con regla `rol ∪ permisos_extra − permisos_denegados` (el denegado gana). Los permisos de Jefatura (`users.manage`, `database.sql_console`, `cells.delete`, cargas) no se pueden conceder por `permisos_extra`. El nivel organizacional de `Operador::nivel()` **no** otorga privilegios.
 5. **Defensa en profundidad**: las rutas internas garantizan el rol además vía `OperadoresController::ensureAdmin()`; el header `x-admin-token` es solo una vía CLI de servicios, se sigue aceptando y se compara en tiempo constante.
 
 - **Consola SQL** (`SqlGuard`): restringida a una única instrucción de **solo lectura**; bloquea `pg_read_file`, `COPY … PROGRAM`, `dblink`, `lo_import`, `GRANT`, etc.
@@ -295,12 +323,12 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **38 tests** (frontend, 7 archivos) + Pest **120 tests / 461 assertions** (backend); `scripts` sin tests (sale 0).
+- `pnpm run test` — Vitest **71 tests** (frontend, 12 archivos) + Pest **143 tests / 640 assertions** (backend); `scripts` sin tests (sale 0).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
 - `pnpm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 pnpm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
-- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **8 tests de humo en 6 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, visibilidad por rol y fallback demo.
+- `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **12 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda), visibilidad por rol de los 12 operadores demo, portal «Mi línea» y fallback demo. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
 - `pnpm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
 - La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, lectura del padrón sin sesión → `401` y con token de operador → `200`. El frontend nunca lee secretos de `import.meta.env`: usa el token de la sesión (`sessionStorage` por defecto; `localStorage` solo con «Recordarme»).
@@ -310,6 +338,13 @@ Hay dos entornos con sus propios `.env`:
 © 2026 COTEL R.L. · Todos los derechos reservados.
 
 ## 🛠️ Cambios recientes
+
+**2026-11-25 — Panel de Celdas, escala del padrón, roles por permiso y portal del abonado:**
+- Panel de Celdas (RFP) completo: KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
+- Fase de escala: `/api/subscribers/page` y `/summary` (SQL), índices en Supabase y frontend preparado para paginación (100.000 líneas).
+- 9 roles funcionales, atributos de perfil (puesto/especialidad/área/zona/turno/supervisor/overrides), 12 operadores demo y catálogo único de permisos con middleware `permission:`.
+- Vistas personalizadas: pestaña de entrada y menú por permisos; portal «Mi línea» con token hasheado y scope por `abonado_nro`.
+- Verificación: **214 tests** (71 FE + 143 BE), typecheck, lint, build, Pint y 12 specs/E2E de humo (4/4 en la ejecución final de los specs nuevos).
 
 **2026-11-10 — Reorganización de las 3 tablas de abonados (9 commits: de `cdb51fd` a `1e7893b`, todos en `main`):**
 - Base geo honesta (`coordsReales` + helpers en `shared/utils/geo.ts`) y columnas **GEO**/**MAPA** en las tablas de abonados (coordenadas reales y enlace al mapa con la misma semántica en cada vista).

@@ -6,21 +6,39 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Índices para el padrón a escala (100.000 líneas). El mismo DDL es
-     * válido en PostgreSQL y en SQLite (tests), y es idempotente.
+     * En PostgreSQL el DDL lo aplica la migración espejo de Supabase
+     * (`supabase/migrations/20261125000000_subscriber_scale_indexes.sql`):
+     * el usuario de la app local no es dueño de todas las tablas del padrón.
+     * En SQLite (tests) creamos los mismos índices para validar las consultas.
      */
+    private const INDEXES = [
+        'idx_scale_abonados_telefono' => 'CREATE INDEX IF NOT EXISTS idx_scale_abonados_telefono ON abonados_lineas (numero_telefono)',
+        'idx_scale_abonados_contrato' => 'CREATE INDEX IF NOT EXISTS idx_scale_abonados_contrato ON abonados_lineas (contrato)',
+        'idx_scale_abonados_celda_estado' => 'CREATE INDEX IF NOT EXISTS idx_scale_abonados_celda_estado ON abonados_lineas (id_celda, estado_servicio)',
+        'idx_scale_abonados_cliente' => 'CREATE INDEX IF NOT EXISTS idx_scale_abonados_cliente ON abonados_lineas (id_cliente)',
+        'idx_scale_clientes_zona' => 'CREATE INDEX IF NOT EXISTS idx_scale_clientes_zona ON clientes (id_zona)',
+        'idx_scale_clientes_nombre_lower' => 'CREATE INDEX IF NOT EXISTS idx_scale_clientes_nombre_lower ON clientes (LOWER(nombre_completo))',
+    ];
+
     public function up(): void
     {
-        DB::unprepared(file_get_contents(database_path('sql/20261125000000_subscriber_scale_indexes.sql')));
+        if (DB::getDriverName() !== 'sqlite') {
+            return;
+        }
+
+        foreach (self::INDEXES as $sql) {
+            DB::statement($sql);
+        }
     }
 
     public function down(): void
     {
-        DB::statement('DROP INDEX IF EXISTS idx_scale_abonados_telefono');
-        DB::statement('DROP INDEX IF EXISTS idx_scale_abonados_contrato');
-        DB::statement('DROP INDEX IF EXISTS idx_scale_abonados_celda_estado');
-        DB::statement('DROP INDEX IF EXISTS idx_scale_abonados_cliente');
-        DB::statement('DROP INDEX IF EXISTS idx_scale_clientes_zona');
-        DB::statement('DROP INDEX IF EXISTS idx_scale_clientes_nombre_lower');
+        if (DB::getDriverName() !== 'sqlite') {
+            return;
+        }
+
+        foreach (array_keys(self::INDEXES) as $nombre) {
+            DB::statement('DROP INDEX IF EXISTS '.$nombre);
+        }
     }
 };

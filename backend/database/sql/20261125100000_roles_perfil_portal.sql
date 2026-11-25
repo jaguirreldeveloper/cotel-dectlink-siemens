@@ -1,5 +1,7 @@
 -- Perfil organizacional de operadores, nuevos roles y portal del abonado.
 -- Idempotente: se puede aplicar más de una vez sin efecto.
+-- work_orders.responsable_id se aplica en supabase/migrations (el usuario de
+-- la app local no es dueño de work_orders).
 
 ALTER TABLE operadores
   ADD COLUMN IF NOT EXISTS puesto TEXT,
@@ -26,9 +28,6 @@ ALTER TABLE operadores
 ALTER TABLE operadores DROP CONSTRAINT IF EXISTS operadores_turno_check;
 ALTER TABLE operadores
   ADD CONSTRAINT operadores_turno_check CHECK (turno IS NULL OR turno IN ('MANANA', 'TARDE', 'NOCHE', 'ROTATIVO'));
-
-ALTER TABLE work_orders
-  ADD COLUMN IF NOT EXISTS responsable_id INTEGER REFERENCES operadores(id) ON DELETE SET NULL;
 
 -- Actor externo: el abonado nunca es un operador. token_hash (nunca plaintext),
 -- expira_en y metodo permiten cambiar el canal de autenticación sin migrar datos.
