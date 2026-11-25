@@ -176,16 +176,30 @@ test('la tabla de operadores pagina en 5, numera y ofrece ver/imprimir', async (
   await page.getByRole('button', { name: /Imprimir ficha de/ }).first().click();
   await expect.poll(async () => page.evaluate(() => (window as unknown as { __impreso?: boolean }).__impreso)).toBe(true);
 
-  // El menú de más acciones se renderiza en un portal: ni se recorta en la
-  // última fila ni genera scroll vertical dentro de la tabla.
+  // El menú siempre se abre DEBAJO del botón, también en la última fila,
+  // y no genera scroll vertical dentro de la tabla.
   await selector.selectOption('25');
   const envoltorio = page.locator('div.overflow-x-auto').first();
   const desbordamientoAntes = await envoltorio.evaluate(el => el.scrollHeight - el.clientHeight);
-  await filas.last().getByRole('button', { name: /Más acciones para/ }).click();
   const menu = page.getByRole('menu');
+
+  const botonPrimera = filas.first().getByRole('button', { name: /Más acciones para/ });
+  const cajaBotonPrimera = await botonPrimera.boundingBox();
+  await botonPrimera.click();
   await expect(menu).toBeVisible();
+  expect((await menu.boundingBox())!.y).toBeGreaterThan(cajaBotonPrimera!.y);
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+
+  const botonUltima = filas.last().getByRole('button', { name: /Más acciones para/ });
+  await botonUltima.click();
+  await expect(menu).toBeVisible();
+  // Medir el botón DESPUÉS del auto-scroll: la ventana se desplazó lo justo
+  // para que el menú quepa debajo.
+  const cajaBotonUltima = await botonUltima.boundingBox();
   const cajaMenu = await menu.boundingBox();
   expect(cajaMenu).not.toBeNull();
+  expect(cajaMenu!.y).toBeGreaterThan(cajaBotonUltima!.y);
   expect(cajaMenu!.x).toBeGreaterThanOrEqual(0);
   expect(cajaMenu!.y).toBeGreaterThanOrEqual(0);
   expect(cajaMenu!.x + cajaMenu!.width).toBeLessThanOrEqual(1440);

@@ -22,13 +22,13 @@ interface Posicion {
 }
 
 const ANCHO_MENU = 224;
-const ALTO_ESTIMADO = 180;
+const ALTO_ESTIMADO = 205;
 const MARGEN = 8;
 
 const boton = 'p-1.5 rounded-lg border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
 const activo = 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 dark:bg-slate-100 dark:border-slate-300 dark:text-slate-700 dark:hover:bg-slate-200';
 const inactivo = 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed dark:bg-slate-200 dark:border-slate-300';
-const item = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
+const item = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11px] text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
 
 /**
  * Acciones de una fila: Ver/Editar/Imprimir visibles y el resto en un menú
@@ -54,29 +54,53 @@ export function OperadorActions({
   const menu = useRef<HTMLDivElement | null>(null);
   const abiertoEn = useRef(0);
 
-  const alternarMenu = useCallback(() => {
-    if (menuAbierto) {
-      setMenuAbierto(false);
-      return;
-    }
-    const rect = disparador.current?.getBoundingClientRect();
-    if (!rect) return;
-
+  const colocarMenu = useCallback((rect: DOMRect) => {
     let left = rect.right - ANCHO_MENU;
     if (left < MARGEN) left = MARGEN;
     if (left + ANCHO_MENU > window.innerWidth - MARGEN) {
       left = Math.max(MARGEN, window.innerWidth - ANCHO_MENU - MARGEN);
     }
+    // Siempre debajo del disparador: uniformidad en todas las filas.
+    setPosicion({ top: rect.bottom + 6, left });
+    setMenuAbierto(true);
+  }, []);
 
-    let top = rect.bottom + 6;
-    if (top + ALTO_ESTIMADO > window.innerHeight - MARGEN) {
-      top = Math.max(MARGEN, rect.top - ALTO_ESTIMADO - 6);
+  const alternarMenu = useCallback(() => {
+    if (menuAbierto) {
+      setMenuAbierto(false);
+      return;
+    }
+    const boton = disparador.current;
+    if (!boton) return;
+    const rect = boton.getBoundingClientRect();
+    const espacio = window.innerHeight - rect.bottom - MARGEN;
+
+    if (espacio >= ALTO_ESTIMADO) {
+      abiertoEn.current = Date.now();
+      colocarMenu(rect);
+      return;
+    }
+
+    // No cabe abajo: desplazamos la ventana lo justo y volvemos a medir.
+    // El guardián de fecha evita que el scroll programado cierre el menú.
+    const scrollDisponible = Math.max(
+      0,
+      document.documentElement.scrollHeight - window.scrollY - window.innerHeight
+    );
+    const delta = Math.min(ALTO_ESTIMADO - espacio, scrollDisponible);
+    abiertoEn.current = Date.now() + 700;
+    if (delta > 0) {
+      window.scrollBy({ top: delta, behavior: 'smooth' });
+      window.setTimeout(() => {
+        abiertoEn.current = Date.now();
+        colocarMenu(boton.getBoundingClientRect());
+      }, 450);
+      return;
     }
 
     abiertoEn.current = Date.now();
-    setPosicion({ top, left });
-    setMenuAbierto(true);
-  }, [menuAbierto]);
+    colocarMenu(rect);
+  }, [colocarMenu, menuAbierto]);
 
   useEffect(() => {
     if (!menuAbierto) return;
@@ -170,7 +194,15 @@ export function OperadorActions({
             ref={menu}
             role='menu'
             aria-label={`Acciones para ${operador.email}`}
-            style={{ position: 'fixed', top: posicion.top, left: posicion.left, width: ANCHO_MENU, zIndex: 100 }}
+            style={{
+              position: 'fixed',
+              top: posicion.top,
+              left: posicion.left,
+              width: ANCHO_MENU,
+              maxHeight: Math.max(120, window.innerHeight - posicion.top - MARGEN),
+              overflowY: 'auto',
+              zIndex: 100,
+            }}
             className='rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-900 dark:ring-white/10'
           >
             <button type='button' role='menuitem' onClick={ejecutar(onPermisos)} className={item}>
@@ -190,7 +222,7 @@ export function OperadorActions({
               <Power className='w-3.5 h-3.5 shrink-0 text-amber-500' />
               {operador.activo ? 'Desactivar cuenta' : 'Activar cuenta'}
             </button>
-            <div className='my-1 border-t border-slate-200 dark:border-slate-800' />
+            <div className='my-0.5 border-t border-slate-200 dark:border-slate-800' />
             <button
               type='button'
               role='menuitem'
