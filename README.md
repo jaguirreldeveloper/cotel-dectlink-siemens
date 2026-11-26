@@ -344,7 +344,7 @@ Hay dos entornos con sus propios `.env`:
 
 Seguimos **GitHub Flow**: `main` es la única rama estable y desplegable; todo cambio entra por Pull Request con las verificaciones en verde.
 
-- **`main`**: protegida. No se permite push directo ni force-push; solo PRs. Los tags de versión (`v0.1.0`, …) se crean desde aquí.
+- **`main`**: protegida. No se permite push directo ni force-push; solo PRs. Los tags de versión (`v0.1.0`, `v0.1.1`, …) se crean desde aquí.
 - **`feature/<tema>`**: desarrollos nuevos (p. ej. `feature/nombres-celdas`).
 - **`fix/<tema>`**: correcciones puntuales.
 - **`chore/<tema>`**: versionado, documentación, dependencias.
@@ -355,11 +355,11 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 ---
 
-## 📌 Estado del proyecto / Handoff (2026-11-28)
+## 📌 Estado del proyecto / Handoff (2026-11-26)
 
 **Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
 
-**Entregas completas y sincronizadas en `main`** (versión **0.1.0**, tag `v0.1.0`; historial en `CHANGELOG.md`):
+**Entregas completas y sincronizadas en `main`** (versión **0.1.1**, tag `v0.1.1`; historial en `CHANGELOG.md`):
 
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
@@ -382,11 +382,15 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 **Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 168 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
-**Pendiente para la próxima sesión**: cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden y actualizar la documentación si cambia la nomenclatura.
+**Pendiente para la próxima sesión**:
+
+- Cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden.
+- GitHub Actions sigue bloqueado por facturación: los 6 checks requeridos están restaurados en `main`, pero cualquier PR nuevo debe integrarse con el procedimiento **relajar checks → merge → restaurar** hasta que se resuelva el cobro.
+- PR **#1** (`initial-greeting-17a4b`) queda abierto; es anterior y no relacionado con este trabajo.
 
 ## 🛠️ Cambios recientes
 
-El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.1.0** (tag `v0.1.0`).
+El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.1.1** (tag `v0.1.1`).
 
 ---
 

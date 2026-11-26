@@ -6,6 +6,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+- (sin cambios registrados)
+
+## [0.1.1] - 2026-11-26
+
 ### Fixed
 
 - `Modal` compartido: el efecto de foco ya no se re-ejecuta en cada render del caller, de modo que se puede escribir letra por letra en los campos del modal de edición de celdas (y de cualquier otro modal con inputs).
@@ -49,5 +53,6 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Menú de acciones de usuarios y celdas renderizado en portal: evita recortes en la última fila y scroll espurio.
 - Regresión que ocultaba «Carga de Padrón» a ADMIN: nuevo permiso `padron.view`.
 
-[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.1
 [0.1.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.0
