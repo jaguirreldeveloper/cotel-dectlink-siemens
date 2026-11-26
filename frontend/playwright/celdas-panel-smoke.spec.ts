@@ -187,7 +187,8 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   const filas = page.locator('table').first().locator('tbody tr');
   await expect(filas).toHaveCount(5);
   await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
-  await expect(filas.first()).toContainText('CELDA A-04 MERCURIO / INGAVI');
+  await expect(filas.first()).toContainText('RFP-ELA-001');
+  await expect(filas.nth(3)).toContainText('CELDA A-04 MERCURIO / INGAVI');
   await page.screenshot({ path: 'test-results/celdas-datatable.png' });
 
   await page.getByLabel('Filtrar por registro').selectOption('referencias');

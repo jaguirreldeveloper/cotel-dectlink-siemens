@@ -328,7 +328,7 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **159 tests / 730 assertions** (backend); `scripts` sin tests (sale 0).
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **162 tests / 827 assertions** (backend); `scripts` sin tests (sale 0).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
@@ -343,6 +343,10 @@ Hay dos entornos con sus propios `.env`:
 © 2026 COTEL R.L. · Todos los derechos reservados.
 
 ## 🛠️ Cambios recientes
+
+**2026-11-28 — Numeración corrida y rebuild limpio:**
+- `CeldasRebuildSeeder`: 60 celdas con **60 IDs corridos** — El Alto `1..30` (N° `1..30`, `RFP-ELA-001..030`) y La Paz `31..60` (N° `1..30`, `RFP-LP-001..030`). Borra solo dependencias de celdas (abonados, OTs, bitácoras); operadores y zonas se conservan.
+- Las celdas sin registro real llevan nombre `CELDA INEXISTENTE …`; los nombres definitivos se cargarán con el listado que proporcione el usuario. `PadronDemoSeeder` siembra 20 líneas de humo sobre las 5 celdas reales.
 
 **2026-11-27 — Ciclo de vida completo y 60 celdas históricas:**
 - `numero_celda` 1–30 por municipio con `UNIQUE(municipio, numero_celda)`; `PATCH /api/cells/{id}/estado` con máquina de estados y bitácora; reactivación de baja/retiro solo para SUPERADMIN.
