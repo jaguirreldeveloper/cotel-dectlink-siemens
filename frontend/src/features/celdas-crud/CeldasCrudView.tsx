@@ -170,6 +170,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoCelda>('todos');
   const [filtroRegistro, setFiltroRegistro] = useState<'todos' | 'reales' | 'referencias'>('todos');
   const [filtroEnergia, setFiltroEnergia] = useState<'todas' | EstadoEnergia>('todas');
+  const [vista, setVista] = useState<'general' | 'tecnica'>('general');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
@@ -618,6 +619,28 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         />
       </div>
 
+      {/* Vistas de la tabla: comparten datos, filtros y paginación */}
+      <div className='inline-flex rounded-lg border border-slate-700 bg-slate-900/60 p-1'>
+        {([
+          ['general', 'Vista general'],
+          ['tecnica', 'Vista específica / técnica'],
+        ] as const).map(([clave, etiqueta]) => (
+          <button
+            key={clave}
+            type='button'
+            onClick={() => setVista(clave)}
+            aria-pressed={vista === clave}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+              vista === clave
+                ? 'bg-brand-500 text-white shadow-xs'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+
       {/* Búsqueda y filtros */}
       <div className='flex flex-wrap items-center gap-2'>
         <Input
@@ -720,7 +743,80 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         </span>
       </div>
 
-      {/* Tabla administrativa de celdas */}
+      {/* Vista general: columnas esenciales para lectura rápida */}
+      {vista === 'general' && (
+        <div className='rounded-xl border border-slate-700 bg-slate-900/60 overflow-x-auto'>
+          <table className='w-full text-xs'>
+            <thead className='bg-slate-800/60 text-slate-300'>
+              <tr>
+                <th className='px-3 py-2 text-center'>N°</th>
+                <Th label='Código' sortKey='id' current={sort.key} dir={sort.dir} onSort={handleSort} />
+                <Th label='Nombre / Ubicación' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
+                <th className='px-3 py-2 text-center'>Estado</th>
+                <Th label='Usuarios' sortKey='abonados' current={sort.key} dir={sort.dir} onSort={handleSort} align='center' />
+                <th className='px-3 py-2 text-center'>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filasVisibles.map((c, indice) => {
+                const numero = (paginacion.page - 1) * pageSize + indice + 1;
+                const count = abonadosPorCelda.get(c.id) ?? 0;
+                return (
+                  <tr key={c.id} onClick={() => setDetalleId(c.id)} className='border-t border-slate-800 hover:bg-slate-800/40 cursor-pointer transition'>
+                    <td className='px-3 py-2 text-center'>
+                      <span className='block font-mono font-semibold tabular-nums text-slate-200'>{numero}</span>
+                      <span className='block font-mono text-[10px] text-slate-500'>ID {c.id}</span>
+                    </td>
+                    <td className='px-3 py-2 text-center font-mono text-brand-300 whitespace-nowrap'>{c.codigo}</td>
+                    <td className='px-3 py-2'>
+                      <div className='font-semibold text-white'>{c.nombre}</div>
+                      <div className='text-[10px] text-slate-500'>{c.municipio ?? '—'} · {c.zona ?? c.direccion ?? '—'}</div>
+                    </td>
+                    <td className='px-3 py-2 text-center whitespace-nowrap'>
+                      <span className={`inline-flex flex-col items-center gap-0.5 rounded-md border px-2 py-1 text-[10px] font-bold ${
+                        c.estado === 'EN_SERVICIO'
+                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                          : 'border-slate-700 bg-slate-800/60 text-slate-300'
+                      }`}>
+                        <span>{ETIQUETA_ESTADO[c.estado as EstadoCelda] ?? c.estado}</span>
+                        <span className='text-[9px] font-normal text-slate-400'>{ETIQUETA_ENERGIA[c.estadoEnergia as EstadoEnergia] ?? c.estadoEnergia}</span>
+                      </span>
+                    </td>
+                    <td className='px-3 py-2 text-center'>
+                      <span className={`font-mono font-bold ${count > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {c.usuariosActuales ?? count}
+                      </span>
+                      {c.capacidadAbonadosPrevista != null && (
+                        <span className='block text-[10px] text-slate-600'>/ {c.capacidadAbonadosPrevista} previstos</span>
+                      )}
+                    </td>
+                    <td className='px-3 py-2 text-center whitespace-nowrap' onClick={e => e.stopPropagation()}>
+                      <CeldaActions
+                        celda={c}
+                        puedeEditar={escritura}
+                        puedeBorrar={borrado}
+                        onVer={() => setDetalleId(c.id)}
+                        onEditar={() => openEdit(c)}
+                        onImprimir={() => { setCeldaImprimir(c); setTimeout(() => window.print(), 200); }}
+                        onHistorial={() => setDetalleId(c.id)}
+                        onCambiarEstado={() => setEstadoModalCelda(c)}
+                        onBaja={() => setEstadoModalCelda(c)}
+                        onEliminar={() => setPendienteEliminar(c)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+              {filasVisibles.length === 0 && !loading && (
+                <tr><td colSpan={6} className='px-3 py-8 text-center text-slate-500'>Ninguna celda coincide con los filtros.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Vista específica / técnica: todos los campos del registro */}
+      {vista === 'tecnica' && (
       <div className='rounded-xl border border-slate-700 bg-slate-900/60 overflow-x-auto'>
         <table className='w-full text-xs'>
           <thead className='bg-slate-800/60 text-slate-300'>
@@ -731,6 +827,12 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
               <Th label='Nombre' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
               <th className='px-3 py-2 text-center'>Municipio / Zona</th>
               <th className='px-3 py-2 text-center'>Estado</th>
+              <th className='px-3 py-2 text-center'>DPI</th>
+              <th className='px-3 py-2 text-center'>Medidor</th>
+              <th className='px-3 py-2 text-center'>Tierra (Ω)</th>
+              <th className='px-3 py-2 text-center'>Flot / Carga</th>
+              <th className='px-3 py-2 text-center'>Rangos</th>
+              <th className='px-3 py-2 text-center'>Observaciones</th>
               <Th
                 label='Subcentral'
                 sortKey='subcentral'
@@ -808,6 +910,30 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                         {ETIQUETA_ENERGIA[c.estadoEnergia as EstadoEnergia] ?? c.estadoEnergia}
                       </span>
                     </span>
+                  </td>
+                  <td className='px-3 py-2 text-center font-mono text-slate-300'>{c.codigoDpi ?? '—'}</td>
+                  <td className='px-3 py-2 text-center font-mono text-slate-300'>{c.numeroMedidor ?? '—'}</td>
+                  <td className='px-3 py-2 text-center text-slate-400'>
+                    {c.resistenciaTierraOhm != null ? `${c.resistenciaTierraOhm} Ω` : '—'}
+                  </td>
+                  <td className='px-3 py-2 text-center text-slate-400 whitespace-nowrap'>
+                    {c.corrienteFlotanteA != null ? `${c.corrienteFlotanteA} A` : '—'}
+                    {' / '}
+                    {c.corrienteCargaA != null ? `${c.corrienteCargaA} A` : (c.observaciones ?? '—')}
+                  </td>
+                  <td className='px-3 py-2 text-left'>
+                    {(c.rangosNumeracion ?? []).length === 0 ? (
+                      <span className='text-slate-600'>—</span>
+                    ) : (
+                      <span className='flex flex-col font-mono text-[10px] text-slate-400'>
+                        {c.rangosNumeracion.map((rango, i) => (
+                          <span key={i}>{rango.desde}–{rango.hasta}</span>
+                        ))}
+                      </span>
+                    )}
+                  </td>
+                  <td className='px-3 py-2 text-center text-[10px] text-slate-500 whitespace-nowrap'>
+                    {c.observaciones ?? '—'}
                   </td>
                   <td className='px-3 py-2' onClick={e => e.stopPropagation()}>
                     {escritura ? (
@@ -890,7 +1016,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             })}
             {filas.length === 0 && !loading && (
               <tr>
-                <td colSpan={13} className='px-3 py-8 text-center text-slate-500'>
+                <td colSpan={19} className='px-3 py-8 text-center text-slate-500'>
                   {celdas.length === 0 ? (
                     <>
                       No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
@@ -921,6 +1047,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           </div>
         )}
       </div>
+      )}
 
       <TablePagination
         page={paginacion.page}
