@@ -42,9 +42,8 @@ class CeldasHistoricasSeeder extends Seeder
 
     public function run(): void
     {
-        // Los IDs 1..30 se reservan para la numeración real por municipio;
-        // las referencias generadas empiezan en 31 para no colisionar.
-        $siguienteId = max((int) DB::table('celdas')->max('id'), 30) + 1;
+        // Orden canónico: El Alto = 1..30, La Paz = 31..60.
+        $offsets = ['EL ALTO' => 0, 'LA PAZ' => 30];
         $operadorId = Operador::query()->where('role', 'SUPERADMIN')->value('id');
 
         foreach (self::CENTROS as $municipio => $centro) {
@@ -67,12 +66,7 @@ class CeldasHistoricasSeeder extends Seeder
                     'numero_celda' => $numero,
                 ]);
                 if ($celda->id === null) {
-                    if ($real !== null) {
-                        $celda->id = $numero;
-                        $siguienteId = max($siguienteId, $numero + 1);
-                    } else {
-                        $celda->id = $siguienteId++;
-                    }
+                    $celda->id = $offsets[$municipio] + $numero;
                 }
                 $celda->fill([
                     'codigo' => $codigo,
