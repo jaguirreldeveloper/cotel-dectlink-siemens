@@ -340,6 +340,21 @@ Hay dos entornos con sus propios `.env`:
 
 ---
 
+## 🌿 Flujo de trabajo y ramas
+
+Seguimos **GitHub Flow**: `main` es la única rama estable y desplegable; todo cambio entra por Pull Request con las verificaciones en verde.
+
+- **`main`**: protegida. No se permite push directo ni force-push; solo PRs. Los tags de versión (`v0.1.0`, …) se crean desde aquí.
+- **`feature/<tema>`**: desarrollos nuevos (p. ej. `feature/nombres-celdas`).
+- **`fix/<tema>`**: correcciones puntuales.
+- **`chore/<tema>`**: versionado, documentación, dependencias.
+
+Ciclo: crear rama desde `main` → implementar → verificar → PR → merge → tag si corresponde → desplegar. No hay ramas `develop`/`staging` mientras exista un solo entorno; se añadirían solo con un staging real.
+
+**Checklist antes del PR**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test`, `pnpm run build`, `pnpm test:e2e` (`PW_CHANNEL=chromium`) y `vendor/bin/pint --dirty --format agent` si se tocó PHP. La rama antigua `feat/celdas-enlaces-mapa` queda archivada; no se elimina sin confirmación.
+
+---
+
 ## 📌 Estado del proyecto / Handoff (2026-11-28)
 
 **Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
