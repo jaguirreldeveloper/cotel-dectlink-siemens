@@ -26,6 +26,13 @@ export interface CeldaCrud extends Record<string, unknown> {
   numeroCelda: number | null;
   fechaEstado: string | null;
   motivoEstado: string | null;
+  codigoDpi: string | null;
+  numeroMedidor: string | null;
+  resistenciaTierraOhm: number | null;
+  rangosNumeracion: Array<{ desde: number; hasta: number }>;
+  corrienteFlotanteA: number | null;
+  corrienteCargaA: number | null;
+  observaciones: string | null;
   activo: boolean;
 }
 

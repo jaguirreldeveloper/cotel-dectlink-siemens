@@ -368,7 +368,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 **Estado de datos local**:
 
-- Celdas: 55 referencias `CELDA INEXISTENTE …` y 5 nombres reales provisionales (ids 4, 5, 11, 15, 17). Los nombres definitivos se cargarán con el listado que proporcione el usuario.
+- Celdas: 20 reales importadas desde `backend/database/data/celdas_reales.csv` (18 El Alto + 2 La Paz) y 40 referencias `CELDA INEXISTENTE …`. Por decisión del usuario, A03 y A04 quedan marcadas como inexistentes. El CSV incluye DPI, medidor, tierra, rangos de numeración y coordenadas DMS convertidas a decimal.
 - Padrón: se borró el real durante el rebuild; `PadronDemoSeeder` siembra 20 líneas de humo sobre las 5 celdas reales. El CSV consolidado no está en el repo, así que el padrón definitivo se cargará con el listado del usuario.
 - Operadores y zonas se conservan; `RolesDemoSeeder` es idempotente y reactiva las 12 cuentas demo.
 
@@ -380,7 +380,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 - Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
 
-**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 162 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 166 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
 **Pendiente para la próxima sesión**: cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden y actualizar la documentación si cambia la nomenclatura.
 

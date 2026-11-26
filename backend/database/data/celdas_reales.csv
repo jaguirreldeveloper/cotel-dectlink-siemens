@@ -1,0 +1,23 @@
+n_txe;n_dpi;ubicacion;direccion;medidor;tierra_ohm;rangos;flot_a;carga_a;lat_dms;lng_dms;observaciones;importar
+A 01;6_1;C. SATELITE;Central El Alto Ciudad Satelite;122311;;;;;16° 31' 37'';68° 09' 23'';APAGADO;1
+A 02;6_2;RIO SECO;Central Rio Seco, Zona Brasil;232252;;2805480-2805839;;;16° 29' 29'';68° 12' 27'';APAGADO;1
+A 03;6_3;;;;;2805840-2806199;;;;;;0
+A 04;6_4;VILLA INGAVI;Av. Calacoto;315776;5,42 Ω;2806200-2806499|2807820-2807879;1,2 Amp;S/AUTONOMIA;16° 27' 56'';68° 10' 37'';;0
+A 05;6_5;URB. MERCEDARIO;Urb. Mercedario Plza. Pricipal Estanque de agua;440846;24,9 Ω;2806500-2806859|2808000-2808119;1,4 Amp;S/AUTONOMIA;16° 31' 16'';68° 14' 00'';;1
+A 06;6_6;V. MARCELINA;Entre calle Luis Zenteno S/N, Villa Marcelina;315245;12,31 Ω;2806860-2807219|2808120-2808239;1,7 Amp;2,4 Amp;16° 32' 11'';68° 12' 57'';;1
+A 07;6_7;RETEN EMU KENKO;sub alcaldia Dto. 2, Av. Hilbo S/N (paralela Av. E);588677;9,24 Ω;2807220-2807579|2808240-2808299;1,5 Amp;3,4 Amp;16° 33' 41'';68° 11' 18'';;1
+A 08;8_4;INST. RP. S. Obermaier;Zona Villa Adela (inst. Sebastian Obermaier);347594;13,91 Ω;2808360-2808779;2,0 Amp;S/AUTONOMIA;16° 31' 18'';68° 12' 25'';;1
+A 09;9_6;SANTIAGO II;Zona Santiago II Reten Policial, Plza. El Minero;347520;12,06 Ω;2808840-2809319;1,7 Amp;9,3 Amp;16° 32' 16'';68° 10' 44'';;1
+A 11;11_6;COSMOS 79;c. Sacocani No. 2085, Z. Cosmos 79;347600;6,71 Ω;2809800-2809979|2880000-2880119;1,8 Amp;8,9 Amp;16° 31' 46'';68° 13' 35'';;1
+A 13;13_1;V. CONCEPCION;C. a Viacha, Surtidor Altamirano;353982;5,94 Ω;2880780-2881199;1,0 Amp;4,0 Amp;16° 32' 27'';68° 11' 46'';;1
+A 14;14_5;V. EXALTACION;Av. 6 de juni y C. 5, Centro de salud;313411;;;;;16° 32' 09'';68° 09' 27'';APAGADO;1
+A 15;15_2;SENKATA;Carretera a Oruro No. 8, Z. Senkata;701669;8,2 Ω;2881740-2882219;1,1 Amp;5,2 Amp;16° 35' 36'';68° 11' 05'';;1
+A 17;17_2;TILATA;Urb. Tilata, C. San Jorge;595705;8,38 Ω;2882700-2883119;1,7 Amp;2,2 Amp;16º 34' 37";68º 13' 38";;1
+A 18;18_5;SAUNA PARAISO;Av. Juan Pablo Segundo;503239;32,8 Ω;2883180-2883599;1,8 Amp;S/AUTONOMIA;16° 29' 43'';68° 11' 32'';APAGADO;1
+A 19;19_1;ESTRELLA DE BELEN;C. 14, Zona Estrella de Belen, No. 2769;306796;19,82 Ω;2883660-2884139;1,1 Amp;6,2 Amp;16° 30' 15'';68° 13' 00'';;1
+A 20;20_7;GERMAN BUSCH;C. Exaltacion No. 2035, Z. German Busch;342588;;2884140-2884499;;;16° 28' 22'';68° 10' 50'';RETIRADO;1
+A 22;22_3;MCAL. SANTA CRUZ;Urb. Mcal. Santa Cruz, estanque de agua;855058;;2885100-2885459;;;16° 30' 07'';68° 09' 56'';NO HAY ING.;1
+A 23;23_6;TUPACK KATARI;Av. Elizardo Perez No. 596;342661;12,93 Ω;2885580-2885939;1,1 Amp;3,9 Amp;16° 29' 03'';68° 11' 44'';;1
+A 24;24_2;VILLA COOPERATIVA;C. Marcelo Alba No. 255, Z. Mcal. Sucre Sector A;347147;3,47 Ω;2886060-2886539;2,0 Amp;3,4 Amp;16° 28' 55'';68° 13' 23'';;1
+L 03;3_03;ACHACHICALA;Calle Sbtte. Burgos Zona Achachicala;210261;2,98 Ω;2404620-2404739;1,5 Amp;;16° 27' 35'';68° 08' 56'';S/RECTIFICADOR;1
+L 04;3_04;CIUDADELA FERRO.;C. Ferroviaria entre Calles 3 y 4 Central Cotel;82761;0,85 Ω;2404740-2405099;1,0 Amp;;16° 28' 29'';68° 09' 03'';S/RECTIFICADOR;1

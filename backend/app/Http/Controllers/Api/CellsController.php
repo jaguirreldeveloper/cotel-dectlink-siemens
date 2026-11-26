@@ -219,6 +219,15 @@ class CellsController extends Controller
                 'numeroCelda' => $row->numero_celda !== null ? (int) $row->numero_celda : null,
                 'fechaEstado' => $row->fecha_estado !== null ? CarbonImmutable::parse($row->fecha_estado)->toIso8601String() : null,
                 'motivoEstado' => $row->motivo_estado,
+                'codigoDpi' => $row->codigo_dpi,
+                'numeroMedidor' => $row->numero_medidor,
+                'resistenciaTierraOhm' => $row->resistencia_tierra_ohm !== null ? (float) $row->resistencia_tierra_ohm : null,
+                'rangosNumeracion' => is_string($row->rangos_numeracion)
+                    ? (json_decode($row->rangos_numeracion, true) ?: [])
+                    : ($row->rangos_numeracion ?? []),
+                'corrienteFlotanteA' => $row->corriente_flotante_a !== null ? (float) $row->corriente_flotante_a : null,
+                'corrienteCargaA' => $row->corriente_carga_a !== null ? (float) $row->corriente_carga_a : null,
+                'observaciones' => $row->observaciones,
                 'activo' => (bool) $row->activo,
                 'createdAt' => CarbonImmutable::parse($row->created_at)->toIso8601String(),
             ], $rows));

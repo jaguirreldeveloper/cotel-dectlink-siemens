@@ -188,7 +188,7 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(filas).toHaveCount(5);
   await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
   await expect(filas.first()).toContainText('RFP-ELA-001');
-  await expect(filas.nth(3)).toContainText('CELDA A-04 MERCURIO / INGAVI');
+  await expect(filas.nth(3)).toContainText('CELDA INEXISTENTE ELA 004');
   await page.screenshot({ path: 'test-results/celdas-datatable.png' });
 
   await page.getByLabel('Filtrar por registro').selectOption('referencias');
@@ -197,9 +197,22 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();
 
   await page.getByLabel('Filtrar por estado').selectOption('RETIRADA');
-  await expect(filas).toHaveCount(2);
-  await expect(page.getByText(/Mostrando\s+1–2\s+de\s+2\s+registros/)).toBeVisible();
+  await expect(filas).toHaveCount(3);
+  await expect(page.getByText(/Mostrando\s+1–3\s+de\s+3\s+registros/)).toBeVisible();
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();
+  await expect(filas).toHaveCount(5);
+
+  // La ficha de una celda real muestra los datos técnicos importados.
+  await page.getByLabel('Buscar celdas').fill('MERCEDARIO');
+  await expect(filas).toHaveCount(1);
+  await filas.first().getByRole('button', { name: /Ver celda/ }).click();
+  const ficha = page.getByRole('dialog');
+  await expect(ficha).toContainText('6_5');
+  await expect(ficha).toContainText('440846');
+  await expect(ficha).toContainText('2806500');
+  await expect(ficha).toContainText('2806859');
+  await page.keyboard.press('Escape');
+  await page.getByLabel('Buscar celdas').fill('');
   await expect(filas).toHaveCount(5);
 
   await page.getByRole('button', { name: 'Última página' }).click();

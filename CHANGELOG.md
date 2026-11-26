@@ -6,7 +6,15 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-- (sin cambios registrados)
+### Added
+
+- `backend/database/data/celdas_reales.csv`: listado versionado de 22 celdas reales (DPI, medidor, resistencia de tierra, rangos de numeración dobles, corrientes y coordenadas DMS).
+- `CellCsvImporter`: conversión de DMS a decimal, decimales con coma, rangos múltiples y mapeo de observaciones a estados.
+
+### Changed
+
+- `CeldasRebuildSeeder` consume el CSV: 20 celdas reales importadas y 40 referencias `CELDA INEXISTENTE`. Por decisión del usuario, A03 y A04 quedan marcadas como inexistentes.
+- La ficha y la versión imprimible de la celda muestran DPI, medidor, resistencia, corrientes y todos los rangos.
 
 ## [0.1.0] - 2026-11-26
 
