@@ -196,6 +196,9 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(columnas).toHaveCount(6);
   await page.getByRole('button', { name: 'Vista específica / técnica' }).click();
   await expect(columnas).toHaveCount(19);
+  await expect(page.getByRole('columnheader', { name: 'Dirección' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Usuarios' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'RFP #' })).toHaveCount(0);
   await expect(filas).toHaveCount(5);
   await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
   await page.getByRole('button', { name: 'Vista general' }).click();
