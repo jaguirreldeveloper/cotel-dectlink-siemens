@@ -6,7 +6,7 @@ use OpenApi\Attributes as OA;
 
 #[OA\Info(
     title: 'COTEL DECtlink API',
-    version: '1.0.0',
+    version: '0.1.0',
     description: 'API para gestion de planta externa Siemens DECtlink'
 )]
 #[OA\Server(

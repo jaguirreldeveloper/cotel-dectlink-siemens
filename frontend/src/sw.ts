@@ -10,9 +10,11 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- globals de Service Worker fuera de lib.dom
 // @ts-nocheck - Desactivar type checking para Service Worker
 
-// Nombre del cache para recursos estáticos
-const CACHE_NAME_STATIC = 'cotel-static-v1';
-const CACHE_NAME_API = 'cotel-api-v1';
+// Los nombres de caché siguen la versión del paquete (inyectada por Vite),
+// así cada deploy invalida las respuestas cacheadas de la versión anterior.
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
+const CACHE_NAME_STATIC = `cotel-static-v${APP_VERSION}`;
+const CACHE_NAME_API = `cotel-api-v${APP_VERSION}`;
 
 // Recursos estáticos a cachear
 const STATIC_RESOURCES = [

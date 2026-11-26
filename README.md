@@ -344,7 +344,7 @@ Hay dos entornos con sus propios `.env`:
 
 **Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
 
-**Entregas completas y sincronizadas en `main`** (último commit `a4d91fb`):
+**Entregas completas y sincronizadas en `main`** (versión **0.1.0**, tag `v0.1.0`; historial en `CHANGELOG.md`):
 
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
@@ -369,52 +369,10 @@ Hay dos entornos con sus propios `.env`:
 
 **Pendiente para la próxima sesión**: cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden y actualizar la documentación si cambia la nomenclatura.
 
+## 🛠️ Cambios recientes
+
+El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.1.0** (tag `v0.1.0`).
+
 ---
 
 © 2026 COTEL R.L. · Todos los derechos reservados.
-
-## 🛠️ Cambios recientes
-
-**2026-11-28 — Numeración corrida y rebuild limpio:**
-- `CeldasRebuildSeeder`: 60 celdas con **60 IDs corridos** — El Alto `1..30` (N° `1..30`, `RFP-ELA-001..030`) y La Paz `31..60` (N° `1..30`, `RFP-LP-001..030`). Borra solo dependencias de celdas (abonados, OTs, bitácoras); operadores y zonas se conservan.
-- Las celdas sin registro real llevan nombre `CELDA INEXISTENTE …`; los nombres definitivos se cargarán con el listado que proporcione el usuario. `PadronDemoSeeder` siembra 20 líneas de humo sobre las 5 celdas reales.
-
-**2026-11-27 — Ciclo de vida completo y 60 celdas históricas:**
-- `numero_celda` 1–30 por municipio con `UNIQUE(municipio, numero_celda)`; `PATCH /api/cells/{id}/estado` con máquina de estados y bitácora; reactivación de baja/retiro solo para SUPERADMIN.
-- `CeldasHistoricasSeeder`: 30 El Alto + 30 La Paz con estados variados y eventos fechados de 2024–2026 (`origen=seed`) para auditoría; las 5 celdas previas se actualizan por su número, no se duplican.
-- `GET /api/cells?municipio=&estado=&numero=` y `/historial-estados`; tabla de celdas con 5 filas por defecto, Inicio/Fin/números, `N°`+ID, columnas centradas, filtro por estado, Ver/Imprimir y menú con Cambiar estado/Baja/Eliminar.
-
-**2026-11-26 — Generación de celdas RFP en El Alto/La Paz:**
-- Campos nuevos en `celdas`: `codigo` único, `departamento`, `municipio`, `zona_id`, `direccion`, `capacidad_abonados_prevista`, `estado` y `activo`; backfill de las 5 celdas existentes y conteo derivado `usuariosActuales` en `GET /api/cells`.
-- Asistente de lote (solo SUPERADMIN): `POST /api/cells/lote/preview` genera coordenadas sugeridas de forma determinista, el operador edita las filas y `POST /api/cells/lote` guarda todo en una transacción con bitácora por celda.
-- CRUD individual ampliado con los campos geográficos, filtro por municipio y columnas de código/municipio/zona/usuarios.
-- Catálogo `GET /api/zonas` para los selectores.
-
-**2026-11-25 — Panel de Celdas, escala del padrón, roles por permiso y portal del abonado:**
-- Panel de Celdas (RFP) completo: KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
-- Fase de escala: `/api/subscribers/page` y `/summary` (SQL), índices en Supabase y frontend preparado para paginación (100.000 líneas).
-- 9 roles funcionales, atributos de perfil (puesto/especialidad/área/zona/turno/supervisor/overrides), 12 operadores demo y catálogo único de permisos con middleware `permission:`.
-- Vistas personalizadas: pestaña de entrada y menú por permisos; portal «Mi línea» con token hasheado y scope por `abonado_nro`.
-- Verificación: **214 tests** (71 FE + 143 BE), typecheck, lint, build, Pint y 12 specs/E2E de humo (4/4 en la ejecución final de los specs nuevos).
-
-**2026-11-10 — Reorganización de las 3 tablas de abonados (9 commits: de `cdb51fd` a `1e7893b`, todos en `main`):**
-- Base geo honesta (`coordsReales` + helpers en `shared/utils/geo.ts`) y columnas **GEO**/**MAPA** en las tablas de abonados (coordenadas reales y enlace al mapa con la misma semántica en cada vista).
-- Paginación compartida de 5/10/15/20/25 filas con defecto 10 (`shared/utils/pagination.ts`) y presentación de tablas (cabecera/primera columna sticky, alineación numérica `tabular-nums`, `EmptyState` con sus textos conservados).
-- Registro compartido de columnas `entities/subscriber/columns.tsx`: `RESUMEN_COLUMNS` (6 columnas) ⊂ `DETALLE_COLUMNS` (15 columnas), con contrato de subconjunto validado por tests.
-- **Abonados por Celda** ahora usa el resumen (Nro, Teléfono, Nombre, Zona, Estado, Señal) y **Detalle por Celda** el detalle completo (+ Tiempo Dep., Falla, GPS mejorada).
-- **Padrón** con franja de resumen y chips de estado (conteos sobre todos los filtros salvo estado), sin select de estado; drill-down de cualquier fila a Abonados por Celda (`onOpenCelda` → `drilldownCelda` → `initialCelda`).
-- Tests Vitest de **14 → 38** (7 archivos): nuevos `subscriberColumns` (6) y `recordSummary` (4), más `geo` y `pagination`.
-- `routes/api.php` verificado con `php artisan route:list --json`: **66 rutas** (el README decía 29); sidebar con 19 pestañas y `frontend/src/features` con 23 directorios.
-- `pnpm run smoke` autenticado con `x-admin-token` (prioridad `SMOKE_ADMIN_TOKEN` → `backend/.env` → entorno) — `4600f64`.
-
-**Anteriores:**
-
-- Se amplió el `CHECK` de `estado_servicio` en la migración de pruebas (`2026_10_22_164813_create_cotel_testing_schema.php`) para incluir el nuevo valor **`ACTIVO`**, permitiendo que los tests de `PadronCargas` inserten filas con ese estado.
-- Se añadió el valor **`SIN DATO`** al `CHECK` de `estado_operativo` para cubrir casos de datos ausentes en la carga del padrón.
-- La migración `20261031100000_sin_dato_estado_operativo.sql` (con su envoltura Laravel `2026_10_31_100000_sql_sin_dato_estado_operativo.php`) alinea ambos CHECK en `abonados_lineas` (y en la tabla legacy `abonados_dect`). Es idempotente; el esquema de Supabase ya acepta ambos valores.
-- `PadronCargasController::store` ahora omite las filas `RECHAZADO` al persistir detalles del lote (solo afectan conteos del resumen).
-- Los tests de `PadronCargas` fueron actualizados para reflejar la nueva lógica: **116 tests, 0 fallos** (hoy: 120 tests / 461 assertions).
-- Nueva pestaña **Carga de Padrón** (`PadronCargasView`) en el frontend: subir CSV (ADMIN+), listar lotes, ver detalle por fila, aplicar y anular (solo SUPERADMIN), con RBAC en sidebar.
-- Tests unitarios Vitest añadidos: 14 tests para funciones puras (`rfCalculations`, `recordFilters`, `roles`) — hoy ampliados a **38 tests**.
-- Tests e2e Playwright reparados y en verde (8/8): se liberó disco, se instaló Chromium 1248, se corrigieron los specs (entrada a modo consulta, selectores de sidebar, ruta de `backend/.env` en helpers) y el badge "Conectado a BD" (punto medio) en `UnifiedHeader`.
-- Job `e2e` de GitHub Actions habilitado: backend SQLite aislado (`database/ci.sqlite`), `migrate:fresh` + `E2eSeeder`, Playwright Chromium y subida de trazas si falla. El seeder es idempotente y solo corre en SQLite, así que nunca toca la base PostgreSQL real.
