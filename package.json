@@ -1,7 +1,7 @@
 {
   "name": "cotel-dectlink-siemens",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "COTEL R.L. - Sistema de Gestión de Planta Externa Siemens DECTlink & Migraciones",
   "scripts": {
     "dev": "pnpm --filter frontend dev",

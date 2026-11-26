@@ -12,7 +12,7 @@
 
 // Los nombres de caché siguen la versión del paquete (inyectada por Vite),
 // así cada deploy invalida las respuestas cacheadas de la versión anterior.
-const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.1.1';
 const CACHE_NAME_STATIC = `cotel-static-v${APP_VERSION}`;
 const CACHE_NAME_API = `cotel-api-v${APP_VERSION}`;
 
