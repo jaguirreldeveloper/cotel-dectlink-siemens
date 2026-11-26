@@ -770,7 +770,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                     <td className='px-3 py-2 text-center font-mono text-brand-300 whitespace-nowrap'>{c.codigo}</td>
                     <td className='px-3 py-2'>
                       <div className='font-semibold text-white'>{c.nombre}</div>
-                      <div className='text-[10px] text-slate-500'>{c.municipio ?? '—'} · {c.zona ?? c.direccion ?? '—'}</div>
+                      <div className='text-[10px] text-slate-500'>{c.municipio ?? '—'}</div>
                     </td>
                     <td className='px-3 py-2 text-center whitespace-nowrap'>
                       <span className={`inline-flex flex-col items-center gap-0.5 rounded-md border px-2 py-1 text-[10px] font-bold ${
@@ -822,10 +822,10 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           <thead className='bg-slate-800/60 text-slate-300'>
             <tr>
               <th className='px-3 py-2 text-center'>N°</th>
-              <Th label='RFP #' sortKey='id' current={sort.key} dir={sort.dir} onSort={handleSort} />
               <th className='px-3 py-2 text-center'>Código</th>
               <Th label='Nombre' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
               <th className='px-3 py-2 text-center'>Municipio / Zona</th>
+              <th className='px-3 py-2 text-center'>Dirección</th>
               <th className='px-3 py-2 text-center'>Estado</th>
               <th className='px-3 py-2 text-center'>DPI</th>
               <th className='px-3 py-2 text-center'>Medidor</th>
@@ -859,7 +859,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
               />
               <th className='px-3 py-2 text-center'>Coordenadas</th>
               <Th
-                label='Abonados'
+                label='Usuarios'
                 sortKey='abonados'
                 current={sort.key}
                 dir={sort.dir}
@@ -883,7 +883,6 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                     <span className='block font-mono font-semibold tabular-nums text-slate-200'>{numero}</span>
                     <span className='block font-mono text-[10px] text-slate-500'>ID {c.id}</span>
                   </td>
-                  <td className='px-3 py-2 font-mono font-bold text-brand-400'>{c.id}</td>
                   <td className='px-3 py-2 text-center font-mono text-slate-400 whitespace-nowrap'>{c.codigo}</td>
                   <td className='px-3 py-2 text-center text-white font-medium'>
                     <span>{c.nombre}</span>
@@ -895,7 +894,10 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                   </td>
                   <td className='px-3 py-2 text-center text-slate-400 whitespace-nowrap'>
                     <div>{c.municipio ?? '—'}</div>
-                    <div className='text-[10px] text-slate-600'>{c.zona ?? c.direccion ?? '—'}</div>
+                    <div className='text-[10px] text-slate-600'>{c.zona ?? '—'}</div>
+                  </td>
+                  <td className='px-3 py-2 text-center text-slate-400 text-[11px]'>
+                    {c.direccion ?? '—'}
                   </td>
                   <td className='px-3 py-2 text-center whitespace-nowrap'>
                     <span className={`inline-flex flex-col items-center gap-0.5 rounded-md border px-2 py-1 text-[10px] font-bold ${
