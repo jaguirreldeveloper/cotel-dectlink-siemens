@@ -23,6 +23,10 @@ import {
   Search,
   Grid3x3,
   Focus,
+  LayoutDashboard,
+  List,
+  SlidersHorizontal,
+  Layers3,
 } from 'lucide-react';
 import { AppTabId } from '@/routes';
 import type { Operador } from '@/features/auth/types';
@@ -92,6 +96,18 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'celdas',
+    label: 'Celdas (RFP)',
+    icon: Radio,
+    color: 'text-indigo-500',
+    tabs: [
+      { id: 'celdas-resumen', label: 'Resumen', icon: LayoutDashboard, badgeColor: 'bg-indigo-500' },
+      { id: 'celdas-general', label: 'Listado general', icon: List, badgeColor: 'bg-emerald-500' },
+      { id: 'celdas-tecnica', label: 'Detalle técnico', icon: SlidersHorizontal, badgeColor: 'bg-brand-500' },
+      { id: 'celdas-lote', label: 'Generación por lote', icon: Layers3, badgeColor: 'bg-teal-500' },
+    ],
+  },
+  {
     id: 'admin',
     label: 'Administración',
     icon: Settings,
@@ -100,7 +116,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'database', label: 'Base de Datos', icon: Database, badgeColor: 'bg-brand-500', roles: ['SUPERADMIN'] },
       { id: 'official-sheets', label: 'Fichas Oficiales', icon: FileText, badgeColor: 'bg-brand-500' },
       { id: 'infraestructura', label: 'Infraestructura', icon: Building2, badgeColor: 'bg-rose-500' },
-      { id: 'celdas-crud', label: 'Celdas (RFP)', icon: Radio, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN', 'ADMIN'] },
       { id: 'padron-cargas', label: 'Carga de Padrón', icon: FileText, badgeColor: 'bg-teal-500', roles: ['SUPERADMIN', 'ADMIN'] },
       { id: 'users', label: 'Usuarios & Roles', icon: Users, badgeColor: 'bg-indigo-500', roles: ['SUPERADMIN'] },
       { id: 'qa', label: 'Consultas', icon: HelpCircle, badgeColor: 'bg-slate-500', roles: ['SUPERADMIN'] },

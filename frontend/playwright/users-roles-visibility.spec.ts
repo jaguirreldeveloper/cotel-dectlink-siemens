@@ -121,6 +121,14 @@ test('la tabla de operadores pagina en 5, numera y ofrece ver/imprimir', async (
   const session = await loginTestSession(request, SUPERADMIN);
   test.skip(!session, 'no se pudo autenticar al operador de prueba (BD local)');
 
+  const total = (
+    await (await request.get('/api/operadores', {
+      headers: { Authorization: `Bearer ${session.token}` },
+    })).json() as unknown[]
+  ).length;
+  const ultimos = total % 5 === 0 ? 5 : total % 5;
+  const primerUltimo = total - ultimos + 1;
+
   const errores: string[] = [];
   page.on('pageerror', err => errores.push(String(err)));
 
@@ -148,8 +156,8 @@ test('la tabla de operadores pagina en 5, numera y ofrece ver/imprimir', async (
   // Inicio / Fin y salto directo por número.
   await selector.selectOption('5');
   await page.getByRole('button', { name: 'Última página' }).click();
-  await expect(filas).toHaveCount(1);
-  await expect(primerNumero).toHaveText('16');
+  await expect(filas).toHaveCount(ultimos);
+  await expect(primerNumero).toHaveText(String(primerUltimo));
   await expect(page.getByRole('button', { name: 'Última página' })).toBeDisabled();
   await page.getByRole('button', { name: 'Primera página' }).click();
   await expect(primerNumero).toHaveText('1');

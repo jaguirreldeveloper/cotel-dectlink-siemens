@@ -44,7 +44,7 @@ describe('ROLE_DASHBOARDS', () => {
     expect(visiblesTecnico).not.toContain('celdas-crud');
 
     const visiblesSuper = visibleTabIds(op('SUPERADMIN', [
-      'database.sql_console', 'users.manage', 'cells.view', 'audit.log.view',
+      'database.sql_console', 'users.manage', 'cells.view', 'cells.create', 'audit.log.view',
       'database.csv_upload', 'infraestructura.edit', 'subscribers.gps',
       'work_orders.manage', 'subscribers.status', 'rf.simulate',
       'tech_migration.simulate', 'official_sheets.print', 'gis.coverage',
@@ -52,6 +52,9 @@ describe('ROLE_DASHBOARDS', () => {
     ]));
     expect(visiblesSuper).toContain('users');
     expect(visiblesSuper).toContain('database');
-    expect(visiblesSuper).toContain('celdas-crud');
+    expect(visiblesSuper).toContain('celdas-resumen');
+    expect(visiblesSuper).toContain('celdas-general');
+    expect(visiblesSuper).toContain('celdas-tecnica');
+    expect(visiblesSuper).toContain('celdas-lote');
   });
 });
