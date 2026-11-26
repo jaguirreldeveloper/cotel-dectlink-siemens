@@ -90,12 +90,13 @@ export async function deleteCelda(id: number): Promise<{ message: string }> {
 export async function cambiarEstadoCelda(
   id: number,
   estado: string,
-  motivo?: string
+  motivo?: string,
+  estadoEnergia?: string
 ): Promise<{ message: string }> {
   const res = await apiFetch(`${BASE}/${id}/estado`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ estado, motivo: motivo || null }),
+    body: JSON.stringify({ estado, motivo: motivo || null, estado_energia: estadoEnergia ?? null }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.message || `Error ${res.status} al cambiar el estado`);

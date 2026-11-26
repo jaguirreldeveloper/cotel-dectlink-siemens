@@ -52,6 +52,7 @@ final class CellBatchGenerator
                 'radio_cobertura_km' => $params['radio_km'],
                 'capacidad_abonados_prevista' => $params['capacidad_abonados_prevista'],
                 'estado' => $params['estado'],
+                'estado_energia' => $params['estado_energia'] ?? 'ENCENDIDA',
                 'activo' => true,
             ];
         }
