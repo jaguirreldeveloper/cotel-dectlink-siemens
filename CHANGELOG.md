@@ -6,6 +6,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `Modal` compartido: el efecto de foco ya no se re-ejecuta en cada render del caller, de modo que se puede escribir letra por letra en los campos del modal de edición de celdas (y de cualquier otro modal con inputs).
+
 ### Added
 
 - 8 estados de ciclo de vida (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) y estado eléctrico independiente (`ENCENDIDA`, `APAGADA`, `SIN_ENERGIA`).

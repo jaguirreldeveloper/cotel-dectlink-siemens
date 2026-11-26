@@ -222,6 +222,16 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(edicion.getByLabel('Estado eléctrico de la celda')).toHaveValue('APAGADA');
   await expect(edicion.getByLabel('Código DPI')).toHaveValue('6_2');
   await expect(edicion.getByLabel('Número de RFP')).toBeDisabled();
+
+  // Regresión: escribir letra por letra no debe perder el foco del input.
+  const nombre = edicion.getByLabel('Nombre de la celda');
+  await nombre.fill('');
+  await nombre.pressSequentially('RIO SECO EDITADO', { delay: 20 });
+  await expect(nombre).toHaveValue('RIO SECO EDITADO');
+  const direccion = edicion.getByLabel('Dirección de la celda');
+  await direccion.pressSequentially(' · editada', { delay: 20 });
+  await expect(direccion).toHaveValue(/editada$/);
+
   await edicion.getByRole('button', { name: 'Cerrar diálogo' }).click();
 
   await page.getByLabel('Buscar celdas').fill('');

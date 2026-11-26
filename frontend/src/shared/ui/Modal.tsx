@@ -44,6 +44,11 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // Los callers pasan `onClose` como función inline: si el efecto depende de
+  // esa referencia, se re-ejecuta en cada render y roba el foco a los inputs
+  // mientras el usuario escribe. Lo estabilizamos con un ref.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,14 +57,14 @@ export const Modal: React.FC<ModalProps> = ({
     panelRef.current?.focus();
 
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('keydown', handleKey);
       previouslyFocused.current?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
