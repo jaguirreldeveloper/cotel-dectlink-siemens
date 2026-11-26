@@ -49,6 +49,7 @@ final class CellCsvImporter
                 'latitud' => self::gradosADecimal((string) ($datos['lat_dms'] ?? ''), true),
                 'longitud' => self::gradosADecimal((string) ($datos['lng_dms'] ?? ''), true),
                 'estado' => $estado,
+                'estado_energia' => self::energiaDesdeEstado($estado, (string) $datos['observaciones'] ?? ''),
                 'activo' => self::activoDesdeEstado($estado),
                 'observaciones' => self::texto($datos['observaciones'] ?? ''),
                 'importar' => (int) ($datos['importar'] ?? 1) === 1,
@@ -134,6 +135,18 @@ final class CellCsvImporter
         }
 
         return CellStateMachine::EN_SERVICIO;
+    }
+
+    private static function energiaDesdeEstado(string $estado, string $observacion): string
+    {
+        if ($estado === CellStateMachine::EN_SERVICIO) {
+            return CellStateMachine::ENCENDIDA;
+        }
+        if (str_contains(strtoupper($observacion), 'RECTIFICADOR')) {
+            return CellStateMachine::SIN_ENERGIA;
+        }
+
+        return CellStateMachine::APAGADA;
     }
 
     private static function activoDesdeEstado(string $estado): bool

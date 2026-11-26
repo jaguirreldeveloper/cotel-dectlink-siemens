@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $direccion
  * @property int|null $capacidad_abonados_prevista
  * @property string $estado
+ * @property string $estado_energia
  * @property int|null $numero_celda
  * @property CarbonImmutable|null $fecha_estado
  * @property string|null $motivo_estado
@@ -50,7 +51,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'id', 'codigo', 'nombre', 'tecnologia', 'descripcion', 'rfp_modelo', 'banda_frecuencia',
     'capacidad_canales', 'radio_cobertura_km', 'latitud', 'longitud', 'id_subcentral',
     'departamento', 'municipio', 'zona_id', 'direccion', 'capacidad_abonados_prevista',
-    'estado', 'numero_celda', 'fecha_estado', 'motivo_estado', 'activo',
+    'estado', 'estado_energia', 'numero_celda', 'fecha_estado', 'motivo_estado', 'activo',
     'codigo_dpi', 'numero_medidor', 'resistencia_tierra_ohm', 'rangos_numeracion',
     'corriente_flotante_a', 'corriente_carga_a', 'observaciones',
 ])]

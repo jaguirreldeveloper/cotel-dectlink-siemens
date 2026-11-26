@@ -38,6 +38,19 @@ class CellStateMachineTest extends TestCase
         $this->assertTrue(CellStateMachine::esTerminal(CellStateMachine::RETIRADA));
     }
 
+    public function test_nuevos_estados_y_energia(): void
+    {
+        $this->assertContains(CellStateMachine::FUERA_DE_SERVICIO, CellStateMachine::ESTADOS);
+        $this->assertContains(CellStateMachine::EN_MANTENIMIENTO, CellStateMachine::ESTADOS);
+        $this->assertTrue(CellStateMachine::puede(CellStateMachine::EN_SERVICIO, CellStateMachine::EN_MANTENIMIENTO));
+        $this->assertTrue(CellStateMachine::puede(CellStateMachine::EN_MANTENIMIENTO, CellStateMachine::EN_SERVICIO));
+        $this->assertFalse(CellStateMachine::puede(CellStateMachine::PLANEADA, CellStateMachine::EN_MANTENIMIENTO));
+        $this->assertTrue(CellStateMachine::energiaValida(CellStateMachine::EN_SERVICIO, CellStateMachine::ENCENDIDA));
+        $this->assertFalse(CellStateMachine::energiaValida(CellStateMachine::EN_SERVICIO, CellStateMachine::APAGADA));
+        $this->assertTrue(CellStateMachine::energiaValida(CellStateMachine::SUSPENDIDA, CellStateMachine::APAGADA));
+        $this->assertTrue(CellStateMachine::energiaValida(CellStateMachine::BAJA, CellStateMachine::SIN_ENERGIA));
+    }
+
     public function test_cambio_de_estado_registra_bitacora_y_bitacora_no_borra_la_celda(): void
     {
         $celda = Cell::factory()->create(['estado' => CellStateMachine::EN_SERVICIO, 'activo' => true]);
@@ -54,6 +67,37 @@ class CellStateMachineTest extends TestCase
             'accion' => InfraestructuraBitacora::ACCION_DESACTIVAR,
         ]);
         $this->assertNotNull($celda->fresh()->fecha_estado);
+    }
+
+    public function test_api_actualiza_estado_y_energia_con_bitacora(): void
+    {
+        $celda = Cell::factory()->create([
+            'estado' => CellStateMachine::EN_SERVICIO,
+            'estado_energia' => CellStateMachine::ENCENDIDA,
+        ]);
+
+        $this->patchJson('/api/cells/'.$celda->id.'/estado', [
+            'estado' => CellStateMachine::SUSPENDIDA,
+            'estado_energia' => CellStateMachine::APAGADA,
+            'motivo' => 'Apagado programado',
+        ], $this->headers())->assertOk()->assertJsonPath('celda.estadoEnergia', 'APAGADA');
+
+        $this->assertDatabaseHas('celdas', [
+            'id' => $celda->id,
+            'estado' => 'SUSPENDIDA',
+            'estado_energia' => 'APAGADA',
+        ]);
+
+        $bitacora = InfraestructuraBitacora::query()
+            ->where('tabla', 'celdas')
+            ->where('registro_id', $celda->id)
+            ->firstOrFail();
+        $this->assertSame('APAGADA', $bitacora->payload['despues']['estado_energia']);
+
+        $this->patchJson('/api/cells/'.$celda->id.'/estado', [
+            'estado' => CellStateMachine::EN_SERVICIO,
+            'estado_energia' => CellStateMachine::APAGADA,
+        ], $this->headers())->assertStatus(422);
     }
 
     public function test_transicion_invalida_devuelve_422(): void

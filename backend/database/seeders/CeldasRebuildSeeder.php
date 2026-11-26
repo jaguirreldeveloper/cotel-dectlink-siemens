@@ -66,6 +66,9 @@ class CeldasRebuildSeeder extends Seeder
                         'departamento' => 'LA PAZ',
                         'municipio' => $municipio,
                         'estado' => $estado,
+                        'estado_energia' => $importada['estado_energia'] ?? ($estado === CellStateMachine::EN_SERVICIO
+                            ? CellStateMachine::ENCENDIDA
+                            : CellStateMachine::APAGADA),
                         'fecha_estado' => $fechaAlta->copy()->addMonths(8),
                         'motivo_estado' => $importada['observaciones'] ?? ($importada !== null
                             ? 'Celda identificada en el listado real de planta externa'
@@ -125,7 +128,12 @@ class CeldasRebuildSeeder extends Seeder
                 'payload' => json_encode([
                     'origen' => 'seed',
                     'antes' => ['estado' => $evento[1]],
-                    'despues' => ['estado' => $evento[1]],
+                    'despues' => [
+                        'estado' => $evento[1],
+                        'estado_energia' => $evento[1] === CellStateMachine::EN_SERVICIO
+                            ? CellStateMachine::ENCENDIDA
+                            : CellStateMachine::APAGADA,
+                    ],
                 ]),
                 'created_at' => $evento[2],
             ],

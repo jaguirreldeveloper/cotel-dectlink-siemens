@@ -23,6 +23,7 @@ export interface CeldaCrud extends Record<string, unknown> {
   capacidadAbonadosPrevista: number | null;
   usuariosActuales: number;
   estado: string;
+  estadoEnergia: string;
   numeroCelda: number | null;
   fechaEstado: string | null;
   motivoEstado: string | null;
@@ -52,7 +53,7 @@ export interface CeldaLoteParams {
   centro: { latitud: number; longitud: number };
   radioKm: number;
   capacidadAbonadosPrevista: number;
-  estado: 'PLANEADA' | 'INSTALADA' | 'EN_SERVICIO';
+  estado: 'PLANEADA' | 'INSTALADA' | 'EN_SERVICIO' | 'SUSPENDIDA' | 'FUERA_DE_SERVICIO' | 'EN_MANTENIMIENTO' | 'BAJA' | 'RETIRADA';
   /** Filas ya editadas en la previsualización (opcional al confirmar). */
   filas?: CeldaLoteFila[];
 }
@@ -71,6 +72,7 @@ export interface CeldaLoteFila {
   radio_cobertura_km: number;
   capacidad_abonados_prevista: number | null;
   estado: string;
+  estado_energia?: string;
   activo: boolean;
 }
 
@@ -91,5 +93,13 @@ export interface CeldaFormData {
   zonaId: string;
   direccion: string;
   capacidadAbonadosPrevista: string;
-  estado: 'PLANEADA' | 'INSTALADA' | 'EN_SERVICIO';
+  estado: 'PLANEADA' | 'INSTALADA' | 'EN_SERVICIO' | 'SUSPENDIDA' | 'FUERA_DE_SERVICIO' | 'EN_MANTENIMIENTO' | 'BAJA' | 'RETIRADA';
+  estadoEnergia: 'ENCENDIDA' | 'APAGADA' | 'SIN_ENERGIA';
+  codigoDpi: string;
+  numeroMedidor: string;
+  resistenciaTierraOhm: string;
+  rangosNumeracion: string;
+  corrienteFlotanteA: string;
+  corrienteCargaA: string;
+  observaciones: string;
 }

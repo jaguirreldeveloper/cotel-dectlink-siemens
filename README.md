@@ -364,7 +364,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
 - 9 roles funcionales (incluye `GERENTE_AREA`, `JEFE_DEPARTAMENTO`, `ENCARGADO_AREA`), 12 operadores demo y portal «Mi línea» con token hasheado.
-- 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida `PLANEADA → INSTALADA → EN_SERVICIO ⇄ SUSPENDIDA → BAJA → RETIRADA` con bitácora por transición; baja/retiro conservan la fila por auditoría.
+- 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida de 8 estados (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) con estado eléctrico independiente (`ENCENDIDA`/`APAGADA`/`SIN_ENERGIA`) y bitácora por transición; baja/retiro conservan la fila por auditoría.
 
 **Estado de datos local**:
 
@@ -380,7 +380,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 - Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
 
-**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 166 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 168 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
 **Pendiente para la próxima sesión**: cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden y actualizar la documentación si cambia la nomenclatura.
 

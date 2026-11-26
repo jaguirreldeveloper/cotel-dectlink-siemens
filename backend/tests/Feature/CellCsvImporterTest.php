@@ -49,6 +49,9 @@ class CellCsvImporterTest extends TestCase
 
         $this->assertSame(-16.576944, $registros['EL ALTO:17']['latitud']);
         $this->assertSame(-68.227222, $registros['EL ALTO:17']['longitud']);
+        $this->assertSame(CellStateMachine::ENCENDIDA, $registros['EL ALTO:5']['estado_energia']);
+        $this->assertSame(CellStateMachine::APAGADA, $registros['EL ALTO:2']['estado_energia']);
+        $this->assertSame(CellStateMachine::SIN_ENERGIA, $registros['LA PAZ:3']['estado_energia']);
         $this->assertSame(CellStateMachine::SUSPENDIDA, $registros['EL ALTO:2']['estado']);
         $this->assertSame(CellStateMachine::RETIRADA, $registros['EL ALTO:20']['estado']);
         $this->assertSame(CellStateMachine::BAJA, $registros['EL ALTO:22']['estado']);

@@ -28,7 +28,7 @@ class CatalogEndpointsTest extends TestCase
             'id', 'codigo', 'nombre', 'tecnologia', 'descripcion', 'rfpModelo', 'bandaFrecuencia',
             'capacidadCanales', 'radioCoberturaKm', 'latitud', 'longitud',
             'idSubcentral', 'nombreSubcentral', 'departamento', 'municipio', 'zonaId', 'zona',
-            'direccion', 'capacidadAbonadosPrevista', 'usuariosActuales', 'estado',
+            'direccion', 'capacidadAbonadosPrevista', 'usuariosActuales', 'estado', 'estadoEnergia',
             'numeroCelda', 'fechaEstado', 'motivoEstado', 'codigoDpi', 'numeroMedidor',
             'resistenciaTierraOhm', 'rangosNumeracion', 'corrienteFlotanteA', 'corrienteCargaA',
             'observaciones', 'activo', 'createdAt',

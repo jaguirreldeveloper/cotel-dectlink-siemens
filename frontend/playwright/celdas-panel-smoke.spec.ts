@@ -196,7 +196,7 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(page.getByText('CELDA A-04 MERCURIO / INGAVI')).toHaveCount(0);
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();
 
-  await page.getByLabel('Filtrar por estado').selectOption('RETIRADA');
+  await page.getByLabel('Filtrar por estado', { exact: true }).selectOption('RETIRADA');
   await expect(filas).toHaveCount(3);
   await expect(page.getByText(/Mostrando\s+1–3\s+de\s+3\s+registros/)).toBeVisible();
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();
@@ -212,6 +212,18 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(ficha).toContainText('2806500');
   await expect(ficha).toContainText('2806859');
   await page.keyboard.press('Escape');
+
+  // Una celda inactiva se puede editar: todos los campos visibles y con valor.
+  await page.getByLabel('Buscar celdas').fill('RIO SECO');
+  await expect(filas).toHaveCount(1);
+  await filas.first().getByRole('button', { name: /Editar celda/ }).click();
+  const edicion = page.getByRole('dialog');
+  await expect(edicion.getByLabel('Estado de la celda')).toHaveValue('SUSPENDIDA');
+  await expect(edicion.getByLabel('Estado eléctrico de la celda')).toHaveValue('APAGADA');
+  await expect(edicion.getByLabel('Código DPI')).toHaveValue('6_2');
+  await expect(edicion.getByLabel('Número de RFP')).toBeDisabled();
+  await edicion.getByRole('button', { name: 'Cerrar diálogo' }).click();
+
   await page.getByLabel('Buscar celdas').fill('');
   await expect(filas).toHaveCount(5);
 

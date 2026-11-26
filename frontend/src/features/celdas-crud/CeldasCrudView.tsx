@@ -29,7 +29,14 @@ import * as api from './api';
 import { CeldasLoteModal } from './CeldasLoteModal';
 import { CeldaActions } from './CeldaActions';
 import { CambiarEstadoModal } from './CambiarEstadoModal';
-import { ESTADOS_CELDA, ETIQUETA_ESTADO, type EstadoCelda } from './estados';
+import {
+  ESTADOS_CELDA,
+  ESTADOS_ENERGIA,
+  ETIQUETA_ENERGIA,
+  ETIQUETA_ESTADO,
+  type EstadoCelda,
+  type EstadoEnergia,
+} from './estados';
 import type { EntradaBitacora } from './api';
 import { ACCION_LABEL, cambiosDeEntrada, fechaLegible } from './bitacora';
 import { CoordenadasMapa } from './CoordenadasMapa';
@@ -62,6 +69,14 @@ const EMPTY_FORM: CeldaFormData = {
   direccion: '',
   capacidadAbonadosPrevista: '',
   estado: 'PLANEADA',
+  estadoEnergia: 'APAGADA',
+  codigoDpi: '',
+  numeroMedidor: '',
+  resistenciaTierraOhm: '',
+  rangosNumeracion: '',
+  corrienteFlotanteA: '',
+  corrienteCargaA: '',
+  observaciones: '',
 };
 
 /** Columnas ordenables de la tabla administrativa. */
@@ -154,6 +169,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [filtroMunicipio, setFiltroMunicipio] = useState<'todas' | 'EL ALTO' | 'LA PAZ'>('todas');
   const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoCelda>('todos');
   const [filtroRegistro, setFiltroRegistro] = useState<'todos' | 'reales' | 'referencias'>('todos');
+  const [filtroEnergia, setFiltroEnergia] = useState<'todas' | EstadoEnergia>('todas');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
@@ -274,6 +290,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
       }
       if (filtroMunicipio !== 'todas' && c.municipio !== filtroMunicipio) return false;
       if (filtroEstado !== 'todos' && c.estado !== filtroEstado) return false;
+      if (filtroEnergia !== 'todas' && c.estadoEnergia !== filtroEnergia) return false;
       const referencia = c.nombre.startsWith('CELDA INEXISTENTE');
       if (filtroRegistro === 'reales' && referencia) return false;
       if (filtroRegistro === 'referencias' && !referencia) return false;
@@ -320,14 +337,14 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           );
       }
     });
-  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroRegistro, sort]);
+  }, [celdas, abonadosPorCelda, busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroEnergia, filtroRegistro, sort]);
 
   const paginacion = pageRange(page, pageSize, filas.length);
   const filasVisibles = filas.slice((paginacion.page - 1) * pageSize, (paginacion.page - 1) * pageSize + pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroRegistro]);
+  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroEnergia, filtroRegistro]);
 
   const hayFiltros =
     busqueda !== '' ||
@@ -336,7 +353,8 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     filtroAbonados !== 'todos' ||
     filtroMunicipio !== 'todas' ||
     filtroEstado !== 'todos' ||
-    filtroRegistro !== 'todos';
+    filtroRegistro !== 'todos' ||
+    filtroEnergia !== 'todas';
 
   /** Celda seleccionada para el panel de detalle. */
   const detalle = detalleId != null ? (celdas.find(c => c.id === detalleId) ?? null) : null;
@@ -349,6 +367,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     setFiltroMunicipio('todas');
     setFiltroEstado('todos');
     setFiltroRegistro('todos');
+    setFiltroEnergia('todas');
   };
 
   const handleSort = (key: SortKey) => {
@@ -403,6 +422,16 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
       direccion: c.direccion ?? '',
       capacidadAbonadosPrevista: c.capacidadAbonadosPrevista?.toString() ?? '',
       estado: (c.estado as CeldaFormData['estado']) ?? 'PLANEADA',
+      estadoEnergia: (c.estadoEnergia as EstadoEnergia) ?? 'APAGADA',
+      codigoDpi: c.codigoDpi ?? '',
+      numeroMedidor: c.numeroMedidor ?? '',
+      resistenciaTierraOhm: c.resistenciaTierraOhm?.toString() ?? '',
+      rangosNumeracion: (c.rangosNumeracion ?? [])
+        .map(r => `${r.desde}-${r.hasta}`)
+        .join('|'),
+      corrienteFlotanteA: c.corrienteFlotanteA?.toString() ?? '',
+      corrienteCargaA: c.corrienteCargaA?.toString() ?? '',
+      observaciones: c.observaciones ?? '',
     });
     setEditingId(c.id);
     setFormError(null);
@@ -419,6 +448,12 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
     setSaving(true);
     setFormError(null);
     try {
+      const rangos = form.rangosNumeracion
+        .split('|')
+        .map(parte => parte.split('-').map(valor => Number(valor.trim())))
+        .filter(parte => parte.length === 2 && Number.isFinite(parte[0]) && Number.isFinite(parte[1]))
+        .map(([desde, hasta]) => ({ desde, hasta }));
+
       const body: Record<string, unknown> = {
         codigo: form.codigo.trim(),
         nombre: form.nombre.trim(),
@@ -437,6 +472,14 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           ? Number(form.capacidadAbonadosPrevista)
           : null,
         estado: form.estado,
+        estado_energia: form.estadoEnergia,
+        codigo_dpi: form.codigoDpi.trim() || null,
+        numero_medidor: form.numeroMedidor.trim() || null,
+        resistencia_tierra_ohm: form.resistenciaTierraOhm ? Number(form.resistenciaTierraOhm) : null,
+        rangos_numeracion: rangos,
+        corriente_flotante_a: form.corrienteFlotanteA ? Number(form.corrienteFlotanteA) : null,
+        corriente_carga_a: form.corrienteCargaA ? Number(form.corrienteCargaA) : null,
+        observaciones: form.observaciones.trim() || null,
       };
 
       if (editingId === null) {
@@ -614,6 +657,18 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         <Select
           dark
           size='sm'
+          value={filtroEnergia}
+          onChange={e => setFiltroEnergia(e.target.value as 'todas' | EstadoEnergia)}
+          aria-label='Filtrar por estado eléctrico'
+        >
+          <option value='todas'>Energía: todas</option>
+          {ESTADOS_ENERGIA.map(opcion => (
+            <option key={opcion} value={opcion}>{ETIQUETA_ENERGIA[opcion]}</option>
+          ))}
+        </Select>
+        <Select
+          dark
+          size='sm'
           value={filtroRegistro}
           onChange={e => setFiltroRegistro(e.target.value as 'todos' | 'reales' | 'referencias')}
           aria-label='Filtrar por registro'
@@ -675,6 +730,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
               <th className='px-3 py-2 text-center'>Código</th>
               <Th label='Nombre' sortKey='nombre' current={sort.key} dir={sort.dir} onSort={handleSort} />
               <th className='px-3 py-2 text-center'>Municipio / Zona</th>
+              <th className='px-3 py-2 text-center'>Estado</th>
               <Th
                 label='Subcentral'
                 sortKey='subcentral'
@@ -738,6 +794,20 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                   <td className='px-3 py-2 text-center text-slate-400 whitespace-nowrap'>
                     <div>{c.municipio ?? '—'}</div>
                     <div className='text-[10px] text-slate-600'>{c.zona ?? c.direccion ?? '—'}</div>
+                  </td>
+                  <td className='px-3 py-2 text-center whitespace-nowrap'>
+                    <span className={`inline-flex flex-col items-center gap-0.5 rounded-md border px-2 py-1 text-[10px] font-bold ${
+                      c.estado === 'EN_SERVICIO'
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                        : c.estado === 'EN_MANTENIMIENTO'
+                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                          : 'border-slate-700 bg-slate-800/60 text-slate-300'
+                    }`}>
+                      <span>{ETIQUETA_ESTADO[c.estado as EstadoCelda] ?? c.estado}</span>
+                      <span className='text-[9px] font-normal text-slate-400'>
+                        {ETIQUETA_ENERGIA[c.estadoEnergia as EstadoEnergia] ?? c.estadoEnergia}
+                      </span>
+                    </span>
                   </td>
                   <td className='px-3 py-2' onClick={e => e.stopPropagation()}>
                     {escritura ? (
@@ -820,7 +890,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             })}
             {filas.length === 0 && !loading && (
               <tr>
-                <td colSpan={12} className='px-3 py-8 text-center text-slate-500'>
+                <td colSpan={13} className='px-3 py-8 text-center text-slate-500'>
                   {celdas.length === 0 ? (
                     <>
                       No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
@@ -912,6 +982,16 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                 value={detalle.radioCoberturaKm != null ? `${detalle.radioCoberturaKm} km` : null}
               />
               <DetalleTile label='Subcentral' value={detalle.nombreSubcentral} />
+              <DetalleTile
+                label='Estado'
+                value={ETIQUETA_ESTADO[detalle.estado as EstadoCelda] ?? detalle.estado}
+                tono={detalle.estado === 'EN_SERVICIO' ? 'ok' : 'warn'}
+              />
+              <DetalleTile
+                label='Energía'
+                value={ETIQUETA_ENERGIA[detalle.estadoEnergia as EstadoEnergia] ?? detalle.estadoEnergia}
+                tono={detalle.estadoEnergia === 'ENCENDIDA' ? 'ok' : 'warn'}
+              />
               <DetalleTile
                 label='Coordenadas'
                 value={
@@ -1075,7 +1155,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         onClose={() => setModalOpen(false)}
         dark
         title={editingId != null ? `Editar Celda RFP ${editingId}` : 'Nueva Celda'}
-        panelClassName='max-w-lg p-6 max-h-[90vh] overflow-y-auto'
+        panelClassName='max-w-4xl p-6 max-h-[90vh] overflow-y-auto'
         footer={
           <div className='flex justify-end gap-2'>
             <Button variant='ghost' size='sm' onClick={() => setModalOpen(false)} disabled={saving}>
@@ -1139,7 +1219,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             />
           </div>
 
-          <div className='grid grid-cols-2 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
             <div>
               <label className='block text-xs font-semibold text-slate-400 mb-1'>Tecnología</label>
               <Input
@@ -1180,7 +1260,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             />
           </div>
 
-          <div className='grid grid-cols-2 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
             <div>
               <label className='block text-xs font-semibold text-slate-400 mb-1'>Capacidad (canales)</label>
               <Input
@@ -1205,7 +1285,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           </div>
 
           {/* Perfil geográfico y cupo previsto */}
-          <div className='grid grid-cols-2 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
             <div>
               <label className='block text-xs font-semibold text-slate-400 mb-1'>Municipio</label>
               <Select dark value={form.municipio} onChange={e => updateField('municipio', e.target.value)} aria-label='Municipio de la celda'>
@@ -1220,7 +1300,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                 {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
               </Select>
             </div>
-            <div className='col-span-2'>
+            <div className='sm:col-span-3'>
               <label className='block text-xs font-semibold text-slate-400 mb-1'>Dirección</label>
               <Input dark value={form.direccion} onChange={e => updateField('direccion', e.target.value)} placeholder='Ej. Av. 6 de Marzo N° 123' aria-label='Dirección de la celda' />
             </div>
@@ -1231,10 +1311,50 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             <div>
               <label className='block text-xs font-semibold text-slate-400 mb-1'>Estado</label>
               <Select dark value={form.estado} onChange={e => updateField('estado', e.target.value)} aria-label='Estado de la celda'>
-                <option value='PLANEADA'>PLANEADA</option>
-                <option value='INSTALADA'>INSTALADA</option>
-                <option value='EN_SERVICIO'>EN SERVICIO</option>
+                {ESTADOS_CELDA.map(estado => (
+                  <option key={estado} value={estado}>{ETIQUETA_ESTADO[estado]}</option>
+                ))}
               </Select>
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Estado eléctrico</label>
+              <Select dark value={form.estadoEnergia} onChange={e => updateField('estadoEnergia', e.target.value)} aria-label='Estado eléctrico de la celda'>
+                {ESTADOS_ENERGIA.map(opcion => (
+                  <option key={opcion} value={opcion}>{ETIQUETA_ENERGIA[opcion]}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {/* Datos técnicos del listado real */}
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Código DPI</label>
+              <Input dark value={form.codigoDpi} onChange={e => updateField('codigoDpi', e.target.value)} placeholder='Ej: 6_5' aria-label='Código DPI' />
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>N° de medidor</label>
+              <Input dark value={form.numeroMedidor} onChange={e => updateField('numeroMedidor', e.target.value)} placeholder='Ej: 440846' aria-label='Número de medidor' />
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Resistencia tierra (Ω)</label>
+              <Input dark type='number' step='0.01' value={form.resistenciaTierraOhm} onChange={e => updateField('resistenciaTierraOhm', e.target.value)} placeholder='Ej: 24.9' aria-label='Resistencia de tierra' />
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Corriente flotante (A)</label>
+              <Input dark type='number' step='0.1' value={form.corrienteFlotanteA} onChange={e => updateField('corrienteFlotanteA', e.target.value)} placeholder='Ej: 1.4' aria-label='Corriente flotante' />
+            </div>
+            <div>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Corriente carga (A)</label>
+              <Input dark type='number' step='0.1' value={form.corrienteCargaA} onChange={e => updateField('corrienteCargaA', e.target.value)} placeholder='Ej: 2.4 o vacío si S/AUTONOMIA' aria-label='Corriente de carga' />
+            </div>
+            <div className='sm:col-span-3'>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Rangos de numeración (desde-hasta, separados por |)</label>
+              <Input dark value={form.rangosNumeracion} onChange={e => updateField('rangosNumeracion', e.target.value)} placeholder='Ej: 2806500-2806859|2808000-2808119' aria-label='Rangos de numeración' />
+            </div>
+            <div className='sm:col-span-3'>
+              <label className='block text-xs font-semibold text-slate-400 mb-1'>Observaciones</label>
+              <Input dark value={form.observaciones} onChange={e => updateField('observaciones', e.target.value)} placeholder='Ej: APAGADO, S/RECTIFICADOR…' aria-label='Observaciones de la celda' />
             </div>
           </div>
 
@@ -1300,8 +1420,8 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         isOpen={estadoModalCelda != null}
         onClose={() => setEstadoModalCelda(null)}
         esSuperadmin={esSuperadmin}
-        onSave={async (estado, motivo) => {
-          const r = await api.cambiarEstadoCelda(estadoModalCelda!.id, estado, motivo);
+        onSave={async (estado, motivo, estadoEnergia) => {
+          const r = await api.cambiarEstadoCelda(estadoModalCelda!.id, estado, motivo, estadoEnergia);
           setNotice(r.message);
           invalidateCellsCache();
           await loadCeldas();
@@ -1323,7 +1443,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             <div><dt className='text-xs text-slate-500'>RFP / ID</dt><dd className='font-mono'>{celdaImprimir.id}</dd></div>
             <div><dt className='text-xs text-slate-500'>Código</dt><dd className='font-mono'>{celdaImprimir.codigo}</dd></div>
             <div><dt className='text-xs text-slate-500'>Número / municipio</dt><dd>{celdaImprimir.numeroCelda ?? '—'} · {celdaImprimir.municipio ?? '—'}</dd></div>
-            <div><dt className='text-xs text-slate-500'>Estado</dt><dd>{ETIQUETA_ESTADO[celdaImprimir.estado as EstadoCelda] ?? celdaImprimir.estado}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Estado</dt><dd>{ETIQUETA_ESTADO[celdaImprimir.estado as EstadoCelda] ?? celdaImprimir.estado} · {ETIQUETA_ENERGIA[celdaImprimir.estadoEnergia as EstadoEnergia] ?? celdaImprimir.estadoEnergia}</dd></div>
             <div><dt className='text-xs text-slate-500'>Zona / dirección</dt><dd>{celdaImprimir.zona ?? '—'} · {celdaImprimir.direccion ?? '—'}</dd></div>
             <div><dt className='text-xs text-slate-500'>Coordenadas</dt><dd>{celdaImprimir.latitud != null ? `${celdaImprimir.latitud}, ${celdaImprimir.longitud}` : 'Sin calibrar'}</dd></div>
             <div><dt className='text-xs text-slate-500'>Capacidad</dt><dd>{celdaImprimir.capacidadCanales ?? '—'} canales · {celdaImprimir.capacidadAbonadosPrevista ?? '—'} abonados previstos</dd></div>

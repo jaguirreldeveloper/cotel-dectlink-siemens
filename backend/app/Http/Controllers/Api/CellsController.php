@@ -101,12 +101,22 @@ class CellsController extends Controller
         $cell = Cell::query()->findOrFail($id);
         $validado = $request->validate([
             'estado' => ['required', Rule::in(CellStateMachine::ESTADOS)],
+            'estado_energia' => ['nullable', Rule::in(CellStateMachine::ESTADOS_ENERGIA)],
             'motivo' => ['nullable', 'string', 'max:255'],
             'fecha' => ['nullable', 'date'],
         ]);
 
         $desde = $cell->estado;
         $hasta = (string) $validado['estado'];
+        $energia = (string) ($validado['estado_energia'] ?? ($hasta === CellStateMachine::EN_SERVICIO
+            ? CellStateMachine::ENCENDIDA
+            : CellStateMachine::APAGADA));
+        if (! CellStateMachine::energiaValida($hasta, $energia)) {
+            return response()->json([
+                'message' => "Estado eléctrico {$energia} no válido para {$hasta}.",
+                'estados_energia' => CellStateMachine::ESTADOS_ENERGIA,
+            ], 422);
+        }
         if (! CellStateMachine::puede($desde, $hasta)) {
             return response()->json([
                 'message' => "Transición de estado no permitida: {$desde} → {$hasta}.",
@@ -121,15 +131,17 @@ class CellsController extends Controller
             ], 403);
         }
 
-        $antes = ['estado' => $desde, 'fecha_estado' => $cell->fecha_estado, 'motivo_estado' => $cell->motivo_estado];
+        $antes = [
+            'estado' => $desde,
+            'estado_energia' => $cell->estado_energia,
+            'fecha_estado' => $cell->fecha_estado,
+            'motivo_estado' => $cell->motivo_estado,
+        ];
         $cell->estado = $hasta;
+        $cell->estado_energia = $energia;
         $cell->fecha_estado = $validado['fecha'] ?? now();
         $cell->motivo_estado = $validado['motivo'] ?? null;
-        if (CellStateMachine::esTerminal($hasta)) {
-            $cell->activo = false;
-        } elseif ($hasta === CellStateMachine::EN_SERVICIO) {
-            $cell->activo = true;
-        }
+        $cell->activo = $hasta === CellStateMachine::EN_SERVICIO;
         $cell->save();
 
         InfraestructuraBitacora::create([
@@ -143,6 +155,7 @@ class CellsController extends Controller
                 'antes' => $antes,
                 'despues' => [
                     'estado' => $hasta,
+                    'estado_energia' => $energia,
                     'fecha_estado' => $cell->fecha_estado?->toIso8601String(),
                     'motivo_estado' => $cell->motivo_estado,
                     'activo' => $cell->activo,
@@ -155,6 +168,7 @@ class CellsController extends Controller
             'celda' => [
                 'id' => $cell->id,
                 'estado' => $cell->estado,
+                'estadoEnergia' => $cell->estado_energia,
                 'numeroCelda' => $cell->numero_celda,
                 'activo' => $cell->activo,
                 'fechaEstado' => $cell->fecha_estado?->toIso8601String(),
@@ -216,6 +230,7 @@ class CellsController extends Controller
                 'capacidadAbonadosPrevista' => $row->capacidad_abonados_prevista !== null ? (int) $row->capacidad_abonados_prevista : null,
                 'usuariosActuales' => (int) $row->usuarios_actuales,
                 'estado' => $row->estado,
+                'estadoEnergia' => $row->estado_energia,
                 'numeroCelda' => $row->numero_celda !== null ? (int) $row->numero_celda : null,
                 'fechaEstado' => $row->fecha_estado !== null ? CarbonImmutable::parse($row->fecha_estado)->toIso8601String() : null,
                 'motivoEstado' => $row->motivo_estado,
@@ -294,6 +309,7 @@ class CellsController extends Controller
             'radio_km' => ['required', 'numeric', 'min:0.1', 'max:20'],
             'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS)],
+            'estado_energia' => ['nullable', Rule::in(CellStateMachine::ESTADOS_ENERGIA)],
         ]);
 
         $zona = Zone::query()->findOrFail((int) $validado['zona_id']);
@@ -313,6 +329,7 @@ class CellsController extends Controller
                 ? (int) $validado['capacidad_abonados_prevista']
                 : null,
             'estado' => (string) ($validado['estado'] ?? 'PLANEADA'),
+            'estado_energia' => (string) ($validado['estado_energia'] ?? 'ENCENDIDA'),
         ];
     }
 
@@ -362,6 +379,7 @@ class CellsController extends Controller
                 'radio_cobertura_km' => $parametros['radio_km'],
                 'capacidad_abonados_prevista' => $parametros['capacidad_abonados_prevista'],
                 'estado' => $parametros['estado'],
+                'estado_energia' => $parametros['estado_energia'],
                 'activo' => true,
             ], $editadas);
         } else {
@@ -462,6 +480,7 @@ class CellsController extends Controller
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
             'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS)],
+            'estado_energia' => ['nullable', Rule::in(CellStateMachine::ESTADOS_ENERGIA)],
             'activo' => ['nullable', 'boolean'],
         ]);
 
@@ -485,6 +504,7 @@ class CellsController extends Controller
             'zona_id' => $validated['zona_id'] ?? null,
             'direccion' => $validated['direccion'] ?? null,
             'estado' => $validated['estado'] ?? 'PLANEADA',
+            'estado_energia' => $validated['estado_energia'] ?? 'ENCENDIDA',
             'activo' => $validated['activo'] ?? true,
         ]);
 

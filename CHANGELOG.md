@@ -8,6 +8,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- 8 estados de ciclo de vida (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) y estado eléctrico independiente (`ENCENDIDA`, `APAGADA`, `SIN_ENERGIA`).
+- Modal de crear/editar celda rediseñado (`max-w-4xl`, 3 columnas) con todos los campos técnicos y ambos estados; `CambiarEstadoModal` ahora gestiona energía.
 - `backend/database/data/celdas_reales.csv`: listado versionado de 22 celdas reales (DPI, medidor, resistencia de tierra, rangos de numeración dobles, corrientes y coordenadas DMS).
 - `CellCsvImporter`: conversión de DMS a decimal, decimales con coma, rangos múltiples y mapeo de observaciones a estados.
 
