@@ -364,7 +364,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
 - 9 roles funcionales (incluye `GERENTE_AREA`, `JEFE_DEPARTAMENTO`, `ENCARGADO_AREA`), 12 operadores demo y portal «Mi línea» con token hasheado.
-- 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida de 8 estados (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) con estado eléctrico independiente (`ENCENDIDA`/`APAGADA`/`SIN_ENERGIA`) y bitácora por transición; baja/retiro conservan la fila por auditoría.
+- 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida de 8 estados (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) con estado eléctrico independiente (`ENCENDIDA`/`APAGADA`/`SIN_ENERGIA`) y bitácora por transición; baja/retiro conservan la fila por auditoría. El panel ofrece dos vistas — **General** (columnas esenciales) y **Específica/Técnica** (DPI, medidor, tierras, corrientes, rangos y observaciones) — con filtros y paginación compartidos.
 
 **Estado de datos local**:
 

@@ -29,7 +29,7 @@ test('panel de celdas renderiza sin errores', async ({ page, request }) => {
   await expect(page.getByText('Sin subcentral').first()).toBeVisible();
 
   // Tabla con filas
-  await expect(page.getByRole('columnheader', { name: /RFP/i })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Código' })).toBeVisible();
   await expect(page.locator('table tbody tr').first()).toBeVisible();
 
   await page.screenshot({ path: 'test-results/panel-celdas.png', fullPage: true });
@@ -191,12 +191,25 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(filas.nth(3)).toContainText('CELDA INEXISTENTE ELA 004');
   await page.screenshot({ path: 'test-results/celdas-datatable.png' });
 
+  // Dos vistas sobre la misma fuente: columnas distintas, filtros y paginación compartidos.
+  const columnas = page.locator('table').first().locator('thead tr th');
+  await expect(columnas).toHaveCount(6);
+  await page.getByRole('button', { name: 'Vista específica / técnica' }).click();
+  await expect(columnas).toHaveCount(19);
+  await expect(filas).toHaveCount(5);
+  await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
+  await page.getByRole('button', { name: 'Vista general' }).click();
+  await expect(columnas).toHaveCount(6);
+
   await page.getByLabel('Filtrar por registro').selectOption('referencias');
   await expect(filas).toHaveCount(5);
   await expect(page.getByText('CELDA A-04 MERCURIO / INGAVI')).toHaveCount(0);
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();
 
   await page.getByLabel('Filtrar por estado', { exact: true }).selectOption('RETIRADA');
+  await expect(filas).toHaveCount(3);
+  await expect(page.getByText(/Mostrando\s+1–3\s+de\s+3\s+registros/)).toBeVisible();
+  await page.getByRole('button', { name: 'Vista específica / técnica' }).click();
   await expect(filas).toHaveCount(3);
   await expect(page.getByText(/Mostrando\s+1–3\s+de\s+3\s+registros/)).toBeVisible();
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();
