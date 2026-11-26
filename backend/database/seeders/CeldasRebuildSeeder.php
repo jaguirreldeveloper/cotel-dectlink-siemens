@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\InfraestructuraBitacora;
 use App\Models\Operador;
+use App\Support\CellCsvImporter;
 use App\Support\CellStateMachine;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -24,21 +25,12 @@ class CeldasRebuildSeeder extends Seeder
         'LA PAZ' => ['offset' => 30, 'prefijo' => 'LP', 'latitud' => -16.4897, 'longitud' => -68.1193],
     ];
 
-    private const REALES = [
-        'EL ALTO' => [
-            4 => ['CELDA A-04 MERCURIO / INGAVI', -16.51, -68.196],
-            5 => ['CELDA A-05 MERCEDARIO', null, null],
-            11 => ['CELDA A-11 COSMOS 79', null, null],
-            15 => ['CELDA A-15 SENKATA', null, null],
-            17 => ['CELDA A-17 TILATA', null, null],
-        ],
-    ];
-
     public function run(): void
     {
         $operadorId = Operador::query()->where('role', 'SUPERADMIN')->value('id');
+        $reales = CellCsvImporter::leer(database_path('data/celdas_reales.csv'));
 
-        DB::transaction(function () use ($operadorId): void {
+        DB::transaction(function () use ($operadorId, $reales): void {
             // ON DELETE CASCADE limpia bitácora de abonados y portal;
             // work_orders queda con abonado_nro = NULL.
             DB::table('abonados_lineas')->delete();
@@ -47,35 +39,45 @@ class CeldasRebuildSeeder extends Seeder
 
             foreach (self::CENTROS as $municipio => $centro) {
                 for ($numero = 1; $numero <= 30; $numero += 1) {
-                    $real = self::REALES[$municipio][$numero] ?? null;
+                    $clave = $municipio.':'.$numero;
+                    $importada = ($reales[$clave] ?? null) !== null && $reales[$clave]['importar']
+                        ? $reales[$clave]
+                        : null;
                     $id = $centro['offset'] + $numero;
-                    $estado = $real !== null ? CellStateMachine::EN_SERVICIO : $this->estadoPara($numero);
+                    $estado = $importada['estado'] ?? $this->estadoPara($numero);
                     $fechaAlta = CarbonImmutable::now()->subMonths(30)->addDays($numero * 2);
 
                     DB::table('celdas')->insert([
                         'id' => $id,
                         'codigo' => sprintf('RFP-%s-%03d', $centro['prefijo'], $numero),
                         'numero_celda' => $numero,
-                        'nombre' => $real[0] ?? sprintf('CELDA INEXISTENTE %s %03d', $centro['prefijo'], $numero),
+                        'nombre' => $importada['nombre'] ?? sprintf('CELDA INEXISTENTE %s %03d', $centro['prefijo'], $numero),
                         'tecnologia' => 'DECT-Link',
-                        'descripcion' => $real !== null
-                            ? sprintf('Estación base real %s', $real[0])
+                        'descripcion' => $importada !== null
+                            ? sprintf('Celda real %s · DPI %s', $importada['nombre'], $importada['codigo_dpi'])
                             : 'Referencia de numeración; sin registro real en campo',
                         'rfp_modelo' => 'Siemens C500',
                         'banda_frecuencia' => '1880 - 1900 MHz (DECT GAP)',
                         'capacidad_canales' => 12,
-                        'capacidad_abonados_prevista' => $real !== null ? 120 : 0,
+                        'capacidad_abonados_prevista' => $importada !== null ? 120 : 0,
                         'radio_cobertura_km' => 2.5,
-                        'latitud' => $real[1] ?? round($centro['latitud'] + ($numero % 7 - 3) * 0.004, 6),
-                        'longitud' => $real[2] ?? round($centro['longitud'] + ($numero % 5 - 2) * 0.005, 6),
+                        'latitud' => $importada['latitud'] ?? round($centro['latitud'] + ($numero % 7 - 3) * 0.004, 6),
+                        'longitud' => $importada['longitud'] ?? round($centro['longitud'] + ($numero % 5 - 2) * 0.005, 6),
                         'departamento' => 'LA PAZ',
                         'municipio' => $municipio,
                         'estado' => $estado,
                         'fecha_estado' => $fechaAlta->copy()->addMonths(8),
-                        'motivo_estado' => $real !== null
-                            ? 'Estación base identificada en campo'
-                            : 'Referencia de numeración; sin registro real en campo',
-                        'activo' => $real !== null,
+                        'motivo_estado' => $importada['observaciones'] ?? ($importada !== null
+                            ? 'Celda identificada en el listado real de planta externa'
+                            : 'Referencia de numeración; sin registro real en campo'),
+                        'codigo_dpi' => $importada['codigo_dpi'] ?? null,
+                        'numero_medidor' => $importada['numero_medidor'] ?? null,
+                        'resistencia_tierra_ohm' => $importada['resistencia_tierra_ohm'] ?? null,
+                        'rangos_numeracion' => json_encode($importada['rangos_numeracion'] ?? []),
+                        'corriente_flotante_a' => $importada['corriente_flotante_a'] ?? null,
+                        'corriente_carga_a' => $importada['corriente_carga_a'] ?? null,
+                        'observaciones' => $importada['observaciones'] ?? null,
+                        'activo' => $importada['activo'] ?? false,
                         'created_at' => $fechaAlta,
                     ]);
 

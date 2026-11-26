@@ -922,6 +922,20 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
                 tono={detalle.latitud != null ? 'ok' : 'warn'}
                 vacio='Sin calibrar'
               />
+              <DetalleTile label='DPI' value={detalle.codigoDpi} />
+              <DetalleTile label='N° medidor' value={detalle.numeroMedidor} />
+              <DetalleTile
+                label='Resistencia tierra'
+                value={detalle.resistenciaTierraOhm != null ? `${detalle.resistenciaTierraOhm} Ω` : null}
+              />
+              <DetalleTile
+                label='Corriente flotante'
+                value={detalle.corrienteFlotanteA != null ? `${detalle.corrienteFlotanteA} A` : null}
+              />
+              <DetalleTile
+                label='Corriente carga'
+                value={detalle.corrienteCargaA != null ? `${detalle.corrienteCargaA} A` : detalle.observaciones ?? null}
+              />
               <DetalleTile
                 label='Abonados'
                 value={String(abonadosPorCelda.get(detalle.id) ?? 0)}
@@ -944,6 +958,21 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
 
             {detalle.descripcion && (
               <p className='text-xs text-slate-400'>{detalle.descripcion}</p>
+            )}
+
+            {detalle.rangosNumeracion?.length > 0 && (
+              <div>
+                <h4 className='text-xs font-bold uppercase tracking-wider text-slate-400 mb-2'>
+                  Rangos de numeración
+                </h4>
+                <div className='flex flex-wrap gap-1.5'>
+                  {detalle.rangosNumeracion.map((rango, indice) => (
+                    <span key={indice} className='rounded border border-slate-700 bg-slate-950/60 px-2 py-1 font-mono text-[11px] text-brand-300'>
+                      {rango.desde} – {rango.hasta}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Historial de cambios */}
@@ -1299,6 +1328,10 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
             <div><dt className='text-xs text-slate-500'>Coordenadas</dt><dd>{celdaImprimir.latitud != null ? `${celdaImprimir.latitud}, ${celdaImprimir.longitud}` : 'Sin calibrar'}</dd></div>
             <div><dt className='text-xs text-slate-500'>Capacidad</dt><dd>{celdaImprimir.capacidadCanales ?? '—'} canales · {celdaImprimir.capacidadAbonadosPrevista ?? '—'} abonados previstos</dd></div>
             <div><dt className='text-xs text-slate-500'>Usuarios actuales</dt><dd>{celdaImprimir.usuariosActuales ?? 0}</dd></div>
+            <div><dt className='text-xs text-slate-500'>DPI / medidor</dt><dd>{celdaImprimir.codigoDpi ?? '—'} · {celdaImprimir.numeroMedidor ?? '—'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Resistencia tierra</dt><dd>{celdaImprimir.resistenciaTierraOhm != null ? `${celdaImprimir.resistenciaTierraOhm} Ω` : '—'}</dd></div>
+            <div><dt className='text-xs text-slate-500'>Flotante / carga</dt><dd>{celdaImprimir.corrienteFlotanteA ?? '—'} A / {celdaImprimir.corrienteCargaA ?? (celdaImprimir.observaciones ?? '—')}</dd></div>
+            <div className='col-span-2'><dt className='text-xs text-slate-500'>Rangos de numeración</dt><dd className='font-mono text-xs'>{(celdaImprimir.rangosNumeracion ?? []).map(r => `${r.desde}-${r.hasta}`).join(' | ') || '—'}</dd></div>
           </dl>
           <footer className='mt-8 border-t border-slate-300 pt-3 text-[10px] text-slate-500'>
             Documento generado por COTEL DECTlink · Uso interno · {operador?.email}

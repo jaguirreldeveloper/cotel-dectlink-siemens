@@ -35,6 +35,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $numero_celda
  * @property CarbonImmutable|null $fecha_estado
  * @property string|null $motivo_estado
+ * @property string|null $codigo_dpi
+ * @property string|null $numero_medidor
+ * @property float|null $resistencia_tierra_ohm
+ * @property list<array{desde: int, hasta: int}> $rangos_numeracion
+ * @property float|null $corriente_flotante_a
+ * @property float|null $corriente_carga_a
+ * @property string|null $observaciones
  * @property bool $activo
  * @property-read Subcentral|null $subcentral
  * @property-read Zone|null $zona
@@ -44,6 +51,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'capacidad_canales', 'radio_cobertura_km', 'latitud', 'longitud', 'id_subcentral',
     'departamento', 'municipio', 'zona_id', 'direccion', 'capacidad_abonados_prevista',
     'estado', 'numero_celda', 'fecha_estado', 'motivo_estado', 'activo',
+    'codigo_dpi', 'numero_medidor', 'resistencia_tierra_ohm', 'rangos_numeracion',
+    'corriente_flotante_a', 'corriente_carga_a', 'observaciones',
 ])]
 class Cell extends Model
 {
@@ -72,6 +81,10 @@ class Cell extends Model
             'zona_id' => 'integer',
             'numero_celda' => 'integer',
             'fecha_estado' => 'immutable_datetime',
+            'resistencia_tierra_ohm' => 'float',
+            'rangos_numeracion' => 'array',
+            'corriente_flotante_a' => 'float',
+            'corriente_carga_a' => 'float',
             'activo' => 'boolean',
         ];
     }
