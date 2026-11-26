@@ -12,6 +12,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- `Celdas (RFP)` pasa a ser un grupo del sidebar con 4 vistas/rutas: Resumen (`/celdas/resumen`), Listado general (`/celdas/general`), Detalle técnico (`/celdas/tecnica`) y Generación por lote (`/celdas/lote`). Filtros y paginación se conservan entre ambas listas mediante `CeldasFiltersProvider`.
 - Dos vistas en el panel de Celdas — **General** (6 columnas esenciales) y **Específica/Técnica** (~19 columnas con Dirección, DPI, medidor, tierras, corrientes, rangos y observaciones) — sobre la misma fuente, filtros y paginación compartidos. Se eliminó la columna duplicada `RFP #` y se unificó `Abonados` como `Usuarios`.
 - 8 estados de ciclo de vida (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) y estado eléctrico independiente (`ENCENDIDA`, `APAGADA`, `SIN_ENERGIA`).
 - Modal de crear/editar celda rediseñado (`max-w-4xl`, 3 columnas) con todos los campos técnicos y ambos estados; `CambiarEstadoModal` ahora gestiona energía.

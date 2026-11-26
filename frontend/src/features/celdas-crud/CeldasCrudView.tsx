@@ -27,6 +27,7 @@ import { infraApi } from '@/features/infraestructura/api';
 import type { SubcentralDTO } from '@/features/infraestructura/types';
 import * as api from './api';
 import { CeldasLoteModal } from './CeldasLoteModal';
+import { useCeldasFilters } from './CeldasFiltersContext';
 import { CeldaActions } from './CeldaActions';
 import { CambiarEstadoModal } from './CambiarEstadoModal';
 import {
@@ -44,6 +45,8 @@ import { summarizeCeldas, ocupacionCelda, validarFormCelda, UMBRAL_OCUPACION_ALE
 import type { CeldaCrud, CeldaFormData, ZonaDTO } from './types';
 
 interface CeldasCrudViewProps {
+  /** Vista del panel: resumen, listado general, detalle técnico o generación por lote. */
+  modo?: 'resumen' | 'general' | 'tecnica' | 'lote';
   operador?: Operador | null;
   records: EnrichedSubscriberRecord[];
   /** Drill-down a Abonados por Celda (pestaña cell-users). */
@@ -143,7 +146,13 @@ function Th({
   );
 }
 
-export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: CeldasCrudViewProps) {
+export function CeldasCrudView({
+  modo = 'general',
+  operador,
+  records,
+  onOpenCelda,
+  onGoToTab,
+}: CeldasCrudViewProps) {
   // Autorización efectiva del backend (rol + overrides), con fallback por rol
   // para sesiones antiguas. El servidor vuelve a validar cada escritura.
   const escritura = can(operador, 'cells.create');
@@ -161,19 +170,20 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   const [bitacoraLoading, setBitacoraLoading] = useState(false);
   const [bitacoraError, setBitacoraError] = useState<string | null>(null);
 
-  // Filtros, búsqueda y orden de la tabla administrativa
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroCalibracion, setFiltroCalibracion] = useState<'todas' | 'calibradas' | 'sin'>('todas');
-  const [filtroSubcentral, setFiltroSubcentral] = useState<'todas' | 'con' | 'sin'>('todas');
-  const [filtroAbonados, setFiltroAbonados] = useState<'todos' | 'con' | 'sin'>('todos');
-  const [filtroMunicipio, setFiltroMunicipio] = useState<'todas' | 'EL ALTO' | 'LA PAZ'>('todas');
-  const [filtroEstado, setFiltroEstado] = useState<'todos' | EstadoCelda>('todos');
-  const [filtroRegistro, setFiltroRegistro] = useState<'todos' | 'reales' | 'referencias'>('todos');
-  const [filtroEnergia, setFiltroEnergia] = useState<'todas' | EstadoEnergia>('todas');
-  const [vista, setVista] = useState<'general' | 'tecnica'>('general');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: 'id', dir: 'asc' });
+  // Filtros, búsqueda, orden y paginación compartidos entre vistas.
+  const {
+    busqueda, setBusqueda,
+    filtroCalibracion, setFiltroCalibracion,
+    filtroSubcentral, setFiltroSubcentral,
+    filtroAbonados, setFiltroAbonados,
+    filtroMunicipio, setFiltroMunicipio,
+    filtroEstado, setFiltroEstado,
+    filtroEnergia, setFiltroEnergia,
+    filtroRegistro, setFiltroRegistro,
+    page, setPage, pageSize, setPageSize,
+    sort, setSort, limpiar: limpiarFiltros,
+  } = useCeldasFilters();
+  const vista = modo === 'tecnica' ? 'tecnica' : 'general';
   const [assigningId, setAssigningId] = useState<number | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -250,6 +260,21 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
   }, []);
 
   const resumen = useMemo(() => summarizeCeldas(celdas, abonadosPorCelda), [celdas, abonadosPorCelda]);
+  const distribucion = useMemo(() => {
+    const contar = (clave: keyof CeldaCrud): Array<[string, number]> => {
+      const mapa = new Map<string, number>();
+      for (const c of celdas) {
+        const valor = String(c[clave] ?? '—');
+        mapa.set(valor, (mapa.get(valor) ?? 0) + 1);
+      }
+      return [...mapa.entries()].sort((a, b) => b[1] - a[1]);
+    };
+    return {
+      municipios: contar('municipio'),
+      estados: contar('estado'),
+      energias: contar('estadoEnergia'),
+    };
+  }, [celdas]);
 
   // Historial de la celda en detalle (se carga al abrir el panel)
   useEffect(() => {
@@ -345,7 +370,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
 
   useEffect(() => {
     setPage(1);
-  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroEnergia, filtroRegistro]);
+  }, [busqueda, filtroCalibracion, filtroSubcentral, filtroAbonados, filtroMunicipio, filtroEstado, filtroEnergia, filtroRegistro, setPage]);
 
   const hayFiltros =
     busqueda !== '' ||
@@ -359,17 +384,6 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
 
   /** Celda seleccionada para el panel de detalle. */
   const detalle = detalleId != null ? (celdas.find(c => c.id === detalleId) ?? null) : null;
-
-  const limpiarFiltros = () => {
-    setBusqueda('');
-    setFiltroCalibracion('todas');
-    setFiltroSubcentral('todas');
-    setFiltroAbonados('todos');
-    setFiltroMunicipio('todas');
-    setFiltroEstado('todos');
-    setFiltroRegistro('todos');
-    setFiltroEnergia('todas');
-  };
 
   const handleSort = (key: SortKey) => {
     setSort(prev => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
@@ -562,11 +576,6 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           <Button variant='soft' size='sm' icon={RefreshCw} onClick={loadCeldas} disabled={loading}>
             Recargar
           </Button>
-          {esSuperadmin && (
-            <Button variant='soft' size='sm' icon={Layers3} onClick={() => setLoteOpen(true)}>
-              Generar lote
-            </Button>
-          )}
           {escritura && (
             <Button variant='primary' size='sm' icon={Plus} onClick={openCreate}>
               Nueva Celda
@@ -586,62 +595,92 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
         </div>
       )}
 
-      {/* Franja de KPIs */}
-      <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3'>
-        <KpiTile label='Celdas totales' value={resumen.total} sub='RFP registradas' />
-        <KpiTile
-          label='Canales instalados'
-          value={resumen.canalesInstalados}
-          sub='capacidad agregada'
-        />
-        <KpiTile label='Abonados' value={resumen.abonados} sub='asignados a celdas' />
-        <KpiTile
-          label='Ocupación media'
-          value={`${resumen.ocupacionPct}%`}
-          sub={
-            resumen.alertasOcupacion > 0
-              ? `${resumen.alertasOcupacion} celda(s) con >${UMBRAL_OCUPACION_ALERTA}%`
-              : `sin celdas sobre el ${UMBRAL_OCUPACION_ALERTA}%`
-          }
-          tone={resumen.alertasOcupacion > 0 ? 'text-amber-400' : 'text-emerald-400'}
-        />
-        <KpiTile
-          label='Sin calibrar'
-          value={resumen.sinCalibrar}
-          sub='sin coordenadas GPS'
-          tone={resumen.sinCalibrar > 0 ? 'text-rose-400' : 'text-emerald-400'}
-        />
-        <KpiTile
-          label='Sin subcentral'
-          value={resumen.sinSubcentral}
-          sub='por asignar'
-          tone={resumen.sinSubcentral > 0 ? 'text-amber-400' : 'text-emerald-400'}
-        />
-      </div>
+      {modo === 'resumen' && (
+        <div className='space-y-5'>
+          {/* Franja de KPIs */}
+          <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3'>
+            <KpiTile label='Celdas totales' value={resumen.total} sub='RFP registradas' />
+            <KpiTile label='Canales instalados' value={resumen.canalesInstalados} sub='capacidad agregada' />
+            <KpiTile label='Abonados' value={resumen.abonados} sub='asignados a celdas' />
+            <KpiTile
+              label='Ocupación media'
+              value={`${resumen.ocupacionPct}%`}
+              sub={resumen.alertasOcupacion > 0
+                ? `${resumen.alertasOcupacion} celda(s) con >${UMBRAL_OCUPACION_ALERTA}%`
+                : `sin celdas sobre el ${UMBRAL_OCUPACION_ALERTA}%`}
+              tone={resumen.alertasOcupacion > 0 ? 'text-amber-400' : 'text-emerald-400'}
+            />
+            <KpiTile
+              label='Sin calibrar'
+              value={resumen.sinCalibrar}
+              sub='sin coordenadas GPS'
+              tone={resumen.sinCalibrar > 0 ? 'text-rose-400' : 'text-emerald-400'}
+            />
+            <KpiTile
+              label='Sin subcentral'
+              value={resumen.sinSubcentral}
+              sub='por asignar'
+              tone={resumen.sinSubcentral > 0 ? 'text-amber-400' : 'text-emerald-400'}
+            />
+          </div>
 
-      {/* Vistas de la tabla: comparten datos, filtros y paginación */}
-      <div className='inline-flex rounded-lg border border-slate-700 bg-slate-900/60 p-1'>
-        {([
-          ['general', 'Vista general'],
-          ['tecnica', 'Vista específica / técnica'],
-        ] as const).map(([clave, etiqueta]) => (
-          <button
-            key={clave}
-            type='button'
-            onClick={() => setVista(clave)}
-            aria-pressed={vista === clave}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
-              vista === clave
-                ? 'bg-brand-500 text-white shadow-xs'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            {etiqueta}
-          </button>
-        ))}
-      </div>
+          {/* Distribución de la planta */}
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            {([
+              ['Por municipio', distribucion.municipios],
+              ['Por estado', distribucion.estados],
+              ['Por energía', distribucion.energias],
+            ] as const).map(([titulo, filas]) => (
+              <div key={titulo} className='rounded-xl border border-slate-700 bg-slate-900/60 p-4'>
+                <h3 className='text-xs font-bold uppercase tracking-wider text-slate-400 mb-3'>{titulo}</h3>
+                <ul className='space-y-2'>
+                  {filas.map(([nombre, total]) => (
+                    <li key={nombre} className='flex items-center justify-between text-xs'>
+                      <span className='text-slate-300 truncate'>{nombre}</span>
+                      <span className='font-mono font-bold text-white'>{total}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
 
-      {/* Búsqueda y filtros */}
+          {onGoToTab && (
+            <div className='flex flex-wrap gap-2'>
+              {([
+                ['celdas-general', 'Ir al listado general'],
+                ['celdas-tecnica', 'Ir al detalle técnico'],
+                ...(escritura ? [['celdas-lote', 'Generar lote']] : []),
+              ] as Array<[string, string]>).map(([tab, etiqueta]) => (
+                <Button key={tab} variant='soft' size='sm' onClick={() => onGoToTab(tab)}>
+                  {etiqueta}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {modo === 'lote' && (
+        <div className='rounded-xl border border-slate-700 bg-slate-900/60 p-6 max-w-2xl space-y-4'>
+          <div>
+            <h3 className='text-lg font-bold text-white'>Generación de celdas por lote</h3>
+            <p className='text-xs text-slate-400 mt-1'>
+              Define municipio, zona, cantidad y centro geográfico; revisa y edita las filas sugeridas antes de guardar.
+            </p>
+          </div>
+          {escritura ? (
+            <Button variant='primary' size='sm' icon={Layers3} onClick={() => setLoteOpen(true)}>
+              Abrir asistente de lote
+            </Button>
+          ) : (
+            <p className='text-xs text-amber-400'>Requiere permisos de Jefatura para generar celdas.</p>
+          )}
+        </div>
+      )}
+
+      {/* Búsqueda y filtros (solo en los listados) */}
+      {(modo === 'general' || modo === 'tecnica') && (
       <div className='flex flex-wrap items-center gap-2'>
         <Input
           dark
@@ -742,6 +781,7 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
           {filas.length} de {celdas.length} celdas
         </span>
       </div>
+      )}
 
       {/* Vista general: columnas esenciales para lectura rápida */}
       {vista === 'general' && (
@@ -1051,16 +1091,18 @@ export function CeldasCrudView({ operador, records, onOpenCelda, onGoToTab }: Ce
       </div>
       )}
 
-      <TablePagination
-        page={paginacion.page}
-        pageSize={pageSize}
-        total={filas.length}
-        onPageChange={setPage}
-        onPageSizeChange={size => {
-          setPageSize(size);
-          setPage(1);
-        }}
-      />
+      {(modo === 'general' || modo === 'tecnica') && (
+        <TablePagination
+          page={paginacion.page}
+          pageSize={pageSize}
+          total={filas.length}
+          onPageChange={setPage}
+          onPageSizeChange={size => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
+      )}
 
       {/* Panel de detalle de la celda (ficha + drill-down + historial) */}
       <Modal

@@ -44,6 +44,10 @@ export const TAB_PERMISOS: Partial<Record<AppTabId, string>> = {
   'cell-users': 'cells.view',
   'cell-detail': 'cells.view',
   'celdas-crud': 'cells.view',
+  'celdas-resumen': 'cells.view',
+  'celdas-general': 'cells.view',
+  'celdas-tecnica': 'cells.view',
+  'celdas-lote': 'cells.create',
   qa: 'database.sql_console',
 };
 

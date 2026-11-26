@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AppSidebar, visibleTabIds } from '@/widgets/AppSidebar';
 import { landingTab } from '@/shared/utils/roleDashboards';
 import { PortalMiLineaView } from '@/features/portal/PortalMiLineaView';
+import { CeldasFiltersProvider } from '@/features/celdas-crud/CeldasFiltersContext';
 import { UnifiedHeader } from '@/widgets/UnifiedHeader';
 import { AppFooter } from '@/widgets/AppFooter';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -248,8 +249,21 @@ export default function App() {
           />
         );
       case 'celdas-crud':
+      case 'celdas-resumen':
+      case 'celdas-general':
+      case 'celdas-tecnica':
+      case 'celdas-lote':
         return (
           <CeldasCrudView
+            modo={
+              activeTab === 'celdas-tecnica'
+                ? 'tecnica'
+                : activeTab === 'celdas-lote'
+                  ? 'lote'
+                  : activeTab === 'celdas-general'
+                    ? 'general'
+                    : 'resumen'
+            }
             operador={auth.operador}
             records={data.records}
             onOpenCelda={celda => {
@@ -301,6 +315,7 @@ export default function App() {
   }
 
   return (
+    <CeldasFiltersProvider>
     <ErrorBoundary>
       <div className='min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans'>
         <UnifiedHeader
@@ -384,5 +399,6 @@ export default function App() {
         />
       </div>
     </ErrorBoundary>
+    </CeldasFiltersProvider>
   );
 }

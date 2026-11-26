@@ -19,16 +19,14 @@ test('panel de celdas renderiza sin errores', async ({ page, request }) => {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
 
-  // Abrir la pestaña Celdas (RFP)
-  await page.getByRole('button', { name: /Celdas \(RFP\)/i }).first().click();
-
-  // La vista del panel debe renderizar
+  // El grupo Celdas (RFP) tiene vistas propias en el sidebar.
+  await page.getByRole('button', { name: 'Resumen', exact: true }).click();
   await expect(page.getByText(/Panel de Administraci/)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText('Celdas totales')).toBeVisible();
   await expect(page.getByText('Ocupación media')).toBeVisible();
   await expect(page.getByText('Sin subcentral').first()).toBeVisible();
 
-  // Tabla con filas
+  await page.getByRole('button', { name: 'Listado general', exact: true }).click();
   await expect(page.getByRole('columnheader', { name: 'Código' })).toBeVisible();
   await expect(page.locator('table tbody tr').first()).toBeVisible();
 
@@ -54,7 +52,7 @@ test('botones Recargar y Nueva Celda funcionan', async ({ page, request }) => {
 
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  await page.getByRole('button', { name: /Celdas \(RFP\)/i }).first().click();
+  await page.getByRole('button', { name: 'Listado general', exact: true }).click();
   await expect(page.getByText(/Panel de Administraci/)).toBeVisible({ timeout: 15_000 });
 
   // --- Recargar: petición GET real y tabla intacta ---
@@ -148,8 +146,8 @@ test('generar lote de celdas permite previsualizar, editar y crear', async ({ pa
 
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  await page.getByRole('button', { name: /Celdas \(RFP\)/i }).first().click();
-  await page.getByRole('button', { name: 'Generar lote' }).click();
+  await page.getByRole('button', { name: 'Generación por lote' }).click();
+  await page.getByRole('button', { name: 'Abrir asistente de lote' }).click();
 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -182,7 +180,7 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
 
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  await page.getByRole('button', { name: /Celdas \(RFP\)/i }).first().click();
+  await page.getByRole('button', { name: 'Listado general', exact: true }).click();
 
   const filas = page.locator('table').first().locator('tbody tr');
   await expect(filas).toHaveCount(5);
@@ -194,14 +192,14 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   // Dos vistas sobre la misma fuente: columnas distintas, filtros y paginación compartidos.
   const columnas = page.locator('table').first().locator('thead tr th');
   await expect(columnas).toHaveCount(6);
-  await page.getByRole('button', { name: 'Vista específica / técnica' }).click();
+  await page.getByRole('button', { name: 'Detalle técnico' }).click();
   await expect(columnas).toHaveCount(19);
   await expect(page.getByRole('columnheader', { name: 'Dirección' })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Usuarios' })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'RFP #' })).toHaveCount(0);
   await expect(filas).toHaveCount(5);
   await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
-  await page.getByRole('button', { name: 'Vista general' }).click();
+  await page.getByRole('button', { name: 'Listado general', exact: true }).click();
   await expect(columnas).toHaveCount(6);
 
   await page.getByLabel('Filtrar por registro').selectOption('referencias');
@@ -212,7 +210,7 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await page.getByLabel('Filtrar por estado', { exact: true }).selectOption('RETIRADA');
   await expect(filas).toHaveCount(3);
   await expect(page.getByText(/Mostrando\s+1–3\s+de\s+3\s+registros/)).toBeVisible();
-  await page.getByRole('button', { name: 'Vista específica / técnica' }).click();
+  await page.getByRole('button', { name: 'Detalle técnico' }).click();
   await expect(filas).toHaveCount(3);
   await expect(page.getByText(/Mostrando\s+1–3\s+de\s+3\s+registros/)).toBeVisible();
   await page.getByRole('button', { name: /Limpiar filtros/ }).click();

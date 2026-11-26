@@ -26,6 +26,10 @@ export type AppTabId =
   | 'cell-users'
   | 'cell-detail'
   | 'celdas-crud'
+  | 'celdas-resumen'
+  | 'celdas-general'
+  | 'celdas-tecnica'
+  | 'celdas-lote'
   | 'qa';
 
 // Mapeo de rutas a AppTabId
@@ -48,6 +52,10 @@ const TAB_TO_ROUTE: Record<AppTabId, string> = {
   'cell-users': '/cell-users',
   'cell-detail': '/cell-detail',
   'celdas-crud': '/celdas-crud',
+  'celdas-resumen': '/celdas/resumen',
+  'celdas-general': '/celdas/general',
+  'celdas-tecnica': '/celdas/tecnica',
+  'celdas-lote': '/celdas/lote',
   'qa': '/qa',
 };
 
@@ -71,6 +79,10 @@ const ROUTE_TO_TAB: Record<string, AppTabId> = {
   '/cell-users': 'cell-users',
   '/cell-detail': 'cell-detail',
   '/celdas-crud': 'celdas-crud',
+  '/celdas/resumen': 'celdas-resumen',
+  '/celdas/general': 'celdas-general',
+  '/celdas/tecnica': 'celdas-tecnica',
+  '/celdas/lote': 'celdas-lote',
   '/qa': 'qa',
 };
 
@@ -109,6 +121,10 @@ export const router = createBrowserRouter([
       { path: 'cell-users', element: null },
       { path: 'cell-detail', element: null },
       { path: 'celdas-crud', element: null },
+      { path: 'celdas/resumen', element: null },
+      { path: 'celdas/general', element: null },
+      { path: 'celdas/tecnica', element: null },
+      { path: 'celdas/lote', element: null },
       { path: 'qa', element: null },
     ],
   },
