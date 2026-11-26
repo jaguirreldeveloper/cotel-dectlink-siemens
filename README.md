@@ -331,12 +331,43 @@ Hay dos entornos con sus propios `.env`:
 - `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **162 tests / 827 assertions** (backend); `scripts` sin tests (sale 0).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
-- `pnpm run db:verify` — integridad en vivo: recuentos del padrón (244/235/48/5 en la BD local actual), JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**.
+- `pnpm run db:verify` — integridad en vivo: recuentos del padrón, JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**. Tras el rebuild de celdas, el padrón local es el demo de 20 líneas cargado con `PadronDemoSeeder` (el definitivo se carga con el listado del usuario).
 - `pnpm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 pnpm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
 - `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **16 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda, asistente de lote y datatable de 60 registros con filtro/estado/impresión), visibilidad por rol de los 12 operadores demo, portal «Mi línea», modal de Nuevo Operador y tabla de usuarios paginada. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
 - `pnpm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
 - La interfaz **nunca muestra pantalla en blanco**: `ErrorBoundary` global con detalle técnico, placeholders durante la carga, **reintentos automáticos del padrón** con causa visible en el banner, y fallback a datos de demostración siempre etiquetado (banner ámbar) solo al agotar los reintentos.
 - Pruebas de humo de seguridad: SQL sin token → `401`, DDL con token → `403`, `git remote` inyectado → `400`, host hostil → `403`, lectura del padrón sin sesión → `401` y con token de operador → `200`. El frontend nunca lee secretos de `import.meta.env`: usa el token de la sesión (`sessionStorage` por defecto; `localStorage` solo con «Recordarme»).
+
+---
+
+## 📌 Estado del proyecto / Handoff (2026-11-28)
+
+**Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
+
+**Entregas completas y sincronizadas en `main`** (último commit `a4d91fb`):
+
+- Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
+- Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
+- 9 roles funcionales (incluye `GERENTE_AREA`, `JEFE_DEPARTAMENTO`, `ENCARGADO_AREA`), 12 operadores demo y portal «Mi línea» con token hasheado.
+- 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida `PLANEADA → INSTALADA → EN_SERVICIO ⇄ SUSPENDIDA → BAJA → RETIRADA` con bitácora por transición; baja/retiro conservan la fila por auditoría.
+
+**Estado de datos local**:
+
+- Celdas: 55 referencias `CELDA INEXISTENTE …` y 5 nombres reales provisionales (ids 4, 5, 11, 15, 17). Los nombres definitivos se cargarán con el listado que proporcione el usuario.
+- Padrón: se borró el real durante el rebuild; `PadronDemoSeeder` siembra 20 líneas de humo sobre las 5 celdas reales. El CSV consolidado no está en el repo, así que el padrón definitivo se cargará con el listado del usuario.
+- Operadores y zonas se conservan; `RolesDemoSeeder` es idempotente y reactiva las 12 cuentas demo.
+
+**Acceso y URLs**:
+
+- Frontend: `http://127.0.0.1:5173` (Vite, usar `127.0.0.1` — `localhost` resuelve a `::1` y cae en otro proyecto).
+- Backend: `http://127.0.0.1:8010`; build estático servido desde `backend/public/`.
+- SUPERADMIN: `testsuperadmin@cotel.bo` / `TestPass123!`. ADMIN: `testadmin@cotel.bo` / misma clave.
+- Portal demo: `/?portal=1&token=demo-token-mi-linea`.
+- Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
+
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 162 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+
+**Pendiente para la próxima sesión**: cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden y actualizar la documentación si cambia la nomenclatura.
 
 ---
 
