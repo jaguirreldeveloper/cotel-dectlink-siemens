@@ -28,7 +28,17 @@ export default defineConfig(({ mode }) => {
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
       proxy: {
         '/api': {
-          target: process.env.VITE_API_TARGET || 'http://127.0.0.1:8010',
+          target: process.env.VITE_API_TARGET || 'http://127.0.0.1:8000',
+          changeOrigin: false
+        }
+      }
+    },
+    preview: {
+      port: 4173,
+      host: true,
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_TARGET || 'http://127.0.0.1:8000',
           changeOrigin: false
         }
       }
