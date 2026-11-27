@@ -21,6 +21,16 @@ export const ETIQUETA_ENERGIA: Record<EstadoEnergia, string> = {
   SIN_ENERGIA: 'Sin energía',
 };
 
+/** Espejo de CellCatalog::MOTIVOS_SUGERIDOS; el motivo sigue siendo texto libre. */
+export const MOTIVOS_ESTADO_SUGERIDOS = [
+  'APAGADO',
+  'RETIRADO',
+  'S/RECTIFICADOR',
+  'NO HAY ING.',
+  'LISTADO_REAL',
+  'REFERENCIA',
+] as const;
+
 const TRANSICIONES: Record<EstadoCelda, EstadoCelda[]> = {
   PLANEADA: ['INSTALADA', 'BAJA'],
   INSTALADA: ['EN_SERVICIO', 'EN_MANTENIMIENTO', 'BAJA'],

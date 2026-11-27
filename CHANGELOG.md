@@ -9,6 +9,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Added
 
 - CHECKs de catálogo en `celdas` para `tecnologia`, `rfp_modelo`, `banda_frecuencia` y `departamento`, con validación `Rule::in` equivalente en la API.
+- Sugerencias de motivo de cambio de estado en la UI (`APAGADO`, `RETIRADO`, `S/RECTIFICADOR`, `NO HAY ING.`, `LISTADO_REAL`, `REFERENCIA`), sin convertir el campo en obligatorio.
+
+### Changed
+
+- `descripcion` de celdas reales ya no duplica el nombre: queda como `Celda real · DPI {codigo}`.
+- Motivos heredados del CSV se codifican como `LISTADO_REAL` y `REFERENCIA`; `activo` se documenta como flag administrativo independiente de `estado`.
 
 ## [0.2.0] - 2026-11-27
 
