@@ -6,6 +6,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+- (sin cambios registrados)
+
+## [0.3.0] - 2026-11-27
+
 ### Added
 
 - CHECKs de catálogo en `celdas` para `tecnologia`, `rfp_modelo`, `banda_frecuencia` y `departamento`, con validación `Rule::in` equivalente en la API.
@@ -15,6 +19,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 - `descripcion` de celdas reales ya no duplica el nombre: queda como `Celda real · DPI {codigo}`.
 - Motivos heredados del CSV se codifican como `LISTADO_REAL` y `REFERENCIA`; `activo` se documenta como flag administrativo independiente de `estado`.
+- Versión SemVer 0.3.0 sincronizada entre paquetes, OpenAPI y cachés del service worker.
 
 ## [0.2.0] - 2026-11-27
 
@@ -80,7 +85,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Menú de acciones de usuarios y celdas renderizado en portal: evita recortes en la última fila y scroll espurio.
 - Regresión que ocultaba «Carga de Padrón» a ADMIN: nuevo permiso `padron.view`.
 
-[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.3.0
 [0.2.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.2.0
 [0.1.1]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.1
 [0.1.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.0
