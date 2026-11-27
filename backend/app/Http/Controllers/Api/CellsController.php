@@ -7,6 +7,7 @@ use App\Models\Cell;
 use App\Models\InfraestructuraBitacora;
 use App\Models\Zone;
 use App\Support\CellBatchGenerator;
+use App\Support\CellCatalog;
 use App\Support\CellNumberingRanges;
 use App\Support\CellStateMachine;
 use App\Support\OperatorToken;
@@ -470,16 +471,16 @@ class CellsController extends Controller
             }],
             'codigo' => ['nullable', 'string', 'max:50', Rule::unique('celdas', 'codigo')],
             'nombre' => ['required', 'string', 'max:255'],
-            'tecnologia' => ['nullable', 'string', 'max:100'],
+            'tecnologia' => ['nullable', 'string', 'max:100', Rule::in(CellCatalog::TECNOLOGIAS)],
             'descripcion' => ['nullable', 'string'],
-            'rfp_modelo' => ['nullable', 'string', 'max:255'],
-            'banda_frecuencia' => ['nullable', 'string', 'max:100'],
+            'rfp_modelo' => ['nullable', 'string', 'max:255', Rule::in(CellCatalog::MODELOS_RFP)],
+            'banda_frecuencia' => ['nullable', 'string', 'max:100', Rule::in(CellCatalog::BANDAS_FRECUENCIA)],
             'capacidad_canales' => ['nullable', 'integer', 'min:0'],
             'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0'],
             'radio_cobertura_km' => ['nullable', 'numeric', 'min:0'],
             'latitud' => ['nullable', 'numeric', 'min:-90', 'max:90'],
             'longitud' => ['nullable', 'numeric', 'min:-180', 'max:180'],
-            'departamento' => ['nullable', 'string', 'max:40'],
+            'departamento' => ['nullable', 'string', 'max:40', Rule::in(CellCatalog::DEPARTAMENTOS)],
             'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
@@ -588,16 +589,16 @@ class CellsController extends Controller
             }],
             'codigo' => ['sometimes', 'string', 'max:50', Rule::unique('celdas', 'codigo')->ignore($id)],
             'nombre' => ['sometimes', 'string', 'max:255'],
-            'tecnologia' => ['nullable', 'string', 'max:100'],
+            'tecnologia' => ['nullable', 'string', 'max:100', Rule::in(CellCatalog::TECNOLOGIAS)],
             'descripcion' => ['nullable', 'string'],
-            'rfp_modelo' => ['nullable', 'string', 'max:255'],
-            'banda_frecuencia' => ['nullable', 'string', 'max:100'],
+            'rfp_modelo' => ['nullable', 'string', 'max:255', Rule::in(CellCatalog::MODELOS_RFP)],
+            'banda_frecuencia' => ['nullable', 'string', 'max:100', Rule::in(CellCatalog::BANDAS_FRECUENCIA)],
             'capacidad_canales' => ['nullable', 'integer', 'min:0'],
             'capacidad_abonados_prevista' => ['nullable', 'integer', 'min:0'],
             'radio_cobertura_km' => ['nullable', 'numeric', 'min:0'],
             'latitud' => ['nullable', 'numeric', 'min:-90', 'max:90'],
             'longitud' => ['nullable', 'numeric', 'min:-180', 'max:180'],
-            'departamento' => ['nullable', 'string', 'max:40'],
+            'departamento' => ['nullable', 'string', 'max:40', Rule::in(CellCatalog::DEPARTAMENTOS)],
             'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
