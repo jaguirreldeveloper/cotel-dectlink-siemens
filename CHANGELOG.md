@@ -6,7 +6,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-- (sin cambios registrados)
+### Added
+
+- CHECKs de catálogo en `celdas` para `tecnologia`, `rfp_modelo`, `banda_frecuencia` y `departamento`, con validación `Rule::in` equivalente en la API.
 
 ## [0.2.0] - 2026-11-27
 

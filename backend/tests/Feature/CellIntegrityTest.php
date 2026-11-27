@@ -106,4 +106,51 @@ class CellIntegrityTest extends TestCase
         $this->assertSame([['desde' => 2000, 'hasta' => 2100]], $segunda->fresh()->rangos_numeracion);
         $this->assertSame([['desde' => 1000, 'hasta' => 1100]], $primera->fresh()->rangos_numeracion);
     }
+
+    public function test_checks_de_catalogo_rechazan_valores_fuera_del_catalogo(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('Los CHECK solo existen en PostgreSQL.');
+        }
+
+        $celda = Cell::factory()->create();
+
+        foreach ([
+            ['tecnologia', 'CDMA'],
+            ['rfp_modelo', 'Otro modelo'],
+            ['banda_frecuencia', '900 MHz'],
+            ['departamento', 'COCHABAMBA'],
+        ] as [$columna, $valor]) {
+            DB::beginTransaction();
+
+            try {
+                DB::table('celdas')->where('id', $celda->id)->update([$columna => $valor]);
+                $this->fail("El catálogo debió rechazar {$columna}.");
+            } catch (QueryException $exception) {
+                DB::rollBack();
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_api_rechaza_valores_fuera_de_catalogo(): void
+    {
+        $celda = Cell::factory()->create();
+
+        foreach ([
+            'tecnologia' => 'CDMA',
+            'rfp_modelo' => 'Otro modelo',
+            'banda_frecuencia' => '900 MHz',
+            'departamento' => 'COCHABAMBA',
+        ] as $campo => $valor) {
+            $this->patchJson('/api/cells/'.$celda->id, [$campo => $valor], $this->headers())
+                ->assertStatus(422)
+                ->assertJsonValidationErrors($campo);
+        }
+
+        $this->patchJson('/api/cells/'.$celda->id, [
+            'tecnologia' => 'DECT-Link',
+            'departamento' => 'LA PAZ',
+        ], $this->headers())->assertOk();
+    }
 }
