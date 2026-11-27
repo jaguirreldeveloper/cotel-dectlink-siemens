@@ -13,7 +13,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Changed
 
 - `codigo` de celda queda canónico: `RFP-ELA-NNN` / `RFP-LP-NNN`, con validación en API, factoría, seeders y `CHECK` estricto en PostgreSQL.
-- Paridad total de la suite en PostgreSQL (182/182): las migraciones ya no siembran celdas/zonas/cuadrillas/materiales, `E2eSeeder` corre bajo `APP_ENV=testing`, las aserciones de fecha comparan instantes y los IDs de OT se validan como UUID antes de consultar.
+- Paridad total de la suite en PostgreSQL (184/184): las migraciones ya no siembran celdas/zonas/cuadrillas/materiales, `E2eSeeder` corre bajo `APP_ENV=testing`, las aserciones de fecha comparan instantes y los IDs de OT se validan como UUID antes de consultar.
+- Auditoría de celdas a nivel de BD: trigger `AFTER INSERT/UPDATE/DELETE` que escribe `infraestructura_bitacora` (con operador de sesión), retirando la escritura manual de la app; en SQLite la bitácora la sigue escribiendo la aplicación.
+- Trigger `BEFORE INSERT/UPDATE` que rechaza rangos de numeración solapados entre celdas también por SQL directo. `CeldasHistoricasSeeder` es ahora realmente idempotente.
 
 ## [0.3.0] - 2026-11-27
 

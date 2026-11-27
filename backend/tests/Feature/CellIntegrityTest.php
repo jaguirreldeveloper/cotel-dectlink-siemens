@@ -147,6 +147,68 @@ class CellIntegrityTest extends TestCase
         ], $this->headers())->assertOk();
     }
 
+    public function test_trigger_de_auditoria_registra_escrituras_directas(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('El trigger de auditoría solo existe en PostgreSQL.');
+        }
+
+        $celda = Cell::factory()->create();
+        $id = $celda->id;
+        DB::table('infraestructura_bitacora')->where('tabla', 'celdas')->where('registro_id', $id)->delete();
+
+        DB::table('celdas')->where('id', $id)->update(['nombre' => 'AUDITADO SQL']);
+        $modificacion = DB::table('infraestructura_bitacora')
+            ->where('tabla', 'celdas')->where('registro_id', $id)->where('accion', 'MODIFICAR')->first();
+        $this->assertNotNull($modificacion);
+        $payload = json_decode($modificacion->payload, true);
+        $this->assertSame('AUDITADO SQL', $payload['despues']['nombre']);
+        $this->assertSame($celda->nombre, $payload['antes']['nombre']);
+
+        DB::table('celdas')->insert([
+            'id' => 9998,
+            'codigo' => 'RFP-ELA-998',
+            'nombre' => 'CELDA AUDITORIA',
+            'tecnologia' => 'DECT-Link',
+            'banda_frecuencia' => '1880 - 1900 MHz (DECT GAP)',
+            'departamento' => 'LA PAZ',
+            'estado' => 'PLANEADA',
+            'estado_energia' => 'ENCENDIDA',
+            'activo' => true,
+            'rangos_numeracion' => json_encode([], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->assertSame(1, DB::table('infraestructura_bitacora')
+            ->where('tabla', 'celdas')->where('registro_id', 9998)->where('accion', 'CREAR')->count());
+
+        DB::table('celdas')->where('id', 9998)->delete();
+        $this->assertSame(1, DB::table('infraestructura_bitacora')
+            ->where('tabla', 'celdas')->where('registro_id', 9998)->where('accion', 'ELIMINAR')->count());
+    }
+
+    public function test_trigger_rechaza_solapes_de_rangos_por_sql_directo(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('El trigger de solapes solo existe en PostgreSQL.');
+        }
+
+        Cell::factory()->create(['rangos_numeracion' => [['desde' => 5000, 'hasta' => 5100]]]);
+        $segunda = Cell::factory()->create(['rangos_numeracion' => []]);
+
+        DB::beginTransaction();
+
+        try {
+            DB::table('celdas')->where('id', $segunda->id)->update([
+                'rangos_numeracion' => json_encode([['desde' => 5050, 'hasta' => 5200]], JSON_THROW_ON_ERROR),
+            ]);
+            $this->fail('El trigger debió rechazar el solape.');
+        } catch (QueryException $exception) {
+            DB::rollBack();
+            $this->addToAssertionCount(1);
+        }
+    }
+
     public function test_api_rechaza_valores_fuera_de_catalogo(): void
     {
         $celda = Cell::factory()->create();

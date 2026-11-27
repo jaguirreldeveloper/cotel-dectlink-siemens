@@ -7,6 +7,7 @@ use App\Models\InfraestructuraBitacora;
 use App\Models\Operador;
 use App\Support\OperatorToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -67,6 +68,7 @@ class CellsAdminTest extends TestCase
         $h = ['Authorization' => "Bearer {$this->token($super)}"];
 
         $cell = Cell::factory()->create();
+        DB::table('infraestructura_bitacora')->where('tabla', 'celdas')->where('registro_id', $cell->id)->delete();
 
         $this->patchJson("/api/cells/{$cell->id}", ['nombre' => 'CELDA RFP RENOMBRADA'], $h)
             ->assertOk();
@@ -86,6 +88,7 @@ class CellsAdminTest extends TestCase
     public function test_bitacora_de_celda_sin_historial_devuelve_array_vacio(): void
     {
         $cell = Cell::factory()->create();
+        DB::table('infraestructura_bitacora')->where('tabla', 'celdas')->where('registro_id', $cell->id)->delete();
 
         $this->getJson("/api/cells/{$cell->id}/bitacora")
             ->assertOk()
@@ -104,6 +107,7 @@ class CellsAdminTest extends TestCase
     {
         $cell = Cell::factory()->create();
         $otra = Cell::factory()->create();
+        DB::table('infraestructura_bitacora')->where('tabla', 'celdas')->where('registro_id', $cell->id)->delete();
 
         InfraestructuraBitacora::create([
             'tabla' => 'celdas',

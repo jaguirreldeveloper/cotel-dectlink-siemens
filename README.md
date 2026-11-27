@@ -328,8 +328,8 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **182 tests / 909 assertions** (backend, 4 omitidos en SQLite: trigger y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
-- **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. **Suite completa: 182/182 en PostgreSQL** (sin omitidos), ahora usable como gate. Las migraciones ya no siembran datos: las semillas viven en los seeders, así que PostgreSQL y SQLite arrancan igual. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan 9/9 (trigger y CHECK incluidos).
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **184 tests / 909 assertions** (backend, 6 omitidos en SQLite: triggers y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
+- **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. **Suite completa: 184/184 en PostgreSQL** (sin omitidos), ahora usable como gate. Las migraciones ya no siembran datos: las semillas viven en los seeders, así que PostgreSQL y SQLite arrancan igual. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan 11/11 (trigger de auditoría, solapes, CHECK y `updated_at` incluidos).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón, JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**. El padrón local es el definitivo de 522 líneas cargado con `PadronRealSeeder` desde `CELDAS DECT LINK.xls`.
@@ -383,7 +383,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 - Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
 
-**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 182 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronRealSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 184 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronRealSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
 **Pendiente para la próxima sesión**:
 

@@ -6,6 +6,7 @@ use App\Models\Operador;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -51,13 +52,26 @@ class OperatorToken
         // 1. Si ya hay usuario autenticado por guard web
         $currentUser = Auth::user();
         if ($currentUser instanceof Operador && $currentUser->activo) {
-            return $currentUser;
+            return self::conContexto($currentUser);
         }
 
         // 2. Extraer token de encabezados
         $rawToken = $request->bearerToken() ?? $request->header('x-operator-token');
 
-        return self::resolveToken($rawToken);
+        return self::conContexto(self::resolveToken($rawToken));
+    }
+
+    /** Expone el operador al trigger de auditoría de PostgreSQL. */
+    private static function conContexto(?Operador $operador): ?Operador
+    {
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('SELECT set_config(?, ?, false)', [
+                'app.operador_id',
+                (string) ($operador?->id ?? ''),
+            ]);
+        }
+
+        return $operador;
     }
 
     /**

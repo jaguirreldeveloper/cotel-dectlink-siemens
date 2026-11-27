@@ -59,13 +59,14 @@ class CeldasHistoricasSeeder extends Seeder
                     ? $real['longitud']
                     : round($centro['longitud'] + ($numero % 5 - 2) * 0.005, 6);
                 $codigo = sprintf('RFP-%s-%03d', $centro['prefijo'], $numero);
-                $fechaAlta = CarbonImmutable::now()->subMonths(30)->addDays($numero * 2);
+                $fechaAlta = CarbonImmutable::now()->startOfDay()->subMonths(30)->addDays($numero * 2);
 
                 $celda = Cell::query()->firstOrNew([
                     'municipio' => $municipio,
                     'numero_celda' => $numero,
                 ]);
-                if ($celda->id === null) {
+                $nueva = $celda->id === null;
+                if ($nueva) {
                     $celda->id = $offsets[$municipio] + $numero;
                 }
                 $celda->fill([
@@ -91,9 +92,11 @@ class CeldasHistoricasSeeder extends Seeder
                     'activo' => $real !== null,
                 ]);
                 $celda->created_at = $celda->created_at ?? $fechaAlta;
-                $celda->save();
 
-                $this->regenerarHistorial($celda, $estado, $fechaAlta, $operadorId);
+                if ($nueva || $celda->isDirty()) {
+                    $celda->save();
+                    $this->regenerarHistorial($celda, $estado, $fechaAlta, $operadorId);
+                }
             }
         }
     }
