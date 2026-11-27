@@ -328,8 +328,8 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **184 tests / 909 assertions** (backend, 6 omitidos en SQLite: triggers y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
-- **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. **Suite completa: 184/184 en PostgreSQL** (sin omitidos), ahora usable como gate. Las migraciones ya no siembran datos: las semillas viven en los seeders, así que PostgreSQL y SQLite arrancan igual. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan 11/11 (trigger de auditoría, solapes, CHECK y `updated_at` incluidos).
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **190 tests / 938 assertions** (backend, 6 omitidos en SQLite: triggers y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
+- **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. **Suite completa: 190/190 en PostgreSQL** (sin omitidos), ahora usable como gate. Las migraciones ya no siembran datos: las semillas viven en los seeders, así que PostgreSQL y SQLite arrancan igual. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan 11/11 (trigger de auditoría, solapes, CHECK y `updated_at` incluidos).
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
 - `pnpm run db:verify` — integridad en vivo: recuentos del padrón, JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**. El padrón local es el definitivo de 522 líneas cargado con `PadronRealSeeder` desde `CELDAS DECT LINK.xls`.
@@ -372,7 +372,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 **Estado de datos local**:
 
 - Celdas: 20 reales importadas desde `backend/database/data/celdas_reales.csv` (18 El Alto + 2 La Paz) y 40 referencias `CELDA INEXISTENTE …`. Por decisión del usuario, A03 y A04 quedan marcadas como inexistentes. El CSV incluye DPI, medidor, tierra, rangos de numeración y coordenadas DMS convertidas a decimal.
-- Padrón: **522 líneas reales** exportadas de `G:\excel\xls\CELDAS DECT LINK.xls`, versionadas como `backend/database/data/padron_celdas_dect_link.csv` y cargadas con `PadronRealSeeder` (reemplaza las 20 líneas demo). Repartidas en 11 celdas de El Alto: A-04 (28), A-05 (131), A-06 (74), A-07 (22), A-09 (27), A-11 (41), A-15 (49), A-17 (71), A-19 (17), A-23 (24) y A-24 (38).
+- Padrón: **522 líneas reales** exportadas de `G:\excel\xls\CELDAS DECT LINK.xls`, versionadas como `backend/database/data/padron_celdas_dect_link.csv` y cargadas con `PadronRealSeeder` (reemplaza las 20 líneas demo). Repartidas en 11 celdas de El Alto: A-04 (28), A-05 (131), A-06 (74), A-07 (22), A-09 (27), A-11 (41), A-15 (49), A-17 (71), A-19 (17), A-23 (24) y A-24 (38). Todas georreferenciadas con `php artisan padron:georeferenciar`: 192 por centroide de zona y 330 por dispersión determinista alrededor de la celda, 0 fuera de cobertura; la procedencia se guarda en `precision_gps` y se muestra como estimada en la UI.
 - Operadores y zonas se conservan; `RolesDemoSeeder` es idempotente y reactiva las 12 cuentas demo.
 
 **Acceso y URLs**:
@@ -383,7 +383,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 - Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
 
-**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 184 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronRealSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 190 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronRealSeeder --force`, `php artisan padron:georeferenciar`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
 **Pendiente para la próxima sesión**:
 

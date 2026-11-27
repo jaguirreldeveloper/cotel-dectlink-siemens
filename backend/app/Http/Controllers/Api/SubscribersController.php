@@ -59,6 +59,7 @@ use OpenApi\Attributes as OA;
  *                 @OA\Property(property="lng", type="number", format="float", nullable=true),
  *                 @OA\Property(property="distanciaKm", type="number", format="float", nullable=true),
  *                 @OA\Property(property="azimutGrados", type="integer", nullable=true),
+ *                 @OA\Property(property="precisionGps", type="string", enum={"SIN_DATO","CENTROIDE_ZONA","CATASTRO_ESTIMADO","CALIBRADO_MAPA","GPS_CAMPO_ALTA","GEOCODIFICADO"})
  *                 @OA\Property(property="updatedAt", type="string", format="date-time")
  *             )
  *         )
@@ -123,6 +124,7 @@ use OpenApi\Attributes as OA;
  *                 @OA\Property(property="lng", type="number", format="float", nullable=true),
  *                 @OA\Property(property="distanciaKm", type="number", format="float", nullable=true),
  *                 @OA\Property(property="azimutGrados", type="integer", nullable=true),
+ *                 @OA\Property(property="precisionGps", type="string", enum={"SIN_DATO","CENTROIDE_ZONA","CATASTRO_ESTIMADO","CALIBRADO_MAPA","GPS_CAMPO_ALTA","GEOCODIFICADO"})
  *                 @OA\Property(property="updatedAt", type="string", format="date-time")
  *             )
  *         )
@@ -188,6 +190,7 @@ use OpenApi\Attributes as OA;
  *                 @OA\Property(property="lng", type="number", format="float", nullable=true),
  *                 @OA\Property(property="distanciaKm", type="number", format="float", nullable=true),
  *                 @OA\Property(property="azimutGrados", type="integer", nullable=true),
+ *                 @OA\Property(property="precisionGps", type="string", enum={"SIN_DATO","CENTROIDE_ZONA","CATASTRO_ESTIMADO","CALIBRADO_MAPA","GPS_CAMPO_ALTA","GEOCODIFICADO"})
  *                 @OA\Property(property="updatedAt", type="string", format="date-time")
  *             )
  *         )

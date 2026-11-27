@@ -34,6 +34,7 @@ final class SubscriberQuery
             a.lng,
             a.distancia_km,
             a.azimut_grados,
+            a.precision_gps,
             a.updated_at
         FROM abonados_lineas a
         INNER JOIN clientes c ON c.id = a.id_cliente
