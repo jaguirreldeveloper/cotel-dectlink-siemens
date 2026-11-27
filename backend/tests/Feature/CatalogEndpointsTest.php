@@ -31,7 +31,7 @@ class CatalogEndpointsTest extends TestCase
             'direccion', 'capacidadAbonadosPrevista', 'usuariosActuales', 'estado', 'estadoEnergia',
             'numeroCelda', 'fechaEstado', 'motivoEstado', 'codigoDpi', 'numeroMedidor',
             'resistenciaTierraOhm', 'rangosNumeracion', 'corrienteFlotanteA', 'corrienteCargaA',
-            'observaciones', 'activo', 'createdAt',
+            'observaciones', 'activo', 'createdAt', 'updatedAt',
         ], array_keys($response->json()[0]));
         $this->assertSame(17, $response->json()[0]['id']);
         $this->assertSame('CELDA A-17 TILATA', $response->json()[0]['nombre']);

@@ -61,6 +61,7 @@ class CellsController extends Controller
                 'codigo' => $cell->codigo,
                 'nombre' => $cell->nombre,
                 'idSubcentral' => $cell->id_subcentral,
+                'updatedAt' => $cell->updated_at?->toIso8601String(),
             ],
         ]);
     }
@@ -172,6 +173,7 @@ class CellsController extends Controller
                 'numeroCelda' => $cell->numero_celda,
                 'activo' => $cell->activo,
                 'fechaEstado' => $cell->fecha_estado?->toIso8601String(),
+                'updatedAt' => $cell->updated_at?->toIso8601String(),
             ],
         ]);
     }
@@ -245,6 +247,7 @@ class CellsController extends Controller
                 'observaciones' => $row->observaciones,
                 'activo' => (bool) $row->activo,
                 'createdAt' => CarbonImmutable::parse($row->created_at)->toIso8601String(),
+                'updatedAt' => CarbonImmutable::parse($row->updated_at)->toIso8601String(),
             ], $rows));
         } catch (\Throwable) {
             return response()->json(['error' => 'Error al consultar celdas en PostgreSQL'], 500);
@@ -531,6 +534,7 @@ class CellsController extends Controller
                 'radioCoberturaKm' => $cell->radio_cobertura_km,
                 'latitud' => $cell->latitud,
                 'longitud' => $cell->longitud,
+                'updatedAt' => $cell->updated_at?->toIso8601String(),
             ],
         ], 201);
     }
@@ -595,8 +599,9 @@ class CellsController extends Controller
             'activo' => ['nullable', 'boolean'],
         ]);
 
+        $estadoAnterior = $cell->estado;
         $cell->fill($validated);
-        if (isset($validated['estado'])) {
+        if (isset($validated['estado']) && $validated['estado'] !== $estadoAnterior) {
             $cell->fecha_estado = now();
         }
         $cell->save();
@@ -624,6 +629,7 @@ class CellsController extends Controller
                 'radioCoberturaKm' => $cell->radio_cobertura_km,
                 'latitud' => $cell->latitud,
                 'longitud' => $cell->longitud,
+                'updatedAt' => $cell->updated_at?->toIso8601String(),
             ],
         ]);
     }

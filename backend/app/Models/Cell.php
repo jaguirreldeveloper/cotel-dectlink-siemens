@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $estado_energia
  * @property int|null $numero_celda
  * @property CarbonImmutable|null $fecha_estado
+ * @property CarbonImmutable|null $updated_at
  * @property string|null $motivo_estado
  * @property string|null $codigo_dpi
  * @property string|null $numero_medidor
@@ -61,8 +62,6 @@ class Cell extends Model
     use HasFactory;
 
     protected $table = 'celdas';
-
-    public const UPDATED_AT = null;
 
     public $incrementing = false;
 
