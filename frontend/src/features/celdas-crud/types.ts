@@ -26,6 +26,8 @@ export interface CeldaCrud extends Record<string, unknown> {
   estadoEnergia: string;
   numeroCelda: number | null;
   fechaEstado: string | null;
+  /** Última modificación del registro (auditoría de la fila). */
+  updatedAt: string | null;
   motivoEstado: string | null;
   codigoDpi: string | null;
   numeroMedidor: string | null;

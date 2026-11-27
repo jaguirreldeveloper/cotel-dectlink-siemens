@@ -11,6 +11,7 @@ const ETIQUETAS: Record<string, string> = {
   radio_cobertura_km: 'Cobertura (km)',
   latitud: 'Latitud',
   longitud: 'Longitud',
+  updated_at: 'Última modificación',
   id_subcentral: 'Subcentral',
 };
 

@@ -906,6 +906,7 @@ export function CeldasCrudView({
                 onSort={handleSort}
                 align='center'
               />
+              <th className='px-3 py-2 text-center'>Últ. modificación</th>
               <th className='px-3 py-2 text-right'>Acciones</th>
             </tr>
           </thead>
@@ -1036,6 +1037,9 @@ export function CeldasCrudView({
                       <span className='block text-[10px] text-slate-600'>/ {c.capacidadAbonadosPrevista} previstos</span>
                     )}
                   </td>
+                  <td className='px-3 py-2 text-center text-slate-500 whitespace-nowrap'>
+                    {c.updatedAt ? fechaLegible(c.updatedAt) : '—'}
+                  </td>
                   <td className='px-3 py-2 text-center whitespace-nowrap' onClick={e => e.stopPropagation()}>
                     <CeldaActions
                       celda={c}
@@ -1058,7 +1062,7 @@ export function CeldasCrudView({
             })}
             {filas.length === 0 && !loading && (
               <tr>
-                <td colSpan={19} className='px-3 py-8 text-center text-slate-500'>
+                <td colSpan={20} className='px-3 py-8 text-center text-slate-500'>
                   {celdas.length === 0 ? (
                     <>
                       No hay celdas registradas. {escritura ? 'Crea una con el botón "Nueva Celda".' : ''}
