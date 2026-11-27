@@ -154,21 +154,24 @@ test('generar lote de celdas permite previsualizar, editar y crear', async ({ pa
   await expect(dialog.getByText('Generar lote de celdas RFP')).toBeVisible();
 
   await dialog.getByLabel('Cantidad').fill('3');
-  await dialog.getByLabel('Prefijo código').fill('RFP-SMOKE');
+  await dialog.getByLabel('Prefijo código').fill('RFP-LP');
   await dialog.getByLabel('Dirección base').fill('Av. SMOKE');
   await dialog.getByRole('button', { name: /Previsualizar/ }).click();
 
   const filas = dialog.locator('tbody tr');
   await expect(filas).toHaveCount(3);
   await page.screenshot({ path: 'test-results/celdas-lote.png' });
-  await filas.first().getByLabel(/Código/).fill('RFP-SMOKE-EDIT');
+  await filas.first().getByLabel(/Código/).fill('RFP-LP-999');
+  const respuestaLote = page.waitForResponse(
+    res => res.url().includes('/api/cells/lote') && res.request().method() === 'POST' && res.status() === 201
+  );
   await dialog.getByRole('button', { name: /Crear 3 celdas/ }).click();
+  const creadas = (await (await respuestaLote).json()) as { celdas: Array<{ id: number }> };
 
   await expect(page.getByText(/3 celdas creadas exitosamente/)).toBeVisible({ timeout: 15_000 });
 
   // Limpieza: el lote es datos de prueba en la BD local.
-  const celdas = (await (await request.get('/api/cells', { headers: { 'x-admin-token': adminToken } })).json()) as Array<{ id: number; codigo: string }>;
-  for (const celda of celdas.filter(c => c.codigo.startsWith('RFP-SMOKE'))) {
+  for (const celda of creadas.celdas) {
     await request.delete(`/api/cells/${celda.id}`, { headers: { 'x-admin-token': adminToken } });
   }
 });

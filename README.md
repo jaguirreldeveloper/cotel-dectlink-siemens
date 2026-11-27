@@ -328,11 +328,11 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **181 tests / 905 assertions** (backend, 4 omitidos en SQLite: trigger y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
-- **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan **8/8** en pgsql (trigger y CHECK incluidos). La suite completa en pgsql aún tiene fallos preexistentes (datos sembrados por las migraciones, zonas horarias y coerciones de tipo que SQLite tolera); no usarla como gate hasta normalizar esos tests.
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **182 tests / 909 assertions** (backend, 4 omitidos en SQLite: trigger y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
+- **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan **9/9** en pgsql (trigger y CHECK incluidos). La suite completa en pgsql aún tiene fallos preexistentes (datos sembrados por las migraciones, zonas horarias y coerciones de tipo que SQLite tolera); no usarla como gate hasta normalizar esos tests.
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
-- `pnpm run db:verify` — integridad en vivo: recuentos del padrón, JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**. Tras el rebuild de celdas, el padrón local es el demo de 20 líneas cargado con `PadronDemoSeeder` (el definitivo se carga con el listado del usuario).
+- `pnpm run db:verify` — integridad en vivo: recuentos del padrón, JOINs normalizados, OTs concurrentes, M:N de materiales, bitácora transaccional y rechazo de estados inválidos; usa datos temporales que **elimina al finalizar**. El padrón local es el definitivo de 522 líneas cargado con `PadronRealSeeder` desde `CELDAS DECT LINK.xls`.
 - `pnpm run smoke` — contra el backend en marcha (`SMOKE_URL` opcional; p. ej. `SMOKE_URL=http://127.0.0.1:8010 pnpm run smoke` contra Laravel, o `https://<app>.laravel.cloud` en la nube; `EXPECTED_LINES` opcional): `/api/subscribers` con filas y campos, `/api/database/status` conectado y coherente, `/api/cells` con celdas. Sale con código 1 si algo falla; correrlo tras cada `build`, `db:load` o despliegue.
 - `pnpm test:e2e` (con `PW_CHANNEL=chromium` en local) — **16 tests de humo en 8 specs** Playwright contra el stack real (`:8010` + `:5173`): búsqueda/filtro del padrón, cambio de estado, carga CSV, creación de OT, panel de Celdas (Recargar/Nueva Celda, asistente de lote y datatable de 60 registros con filtro/estado/impresión), visibilidad por rol de los 12 operadores demo, portal «Mi línea», modal de Nuevo Operador y tabla de usuarios paginada. Los tokens de los specs de roles se generan con `php generate-demo-tokens.php` en `backend/` (archivo temporal, no versionado).
 - `pnpm run db:clean` — elimina restos de prueba conocidos (materiales/OTs/línea temporal de `db:verify`) y **solo informa** sobre titulares que parezcan de prueba sin tocar el padrón.
@@ -372,7 +372,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 **Estado de datos local**:
 
 - Celdas: 20 reales importadas desde `backend/database/data/celdas_reales.csv` (18 El Alto + 2 La Paz) y 40 referencias `CELDA INEXISTENTE …`. Por decisión del usuario, A03 y A04 quedan marcadas como inexistentes. El CSV incluye DPI, medidor, tierra, rangos de numeración y coordenadas DMS convertidas a decimal.
-- Padrón: se borró el real durante el rebuild; `PadronDemoSeeder` siembra 20 líneas de humo sobre las 5 celdas reales. El CSV consolidado no está en el repo, así que el padrón definitivo se cargará con el listado del usuario.
+- Padrón: **522 líneas reales** exportadas de `G:\excel\xls\CELDAS DECT LINK.xls`, versionadas como `backend/database/data/padron_celdas_dect_link.csv` y cargadas con `PadronRealSeeder` (reemplaza las 20 líneas demo). Repartidas en 11 celdas de El Alto: A-04 (28), A-05 (131), A-06 (74), A-07 (22), A-09 (27), A-11 (41), A-15 (49), A-17 (71), A-19 (17), A-23 (24) y A-24 (38).
 - Operadores y zonas se conservan; `RolesDemoSeeder` es idempotente y reactiva las 12 cuentas demo.
 
 **Acceso y URLs**:
@@ -383,7 +383,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 - Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
 
-**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 181 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 182 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronRealSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
 **Pendiente para la próxima sesión**:
 

@@ -306,7 +306,7 @@ class CellsController extends Controller
             'cantidad' => ['required', 'integer', 'min:1', 'max:100'],
             'municipio' => ['required', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['required', 'integer', Rule::exists('zonas', 'id')],
-            'prefijo_codigo' => ['required', 'string', 'max:30', 'regex:/^[A-Z0-9-]+$/'],
+            'prefijo_codigo' => ['required', 'string', 'max:30', 'regex:/^RFP-(ELA|LP)$/'],
             'direccion_base' => ['nullable', 'string', 'max:255'],
             'centro' => ['required', 'array'],
             'centro.latitud' => ['required', 'numeric', 'between:-17.2,-16.2'],
@@ -362,7 +362,7 @@ class CellsController extends Controller
         $editadas = $request->validate([
             'filas' => ['nullable', 'array', 'min:1', 'max:100'],
             'filas.*.id' => ['required_with:filas', 'integer'],
-            'filas.*.codigo' => ['required_with:filas', 'string', 'max:50'],
+            'filas.*.codigo' => ['required_with:filas', 'string', 'max:50', 'regex:/^RFP-(ELA|LP)-[0-9]{3}$/'],
             'filas.*.nombre' => ['required_with:filas', 'string', 'max:255'],
             'filas.*.direccion' => ['nullable', 'string', 'max:255'],
             'filas.*.latitud' => ['required_with:filas', 'numeric', 'min:-90', 'max:90'],
@@ -469,7 +469,7 @@ class CellsController extends Controller
                     $fallar('El número de celda ya está usado en este municipio.');
                 }
             }],
-            'codigo' => ['nullable', 'string', 'max:50', Rule::unique('celdas', 'codigo')],
+            'codigo' => ['nullable', 'string', 'max:50', 'regex:/^RFP-(ELA|LP)-[0-9]{3}$/', Rule::unique('celdas', 'codigo')],
             'nombre' => ['required', 'string', 'max:255'],
             'tecnologia' => ['nullable', 'string', 'max:100', Rule::in(CellCatalog::TECNOLOGIAS)],
             'descripcion' => ['nullable', 'string'],
@@ -497,9 +497,12 @@ class CellsController extends Controller
             'activo' => ['nullable', 'boolean'],
         ]);
 
+        $prefijo = ($validated['municipio'] ?? null) === 'LA PAZ' ? 'LP' : 'ELA';
+        $numero = (int) ($validated['numero_celda'] ?? $validated['id']);
+
         $cell = Cell::create([
             'id' => $validated['id'],
-            'codigo' => $validated['codigo'] ?? 'RFP-'.$validated['id'],
+            'codigo' => $validated['codigo'] ?? sprintf('RFP-%s-%03d', $prefijo, $numero % 1000),
             'numero_celda' => $validated['numero_celda'] ?? null,
             'fecha_estado' => ($validated['estado'] ?? null) !== null ? now() : null,
             'nombre' => $validated['nombre'],
@@ -587,7 +590,7 @@ class CellsController extends Controller
                     $fallar('El número de celda ya está usado en este municipio.');
                 }
             }],
-            'codigo' => ['sometimes', 'string', 'max:50', Rule::unique('celdas', 'codigo')->ignore($id)],
+            'codigo' => ['sometimes', 'string', 'max:50', 'regex:/^RFP-(ELA|LP)-[0-9]{3}$/', Rule::unique('celdas', 'codigo')->ignore($id)],
             'nombre' => ['sometimes', 'string', 'max:255'],
             'tecnologia' => ['nullable', 'string', 'max:100', Rule::in(CellCatalog::TECNOLOGIAS)],
             'descripcion' => ['nullable', 'string'],

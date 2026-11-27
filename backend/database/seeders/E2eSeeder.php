@@ -108,7 +108,7 @@ class E2eSeeder extends Seeder
 
         DB::table('celdas')->insert([
             'id' => $nuevoId,
-            'codigo' => 'RFP-E2E-'.$nuevoId,
+            'codigo' => sprintf('RFP-ELA-%03d', $nuevoId % 1000),
             'nombre' => 'RFP E2E 01',
             'tecnologia' => 'DECT-Link',
             'descripcion' => 'Celda de pruebas e2e',

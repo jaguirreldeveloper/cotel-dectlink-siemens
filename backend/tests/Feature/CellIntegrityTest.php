@@ -44,6 +44,7 @@ class CellIntegrityTest extends TestCase
             ['corriente_carga_a', -1],
             ['numero_celda', 0],
             ['codigo', 'ELA-001'],
+            ['codigo', 'RFP-100'],
             ['estado_energia', 'APAGADA'],
             ['rangos_numeracion', json_encode([['desde' => 20, 'hasta' => 10]], JSON_THROW_ON_ERROR)],
         ] as [$columna, $valor]) {
@@ -131,6 +132,19 @@ class CellIntegrityTest extends TestCase
                 $this->addToAssertionCount(1);
             }
         }
+    }
+
+    public function test_api_rechaza_codigo_no_canonico(): void
+    {
+        $celda = Cell::factory()->create();
+
+        $this->patchJson('/api/cells/'.$celda->id, [
+            'codigo' => 'RFP-100',
+        ], $this->headers())->assertStatus(422)->assertJsonValidationErrors('codigo');
+
+        $this->patchJson('/api/cells/'.$celda->id, [
+            'codigo' => 'RFP-ELA-999',
+        ], $this->headers())->assertOk();
     }
 
     public function test_api_rechaza_valores_fuera_de_catalogo(): void

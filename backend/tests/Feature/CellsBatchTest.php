@@ -102,7 +102,7 @@ class CellsBatchTest extends TestCase
             ->assertOk()
             ->json('filas');
 
-        $preview[0]['codigo'] = 'RFP-EDITADO-001';
+        $preview[0]['codigo'] = 'RFP-ELA-999';
         $preview[0]['nombre'] = 'CELDA EDITADA A MANO';
         $preview[0]['latitud'] = -16.51;
         $parametros['filas'] = $preview;
@@ -110,7 +110,7 @@ class CellsBatchTest extends TestCase
         $this->postJson('/api/cells/lote', $parametros, $this->headersSuperadmin())->assertCreated();
 
         $this->assertDatabaseHas('celdas', [
-            'codigo' => 'RFP-EDITADO-001',
+            'codigo' => 'RFP-ELA-999',
             'nombre' => 'CELDA EDITADA A MANO',
             'latitud' => -16.51,
         ]);
