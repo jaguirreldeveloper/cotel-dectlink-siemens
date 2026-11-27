@@ -360,7 +360,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 **Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
 
-**Entregas completas y sincronizadas en `main`** (versión **0.2.0**, tag `v0.2.0`; historial en `CHANGELOG.md`):
+**Entregas completas y sincronizadas en `main`** (versión **0.3.0**, tag `v0.3.0`; historial en `CHANGELOG.md`):
 
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
@@ -393,7 +393,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 ## 🛠️ Cambios recientes
 
-El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.2.0** (tag `v0.2.0`).
+El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.3.0** (tag `v0.3.0`).
 
 ---
 
