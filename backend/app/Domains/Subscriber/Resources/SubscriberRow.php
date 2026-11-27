@@ -41,6 +41,7 @@ final class SubscriberRow
             'lng' => $row->lng !== null ? (float) $row->lng : null,
             'distanciaKm' => $row->distancia_km !== null ? (float) $row->distancia_km : null,
             'azimutGrados' => $row->azimut_grados !== null ? (int) $row->azimut_grados : null,
+            'precisionGps' => $row->precision_gps ?? 'SIN_DATO',
             'updatedAt' => CarbonImmutable::parse($row->updated_at)->toIso8601String(),
         ];
     }
@@ -68,6 +69,7 @@ final class SubscriberRow
             'lng' => $row->lng !== null ? (float) $row->lng : null,
             'distanciaKm' => $row->distancia_km !== null ? (float) $row->distancia_km : null,
             'azimutGrados' => $row->azimut_grados !== null ? (int) $row->azimut_grados : null,
+            'precisionGps' => $row->precision_gps ?? 'SIN_DATO',
             'updatedAt' => CarbonImmutable::parse($row->updated_at)->toIso8601String(),
         ];
     }

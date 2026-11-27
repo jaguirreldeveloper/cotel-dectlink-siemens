@@ -37,6 +37,7 @@ export function mapSubscriberDto(d: any): RawSubscriberRecord {
     lng: d.lng ?? undefined,
     distanciaKm: d.distanciaKm ?? undefined,
     azimutGrados: d.azimutGrados ?? undefined,
+    precisionGps: d.precisionGps ?? undefined,
   };
 }
 

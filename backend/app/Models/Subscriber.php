@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'nro', 'numero_telefono', 'codigo_area', 'contrato', 'id_cliente', 'id_celda',
     'estado_servicio', 'estado_operativo', 'fecha_servicio', 'fau_model', 'signal_dect',
     'deuda_meses', 'tiempo_deposito_meses', 'falla_descripcion', 'lat', 'lng',
-    'distancia_km', 'azimut_grados', 'nro_registro_origen', 'archivo_origen', 'zona_origen',
+    'distancia_km', 'azimut_grados', 'precision_gps', 'nro_registro_origen', 'archivo_origen', 'zona_origen',
 ])]
 class Subscriber extends Model
 {

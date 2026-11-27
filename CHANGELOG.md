@@ -16,6 +16,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Paridad total de la suite en PostgreSQL (184/184): las migraciones ya no siembran celdas/zonas/cuadrillas/materiales, `E2eSeeder` corre bajo `APP_ENV=testing`, las aserciones de fecha comparan instantes y los IDs de OT se validan como UUID antes de consultar.
 - Auditoría de celdas a nivel de BD: trigger `AFTER INSERT/UPDATE/DELETE` que escribe `infraestructura_bitacora` (con operador de sesión), retirando la escritura manual de la app; en SQLite la bitácora la sigue escribiendo la aplicación.
 - Trigger `BEFORE INSERT/UPDATE` que rechaza rangos de numeración solapados entre celdas también por SQL directo. `CeldasHistoricasSeeder` es ahora realmente idempotente.
+- Georreferenciación estimada y trazable del padrón: columna `precision_gps`, catálogo de centroides de zona en backend, motor determinista acotado por `radio_cobertura_km` y comando `padron:georeferenciar` (solo rellena nulas; `--force` recalcula estimadas). Las 522 líneas reales quedaron ubicadas (192 por zona, 330 por celda, 0 fuera de cobertura).
+- La API expone `precisionGps` y la UI distingue coordenadas estimadas de calibradas.
 
 ## [0.3.0] - 2026-11-27
 

@@ -21,7 +21,7 @@ class SubscribersIndexTest extends TestCase
         'id', 'nro', 'numero', 'area', 'contrato', 'nombre', 'direccion',
         'fechaServicio', 'estado', 'estadoOperativo', 'celdaId', 'celdaNombre',
         'zona', 'fauModel', 'signalDect', 'deudaMeses', 'tiempoDepositoMeses',
-        'fallaDescripcion', 'lat', 'lng', 'distanciaKm', 'azimutGrados', 'updatedAt',
+        'fallaDescripcion', 'lat', 'lng', 'distanciaKm', 'azimutGrados', 'precisionGps', 'updatedAt',
     ];
 
     public function test_index_returns_empty_list_when_padron_is_empty(): void

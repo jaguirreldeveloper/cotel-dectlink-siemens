@@ -155,7 +155,10 @@ export function enrichRecords(records: RawSubscriberRecord[]): EnrichedSubscribe
 
     // ¿Las coordenadas son del padrón o del fallback de abajo? Hay que
     // capturarlo antes de sobrescribir lat/lng con la aproximación por zona.
-    const coordsReales = Number.isFinite(r.lat) && Number.isFinite(r.lng);
+    const precisionEstimada =
+      r.precisionGps === 'CENTROIDE_ZONA' || r.precisionGps === 'CATASTRO_ESTIMADO';
+    const coordsReales =
+      !precisionEstimada && Number.isFinite(r.lat) && Number.isFinite(r.lng);
 
     const lat = r.lat ?? Number((zoneAnchor.lat + Math.sin(offsetAngle) * offsetRadius).toFixed(6));
     const lng = r.lng ?? Number((zoneAnchor.lng + Math.cos(offsetAngle) * offsetRadius).toFixed(6));
