@@ -7,6 +7,7 @@ import {
   ESTADOS_ENERGIA,
   ETIQUETA_ENERGIA,
   ETIQUETA_ESTADO,
+  MOTIVOS_ESTADO_SUGERIDOS,
   destinosEstado,
   energiaValida,
   esTerminal,
@@ -108,7 +109,10 @@ export function CambiarEstadoModal({ celda, isOpen, onClose, onSave, esSuperadmi
         </div>
         <div>
           <label className='block text-xs font-semibold text-slate-400 mb-1'>Motivo (opcional)</label>
-          <Input dark value={motivo} onChange={e => setMotivo(e.target.value)} placeholder='Ej. Obra pública, baja definitiva…' aria-label='Motivo del cambio de estado' />
+          <Input dark list='motivos-estado' value={motivo} onChange={e => setMotivo(e.target.value)} placeholder='Ej. APAGADO, RETIRADO…' aria-label='Motivo del cambio de estado' />
+          <datalist id='motivos-estado'>
+            {MOTIVOS_ESTADO_SUGERIDOS.map(opcion => <option key={opcion} value={opcion} />)}
+          </datalist>
         </div>
         {esTerminal(estado) && (
           <p className='text-[11px] text-amber-400/80'>

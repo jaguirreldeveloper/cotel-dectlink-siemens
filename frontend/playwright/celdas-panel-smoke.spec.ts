@@ -186,7 +186,7 @@ test('tabla de celdas pagina 60 registros, filtra por estado y permite ver/impri
   await expect(filas).toHaveCount(5);
   await expect(page.getByText(/Mostrando\s+1–5\s+de\s+60\s+registros/)).toBeVisible();
   await expect(filas.first()).toContainText('RFP-ELA-001');
-  await expect(filas.nth(3)).toContainText('CELDA INEXISTENTE ELA 004');
+  await expect(filas.nth(3)).toContainText('RFP-ELA-004');
   await page.screenshot({ path: 'test-results/celdas-datatable.png' });
 
   // Dos vistas sobre la misma fuente: columnas distintas, filtros y paginación compartidos.

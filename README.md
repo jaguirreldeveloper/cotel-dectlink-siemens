@@ -328,7 +328,7 @@ Hay dos entornos con sus propios `.env`:
 ## ✅ Verificación
 
 - `pnpm run lint` — TypeScript estricto sin errores.
-- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **176 tests / 899 assertions** (backend, 4 omitidos en SQLite: trigger y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
+- `pnpm run test` — Vitest **75 tests** (frontend, 12 archivos) + Pest **181 tests / 905 assertions** (backend, 4 omitidos en SQLite: trigger y CHECK de PostgreSQL); `scripts` sin tests (sale 0).
 - **Suite PostgreSQL local** (obligatoria cuando se toquen migraciones/triggers): crear BD descartable `cotel_dectlink_test` con `CREATE DATABASE cotel_dectlink_test OWNER cotel` (el rol `cotel` no tiene `CREATEDB`), preparar con `$env:DB_CONNECTION='pgsql'; $env:DB_DATABASE='cotel_dectlink_test'; php artisan migrate:fresh --force` y correr `php artisan test --compact` con esas mismas variables. `CellsUpdatedAtTest` y `CellIntegrityTest` pasan **8/8** en pgsql (trigger y CHECK incluidos). La suite completa en pgsql aún tiene fallos preexistentes (datos sembrados por las migraciones, zonas horarias y coerciones de tipo que SQLite tolera); no usarla como gate hasta normalizar esos tests.
 - `pnpm run build` — build de producción (Vite/Rolldown) correcto, sin fugas de módulos Node al navegador.
 - `pnpm run db:check` — esquema sincronizado (10 tablas sin deriva: tipos, nulabilidad, CHECK y FK).
@@ -367,6 +367,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - 9 roles funcionales (incluye `GERENTE_AREA`, `JEFE_DEPARTAMENTO`, `ENCARGADO_AREA`), 12 operadores demo y portal «Mi línea» con token hasheado.
 - 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida de 8 estados (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) con estado eléctrico independiente (`ENCENDIDA`/`APAGADA`/`SIN_ENERGIA`) y bitácora por transición; baja/retiro conservan la fila por auditoría. El panel se organiza como un **grupo del sidebar** con 4 vistas/rutas: Resumen (`/celdas/resumen`, KPIs y distribución), Listado general (`/celdas/general`), Detalle técnico (`/celdas/tecnica`, DPI, medidor, tierras, corrientes, rangos y observaciones) y Generación por lote (`/celdas/lote`). Los filtros y la paginación se conservan entre ambas listas mediante `CeldasFiltersProvider`.
 - Trazabilidad e integridad de celdas: `updated_at` con trigger en PostgreSQL, CHECKs de rango/coherencia y validación de `rangos_numeracion` (forma y solapes), con suite PostgreSQL local dedicada.
+- `activo` es un flag administrativo **independiente** de `estado` (no se deriva de `EN_SERVICIO`); el ciclo de vida se rige por `estado` y `estado_energia`. `descripcion` ya no duplica el nombre y los motivos heredados del CSV se codifican como `LISTADO_REAL`/`REFERENCIA` (sugeridos en la UI, campo libre).
 
 **Estado de datos local**:
 
@@ -382,7 +383,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 - Portal demo: `/?portal=1&token=demo-token-mi-linea`.
 - Si los servidores se cancelan al reiniciar: `php artisan serve --port=8010` en `backend/` y `npx vite --host 127.0.0.1 --port 5173 --strictPort` en `frontend/`.
 
-**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 176 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
+**Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 181 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronDemoSeeder --force`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
 **Pendiente para la próxima sesión**:
 

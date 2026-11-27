@@ -44,7 +44,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float|null $corriente_flotante_a
  * @property float|null $corriente_carga_a
  * @property string|null $observaciones
- * @property bool $activo
+ * @property bool $activo Flag administrativo independiente; no se deriva de `estado`.
  * @property-read Subcentral|null $subcentral
  * @property-read Zone|null $zona
  */
