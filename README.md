@@ -360,7 +360,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 **Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
 
-**Entregas completas y sincronizadas en `main`** (versión **0.3.0**, tag `v0.3.0`; historial en `CHANGELOG.md`):
+**Entregas completas y sincronizadas en `main`** (versión **0.3.1**, tag `v0.3.1`; historial en `CHANGELOG.md`):
 
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
@@ -385,15 +385,19 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 **Comandos de verificación**: `pnpm run typecheck`, `pnpm run lint`, `pnpm run test` (75 FE + 190 BE), `pnpm run build`, `pnpm test:e2e` (16/16 con `PW_CHANNEL=chromium`). En `backend/`: `php generate-demo-tokens.php` (tokens para los specs de roles), `php artisan db:seed --class=CeldasRebuildSeeder --force`, `php artisan db:seed --class=PadronRealSeeder --force`, `php artisan padron:georeferenciar`, `vendor/bin/pint --dirty --format agent` tras tocar PHP.
 
-**Pendiente para la próxima sesión**:
+**Estado al cierre de la sesión (continúa el lunes)**:
 
-- Cargar los nombres definitivos de las 60 celdas y asignar los usuarios reales a partir del listado que enviará el usuario; verificar que el `id` y `numero_celda` queden alineados con ese orden.
+- `main` limpia en **v0.3.1**: 60 celdas con código canónico, 522 abonados reales georreferenciados (procedencia en `precision_gps`), auditoría y solapes en base de datos, y suite PostgreSQL **190/190** como gate. Servidores activos en `127.0.0.1:5173` / `:8010`; si se caen, relanzar con los comandos indicados arriba.
+
+**Pendiente (no bloqueante)**:
+
+- Refinamientos opcionales: geocodificación externa de direcciones (marcada `GEOCODIFICADO`), matriz completa `estado` ↔ `estado_energia`, `deleted_at` y fechas de ciclo de vida, índice GIN si se llega a consultar por número.
 - GitHub Actions sigue bloqueado por facturación: los 6 checks requeridos están restaurados en `main`, pero cualquier PR nuevo debe integrarse con el procedimiento **relajar checks → merge → restaurar** hasta que se resuelva el cobro.
 - PR **#1** (`initial-greeting-17a4b`) queda abierto; es anterior y no relacionado con este trabajo.
 
 ## 🛠️ Cambios recientes
 
-El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.3.0** (tag `v0.3.0`).
+El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.3.1** (tag `v0.3.1`).
 
 ---
 

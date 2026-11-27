@@ -6,18 +6,23 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+- (sin cambios registrados)
+
+## [0.3.1] - 2026-11-27
+
 ### Added
 
 - Padrón definitivo: 522 líneas reales exportadas de `CELDAS DECT LINK.xls`, versionadas en `backend/database/data/padron_celdas_dect_link.csv` y cargadas con `PadronRealSeeder` (reemplaza el demo de 20 líneas).
+- Georreferenciación estimada y trazable del padrón: columna `precision_gps`, catálogo de centroides de zona en backend, motor determinista acotado por `radio_cobertura_km` y comando `padron:georeferenciar` (solo rellena nulas; `--force` recalcula estimadas). Las 522 líneas reales quedaron ubicadas (192 por zona, 330 por celda, 0 fuera de cobertura).
+- La API expone `precisionGps` y la UI distingue coordenadas estimadas de calibradas.
 
 ### Changed
 
 - `codigo` de celda queda canónico: `RFP-ELA-NNN` / `RFP-LP-NNN`, con validación en API, factoría, seeders y `CHECK` estricto en PostgreSQL.
-- Paridad total de la suite en PostgreSQL (184/184): las migraciones ya no siembran celdas/zonas/cuadrillas/materiales, `E2eSeeder` corre bajo `APP_ENV=testing`, las aserciones de fecha comparan instantes y los IDs de OT se validan como UUID antes de consultar.
+- Paridad total de la suite en PostgreSQL (190/190): las migraciones ya no siembran celdas/zonas/cuadrillas/materiales, `E2eSeeder` corre bajo `APP_ENV=testing`, las aserciones de fecha comparan instantes y los IDs de OT se validan como UUID antes de consultar.
 - Auditoría de celdas a nivel de BD: trigger `AFTER INSERT/UPDATE/DELETE` que escribe `infraestructura_bitacora` (con operador de sesión), retirando la escritura manual de la app; en SQLite la bitácora la sigue escribiendo la aplicación.
 - Trigger `BEFORE INSERT/UPDATE` que rechaza rangos de numeración solapados entre celdas también por SQL directo. `CeldasHistoricasSeeder` es ahora realmente idempotente.
-- Georreferenciación estimada y trazable del padrón: columna `precision_gps`, catálogo de centroides de zona en backend, motor determinista acotado por `radio_cobertura_km` y comando `padron:georeferenciar` (solo rellena nulas; `--force` recalcula estimadas). Las 522 líneas reales quedaron ubicadas (192 por zona, 330 por celda, 0 fuera de cobertura).
-- La API expone `precisionGps` y la UI distingue coordenadas estimadas de calibradas.
+- Versión SemVer 0.3.1 sincronizada entre paquetes, OpenAPI y cachés del service worker.
 
 ## [0.3.0] - 2026-11-27
 
@@ -96,7 +101,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Menú de acciones de usuarios y celdas renderizado en portal: evita recortes en la última fila y scroll espurio.
 - Regresión que ocultaba «Carga de Padrón» a ADMIN: nuevo permiso `padron.view`.
 
-[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.3.1
 [0.3.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.3.0
 [0.2.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.2.0
 [0.1.1]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.1
