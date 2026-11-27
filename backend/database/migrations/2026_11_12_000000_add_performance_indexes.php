@@ -9,7 +9,7 @@ return new class extends Migration
 {
     /**
      * Añade índices de rendimiento para optimizar consultas frecuentes.
-     * 
+     *
      * Índices añadidos:
      * - abonados_lineas: índices compuestos para búsquedas comunes
      * - clientes: índice para nombre_completo (búsquedas de texto)
@@ -26,7 +26,7 @@ return new class extends Migration
         // ====================================================================
         // abonados_lineas: Índices para consultas frecuentes
         // ====================================================================
-        
+
         // Índice compuesto: estado_servicio + estado_operativo (para filtros de estado)
         Schema::table('abonados_lineas', function (Blueprint $table) {
             $table->index(['estado_servicio', 'estado_operativo']);
@@ -55,7 +55,7 @@ return new class extends Migration
         // ====================================================================
         // clientes: Índices para búsquedas
         // ====================================================================
-        
+
         // Índice para nombre_completo (búsquedas de texto)
         Schema::table('clientes', function (Blueprint $table) {
             $table->index('nombre_completo');
@@ -69,7 +69,7 @@ return new class extends Migration
         // ====================================================================
         // zonas: Índices para búsquedas
         // ====================================================================
-        
+
         // Índice para nombre (búsquedas de texto)
         Schema::table('zonas', function (Blueprint $table) {
             $table->index('nombre');
@@ -78,7 +78,7 @@ return new class extends Migration
         // ====================================================================
         // bitacora: Índices para consultas de auditoría
         // ====================================================================
-        
+
         // Índice compuesto: abonado_nro + timestamp (para historial de un abonado)
         Schema::table('bitacora', function (Blueprint $table) {
             $table->index(['abonado_nro', 'timestamp']);
@@ -87,7 +87,7 @@ return new class extends Migration
         // ====================================================================
         // celdas: Índices para búsquedas
         // ====================================================================
-        
+
         // Índice para nombre (búsquedas de texto)
         Schema::table('celdas', function (Blueprint $table) {
             $table->index('nombre');
@@ -106,7 +106,7 @@ return new class extends Migration
         // ====================================================================
         // work_orders: Índices para gestión de OTs
         // ====================================================================
-        
+
         // Índice para abonado_nro (relación con abonados)
         Schema::table('work_orders', function (Blueprint $table) {
             $table->index('abonado_nro');
@@ -119,13 +119,13 @@ return new class extends Migration
 
         // Índice para fecha_creacion (ordenamiento cronológico)
         Schema::table('work_orders', function (Blueprint $table) {
-            $table->index('created_at');
+            $table->index('fecha_creacion');
         });
 
         // ====================================================================
         // users: Índices para autenticación
         // ====================================================================
-        
+
         // Índice para email (login por email)
         Schema::table('users', function (Blueprint $table) {
             $table->index('email');
@@ -139,7 +139,7 @@ return new class extends Migration
         // ====================================================================
         // infraestructura: Índices para tablas jerárquicas
         // ====================================================================
-        
+
         // Centrales
         if (Schema::hasTable('centrales')) {
             Schema::table('centrales', function (Blueprint $table) {
@@ -170,15 +170,6 @@ return new class extends Migration
                 $table->index('id_shelter');
             });
         }
-
-        // ====================================================================
-        // Analizar la base de datos para recomendar más optimizaciones
-        // ====================================================================
-        
-        DB::statement("-- ============================================================================");
-        DB::statement("-- Análisis de índices recomendado (ejecutar en psql):");
-        DB::statement("-- ============================================================================");
-        DB::statement("SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes WHERE schemaname = 'public' ORDER BY idx_scan DESC;");
     }
 
     /**
@@ -195,27 +186,27 @@ return new class extends Migration
             // users
             ['users', 'users_role_index'],
             ['users', 'users_email_index'],
-            
+
             // work_orders
-            ['work_orders', 'work_orders_created_at_index'],
+            ['work_orders', 'work_orders_fecha_creacion_index'],
             ['work_orders', 'work_orders_estado_index'],
             ['work_orders', 'work_orders_abonado_nro_index'],
-            
+
             // celdas
             ['celdas', 'celdas_latitud_longitud_index'],
             ['celdas', 'celdas_tecnologia_index'],
             ['celdas', 'celdas_nombre_index'],
-            
+
             // bitacora
             ['bitacora', 'bitacora_abonado_nro_timestamp_index'],
-            
+
             // zonas
             ['zonas', 'zonas_nombre_index'],
-            
+
             // clientes
             ['clientes', 'clientes_direccion_index'],
             ['clientes', 'clientes_nombre_completo_index'],
-            
+
             // abonados_lineas
             ['abonados_lineas', 'abonados_lineas_fecha_servicio_index'],
             ['abonados_lineas', 'abonados_lineas_contrato_index'],
@@ -227,12 +218,12 @@ return new class extends Migration
         foreach ($indexesToDrop as $index) {
             $table = $index[0];
             $indexName = $index[1];
-            
+
             try {
                 Schema::table($table, function (Blueprint $table) use ($indexName) {
                     $table->dropIndex($indexName);
                 });
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Índice no existe, continuar
             }
         }
@@ -245,7 +236,7 @@ return new class extends Migration
                     Schema::table($table, function (Blueprint $table) {
                         $table->dropIndexIfExists('nombre');
                     });
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Ignorar
                 }
             }
