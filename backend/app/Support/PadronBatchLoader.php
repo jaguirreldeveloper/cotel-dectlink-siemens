@@ -79,8 +79,13 @@ class PadronBatchLoader
         /** @var array<int, bool> $nrosVistos */
         $nrosVistos = [];
 
-        $numerosEnCsv = array_filter(array_map(fn ($f) => $f['numero'] ?? $f['numero_telefono'] ?? null, $filas));
-        $nrosEnCsv = array_filter(array_map(fn ($f) => $f['nro'] ?? null, $filas));
+        // Normalizar antes de consultar: PostgreSQL no tolera nros no numéricos.
+        $infos = array_map(fn (array $f): array => self::fila($f), $filas);
+        $numerosEnCsv = array_values(array_filter(array_map(
+            fn (array $info): ?string => $info['numero'] !== '' ? $info['numero'] : null,
+            $infos
+        )));
+        $nrosEnCsv = array_values(array_filter(array_map(fn (array $info): ?int => $info['nro'], $infos)));
 
         /** @var Collection<string, Subscriber> $existentesPorNumero */
         $existentesPorNumero = $numerosEnCsv !== [] ? Subscriber::query()
@@ -104,9 +109,7 @@ class PadronBatchLoader
         $ciudadPorSubcentral = self::ciudadPorSubcentral();
 
         $sugerencias = [];
-        foreach ($filas as $f) {
-            $info = self::fila($f);
-
+        foreach ($infos as $info) {
             $rechazo = self::motivoDeRechazo($info, $vistos, $nrosVistos, $celdasPorNombre);
             if ($rechazo !== null) {
                 $sugerencias[] = self::emplear($info, $rechazo['accion'], $rechazo['motivo'], PadronCarga::CIUDAD_SIN);
@@ -123,7 +126,7 @@ class PadronBatchLoader
 
             // Coincidencia prioritaria por número telefónico; si el CSV trae nro explícito, por nro
             $existente = ($info['numero'] !== '' ? $existentesPorNumero->get($info['numero']) : null)
-                ?? (isset($f['nro']) && $info['nro'] !== null ? $existentesPorNro->get($info['nro']) : null);
+                ?? ($info['nro'] !== null ? $existentesPorNro->get($info['nro']) : null);
 
             if ($existente === null) {
                 if ($info['nombre'] === null) {

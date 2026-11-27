@@ -37,27 +37,8 @@ BEGIN
   END IF;
 END $$;
 
--- Siembra idempotente de las cuadrillas operativas (solo si la tabla está vacía)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.cuadrillas) THEN
-    INSERT INTO public.cuadrillas
-      (id, nombre, integrantes, vehiculo, zona_asignada, estado, telefono_contacto, lat_actual, lng_actual)
-    VALUES
-      ('crew-1','Cuadrilla 1 - Alfa',
-        ARRAY['Téc. Carlos Mamani (Líder)','Téc. Roberto Condori (Instalador)'],
-        'Camioneta Toyota Hilux 4x4 (Placa 3412-KTA)','Tilata / Viacha Centro / Senkata',
-        'EN_CAMPO','+591 715-44210',-16.5755,-68.2325),
-      ('crew-2','Cuadrilla 2 - Bravo',
-        ARRAY['Téc. Juan Quispe (Líder RF)','Téc. Marco Laura (Empalmador FO)'],
-        'Furgón Renault Master (Placa 2890-UPB)','Río Seco / Mariscal Santa Cruz / Puchukollo',
-        'EN_DESPACHO','+591 720-88331',-16.505,-68.218),
-      ('crew-3','Cuadrilla 3 - Charlie',
-        ARRAY['Téc. Gonzalo Flores (Líder)','Téc. David Apaza (Mediciones)'],
-        'Camioneta Nissan Frontier (Placa 4102-LPA)','16 de Julio / Ballivián / Ceja',
-        'DISPONIBLE','+591 730-19280',-16.503,-68.165);
-  END IF;
-END $$;
+-- Las cuadrillas operativas se siembran con E2eSeeder, no en la migración,
+-- para que PostgreSQL y SQLite arranquen con el mismo catálogo vacío.
 
 -- 2. Catálogo de materiales
 CREATE TABLE IF NOT EXISTS public.materiales (
@@ -67,27 +48,7 @@ CREATE TABLE IF NOT EXISTS public.materiales (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Siembra idempotente del catálogo base (solo si está vacío)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.materiales) THEN
-    INSERT INTO public.materiales (nombre, unidad) VALUES
-      ('Mástil galvanizado 3m','unidad'),
-      ('Antena direccional DECT 1.9 GHz (9 dBi)','unidad'),
-      ('15m Cable coaxial RG-58','rollo'),
-      ('2 Conectores SMA macho','unidad'),
-      ('Unidad Terminal Siemens FAU-300 Pro','unidad'),
-      ('Fuente conmutada 220V/12V 2A','unidad'),
-      ('Protector gaseoso de sobretensión telefónica','unidad'),
-      ('Kit de sellado de bajante','kit'),
-      ('Acta de recepción de activos COTEL','documento'),
-      ('ONT GPON WiFi Dual Band','unidad'),
-      ('Acometida FO Drop 80m','unidad'),
-      ('Roseta óptica y conector rápido SC/APC','unidad'),
-      ('Analizador de espectro Anritsu RF','unidad'),
-      ('Mástil telescópico de prueba','unidad');
-  END IF;
-END $$;
+-- El catálogo de materiales se siembra con E2eSeeder, no en la migración.
 
 -- 3. Tabla puente OT <-> material (M:N con cantidad)
 CREATE TABLE IF NOT EXISTS public.work_order_materiales (

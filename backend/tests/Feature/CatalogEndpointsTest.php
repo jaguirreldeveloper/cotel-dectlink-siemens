@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Concerns\SeedsCotelPatron;
@@ -103,7 +104,10 @@ class CatalogEndpointsTest extends TestCase
 
         $this->assertSame(['C/SERV.', 'FALLA TECNICA', 'CORTE X MORA'],
             array_column($response->json(), 'nuevoEstado'));
-        $this->assertSame('2026-01-03T10:00:00+00:00', $response->json()[0]['timestamp']);
+        $this->assertTrue(
+            CarbonImmutable::parse($response->json()[0]['timestamp'])
+                ->equalTo(CarbonImmutable::parse('2026-01-03T10:00:00Z'))
+        );
         $this->assertSame([
             'id', 'abonadoNro', 'estadoAnterior', 'nuevoEstado', 'detalle', 'tecnico', 'timestamp',
         ], array_keys($response->json()[0]));

@@ -133,23 +133,9 @@ BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------
--- 8. Semilla mínima (arquitectura real COTEL: Central EAI → Senkata/Tilata)
+-- 8. La semilla de centrales/subcentrales/shelters vive en los seeders.
+--    Las migraciones solo crean la estructura (paridad con SQLite).
 -- ---------------------------------------------------------------------------
-INSERT INTO public.centrales (codigo, nombre, direccion, observacion)
-VALUES ('CEN-EAI', 'Central EAI', 'Estación Área de Ingeniería (EAI) - La Paz', 'Central madre de la red COTEL DECTlink')
-ON CONFLICT (codigo) DO NOTHING;
-
-INSERT INTO public.subcentrales (codigo, nombre, id_central, direccion)
-VALUES
-  ('SUB-SENKATA', 'Subcentral Senkata', (SELECT id FROM public.centrales WHERE codigo = 'CEN-EAI'), 'Senkata - El Alto'),
-  ('SUB-TILATA',  'Subcentral Tilata',  (SELECT id FROM public.centrales WHERE codigo = 'CEN-EAI'), 'Tilata - La Paz')
-ON CONFLICT (codigo) DO NOTHING;
-
-INSERT INTO public.shelters (codigo, nombre, id_subcentral)
-VALUES
-  ('SHE-SENKATA-01', 'Shelter Senkata 01', (SELECT id FROM public.subcentrales WHERE codigo = 'SUB-SENKATA')),
-  ('SHE-TILATA-01',  'Shelter Tilata 01',  (SELECT id FROM public.subcentrales WHERE codigo = 'SUB-TILATA'))
-ON CONFLICT (codigo) DO NOTHING;
 
 -- Las 4 celdas existentes: enlazar A-15/A-17 (Senkata/Tilata); Mercedario y
 -- Cosmos 79 quedan con id_subcentral NULL hasta confirmar su subcentral (La Paz).
