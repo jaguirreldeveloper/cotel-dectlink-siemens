@@ -3,6 +3,7 @@
 namespace App\Domains\WorkOrder\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Baja de orden de trabajo: elimina primero el puente de materiales
@@ -15,6 +16,10 @@ final class DeleteWorkOrder
      */
     public function __invoke(string $id): bool
     {
+        if (! Str::isUuid($id)) {
+            return false;
+        }
+
         return DB::transaction(function () use ($id) {
             $existe = DB::selectOne('SELECT id FROM work_orders WHERE id = ?', [$id]);
             if (! $existe) {

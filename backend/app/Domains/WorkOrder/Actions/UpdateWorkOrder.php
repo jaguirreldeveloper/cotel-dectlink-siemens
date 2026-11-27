@@ -5,6 +5,7 @@ namespace App\Domains\WorkOrder\Actions;
 use App\Domains\WorkOrder\Queries\WorkOrderQuery;
 use App\Domains\WorkOrder\Resources\WorkOrderRow;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Edición parcial de orden de trabajo: columnas dinámicas con
@@ -25,6 +26,10 @@ final class UpdateWorkOrder
      */
     public function __invoke(string $id, array $patch, ?string $cuadrillaId): ?array
     {
+        if (! Str::isUuid($id)) {
+            return null;
+        }
+
         $updated = DB::transaction(function () use ($id, $patch, $cuadrillaId) {
             $existe = DB::selectOne('SELECT id FROM work_orders WHERE id = ?', [$id]);
             if (! $existe) {

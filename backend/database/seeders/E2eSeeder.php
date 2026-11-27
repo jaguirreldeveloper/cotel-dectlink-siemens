@@ -10,10 +10,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Datos mínimos e idempotentes para la suite e2e de Playwright.
  *
- * Se ejecuta de forma explícita sobre la base SQLite de CI
- * (`php artisan migrate:fresh` + `php artisan db:seed --class=E2eSeeder`).
- * No se invoca desde DatabaseSeeder y solo corre en SQLite: así nunca
- * contamina la base PostgreSQL real.
+ * Se ejecuta de forma explícita en entorno de pruebas (SQLite o la BD
+ * PostgreSQL descartable de CI). No se invoca desde DatabaseSeeder y se
+ * restringe a `APP_ENV=testing` para no contaminar la base real.
  */
 class E2eSeeder extends Seeder
 {
@@ -25,10 +24,8 @@ class E2eSeeder extends Seeder
      */
     public function run(): void
     {
-        if (DB::getDriverName() !== 'sqlite') {
-            $this->command?->warn(
-                'E2eSeeder es exclusivo de las pruebas SQLite; no se ejecuta sobre '.DB::getDriverName().'.'
-            );
+        if (! app()->environment('testing')) {
+            $this->command?->warn('E2eSeeder solo se ejecuta en APP_ENV=testing.');
 
             return;
         }
@@ -112,7 +109,7 @@ class E2eSeeder extends Seeder
             'nombre' => 'RFP E2E 01',
             'tecnologia' => 'DECT-Link',
             'descripcion' => 'Celda de pruebas e2e',
-            'rfp_modelo' => 'RFP 200',
+            'rfp_modelo' => 'Siemens C500',
             'banda_frecuencia' => '1880 - 1900 MHz (DECT GAP)',
             'capacidad_canales' => 12,
             'radio_cobertura_km' => 2.5,

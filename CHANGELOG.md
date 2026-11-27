@@ -13,6 +13,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Changed
 
 - `codigo` de celda queda canónico: `RFP-ELA-NNN` / `RFP-LP-NNN`, con validación en API, factoría, seeders y `CHECK` estricto en PostgreSQL.
+- Paridad total de la suite en PostgreSQL (182/182): las migraciones ya no siembran celdas/zonas/cuadrillas/materiales, `E2eSeeder` corre bajo `APP_ENV=testing`, las aserciones de fecha comparan instantes y los IDs de OT se validan como UUID antes de consultar.
 
 ## [0.3.0] - 2026-11-27
 

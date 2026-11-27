@@ -21,6 +21,7 @@ trait SeedsCotelPatron
     {
         Cell::query()->updateOrCreate(['id' => $id], [
             'nombre' => $nombre,
+            'codigo' => sprintf('RFP-ELA-%03d', $id),
             'tecnologia' => 'DECT-Link',
             'banda_frecuencia' => '1880 - 1900 MHz (DECT GAP)',
         ]);
