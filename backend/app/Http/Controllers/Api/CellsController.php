@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cell;
-use App\Models\InfraestructuraBitacora;
 use App\Models\Zone;
+use App\Support\CeldaBitacora;
 use App\Support\CellBatchGenerator;
 use App\Support\CellCatalog;
 use App\Support\CellNumberingRanges;
@@ -43,18 +43,12 @@ class CellsController extends Controller
         $cell = Cell::query()->findOrFail($id);
         $antes = $cell->id_subcentral;
 
+        $operador = OperatorToken::resolve($request);
+
         $cell->id_subcentral = $validated['id_subcentral'] ?? null;
         $cell->save();
 
-        $operador = OperatorToken::resolve($request);
-
-        InfraestructuraBitacora::create([
-            'tabla' => 'celdas',
-            'registro_id' => $id,
-            'accion' => InfraestructuraBitacora::ACCION_MODIFICAR,
-            'operador_id' => $operador?->id,
-            'payload' => ['antes' => ['id_subcentral' => $antes], 'despues' => ['id_subcentral' => $cell->id_subcentral]],
-        ]);
+        CeldaBitacora::modificar($cell, ['id_subcentral' => $antes], $operador?->id);
 
         return response()->json([
             'message' => 'Subcentral asignada a la celda exitosamente.',
@@ -134,12 +128,7 @@ class CellsController extends Controller
             ], 403);
         }
 
-        $antes = [
-            'estado' => $desde,
-            'estado_energia' => $cell->estado_energia,
-            'fecha_estado' => $cell->fecha_estado,
-            'motivo_estado' => $cell->motivo_estado,
-        ];
+        $antes = $cell->toArray();
         $cell->estado = $hasta;
         $cell->estado_energia = $energia;
         $cell->fecha_estado = $validado['fecha'] ?? now();
@@ -147,24 +136,11 @@ class CellsController extends Controller
         $cell->activo = $hasta === CellStateMachine::EN_SERVICIO;
         $cell->save();
 
-        InfraestructuraBitacora::create([
-            'tabla' => 'celdas',
-            'registro_id' => $id,
-            'accion' => $hasta === CellStateMachine::BAJA || $hasta === CellStateMachine::RETIRADA
-                ? InfraestructuraBitacora::ACCION_DESACTIVAR
-                : InfraestructuraBitacora::ACCION_MODIFICAR,
-            'operador_id' => $operador?->id,
-            'payload' => [
-                'antes' => $antes,
-                'despues' => [
-                    'estado' => $hasta,
-                    'estado_energia' => $energia,
-                    'fecha_estado' => $cell->fecha_estado?->toIso8601String(),
-                    'motivo_estado' => $cell->motivo_estado,
-                    'activo' => $cell->activo,
-                ],
-            ],
-        ]);
+        if ($hasta === CellStateMachine::BAJA || $hasta === CellStateMachine::RETIRADA) {
+            CeldaBitacora::desactivar($cell, $antes, $operador?->id);
+        } else {
+            CeldaBitacora::modificar($cell, $antes, $operador?->id);
+        }
 
         return response()->json([
             'message' => "Celda actualizada a {$hasta}.",
@@ -409,13 +385,7 @@ class CellsController extends Controller
             $resultado = [];
             foreach ($filas as $fila) {
                 $celda = Cell::query()->create($fila);
-                InfraestructuraBitacora::create([
-                    'tabla' => 'celdas',
-                    'registro_id' => $celda->id,
-                    'accion' => InfraestructuraBitacora::ACCION_CREAR,
-                    'operador_id' => $operador?->id,
-                    'payload' => $fila,
-                ]);
+                CeldaBitacora::crear($celda, $operador?->id);
                 $resultado[] = [
                     'id' => $celda->id,
                     'codigo' => $celda->codigo,
@@ -500,6 +470,8 @@ class CellsController extends Controller
         $prefijo = ($validated['municipio'] ?? null) === 'LA PAZ' ? 'LP' : 'ELA';
         $numero = (int) ($validated['numero_celda'] ?? $validated['id']);
 
+        $operador = OperatorToken::resolve($request);
+
         $cell = Cell::create([
             'id' => $validated['id'],
             'codigo' => $validated['codigo'] ?? sprintf('RFP-%s-%03d', $prefijo, $numero % 1000),
@@ -525,14 +497,7 @@ class CellsController extends Controller
             'activo' => $validated['activo'] ?? true,
         ]);
 
-        $operador = OperatorToken::resolve($request);
-        InfraestructuraBitacora::create([
-            'tabla' => 'celdas',
-            'registro_id' => $cell->id,
-            'accion' => InfraestructuraBitacora::ACCION_CREAR,
-            'operador_id' => $operador?->id,
-            'payload' => $cell->toArray(),
-        ]);
+        CeldaBitacora::crear($cell, $operador?->id);
 
         return response()->json([
             'message' => 'Celda creada exitosamente.',
@@ -573,7 +538,6 @@ class CellsController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $cell = Cell::query()->findOrFail($id);
-        $antes = $cell->toArray();
 
         $validated = $request->validate([
             'numero_celda' => ['nullable', 'integer', 'min:1', function (string $atributo, mixed $valor, callable $fallar) use ($request, $id, $cell): void {
@@ -625,6 +589,9 @@ class CellsController extends Controller
             $validated['rangos_numeracion'] = CellNumberingRanges::normalizar($validated['rangos_numeracion']);
         }
 
+        $operador = OperatorToken::resolve($request);
+
+        $antes = $cell->toArray();
         $estadoAnterior = $cell->estado;
         $cell->fill($validated);
         if (isset($validated['estado']) && $validated['estado'] !== $estadoAnterior) {
@@ -632,14 +599,7 @@ class CellsController extends Controller
         }
         $cell->save();
 
-        $operador = OperatorToken::resolve($request);
-        InfraestructuraBitacora::create([
-            'tabla' => 'celdas',
-            'registro_id' => $id,
-            'accion' => InfraestructuraBitacora::ACCION_MODIFICAR,
-            'operador_id' => $operador?->id,
-            'payload' => ['antes' => $antes, 'despues' => $cell->toArray()],
-        ]);
+        CeldaBitacora::modificar($cell, $antes, $operador?->id);
 
         return response()->json([
             'message' => 'Celda actualizada exitosamente.',
@@ -679,16 +639,12 @@ class CellsController extends Controller
             ], 409);
         }
 
+        $antes = $cell->toArray();
         $operador = OperatorToken::resolve($request);
-        InfraestructuraBitacora::create([
-            'tabla' => 'celdas',
-            'registro_id' => $id,
-            'accion' => InfraestructuraBitacora::ACCION_ELIMINAR,
-            'operador_id' => $operador?->id,
-            'payload' => $cell->toArray(),
-        ]);
 
         $cell->delete();
+
+        CeldaBitacora::eliminar($id, $antes, $operador?->id);
 
         return response()->json(['message' => 'Celda eliminada exitosamente.']);
     }

@@ -91,6 +91,7 @@ class CellStateMachineTest extends TestCase
         $bitacora = InfraestructuraBitacora::query()
             ->where('tabla', 'celdas')
             ->where('registro_id', $celda->id)
+            ->where('accion', 'MODIFICAR')
             ->firstOrFail();
         $this->assertSame('APAGADA', $bitacora->payload['despues']['estado_energia']);
 
