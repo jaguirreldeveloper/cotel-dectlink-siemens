@@ -8,6 +8,25 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 - (sin cambios registrados)
 
+## [0.2.0] - 2026-11-27
+
+### Added
+
+- Trazabilidad de celdas: columna `updated_at` con trigger en PostgreSQL, `updatedAt` en la API y columna «Últ. modificación» en el detalle técnico.
+- CHECKs de integridad en `celdas`: coordenadas, capacidades, datos eléctricos, `numero_celda`, formato de código y coherencia `EN_SERVICIO ⇒ ENCENDIDA`.
+- Validación de `rangos_numeracion`: forma del JSON y prevención de solapes entre celdas en alta/edición (la UI ya enviaba el campo y el backend lo ignoraba).
+- Suite PostgreSQL local con BD descartable `cotel_dectlink_test` y tests de trigger/CHECK.
+
+### Changed
+
+- `fecha_estado` solo se actualiza cuando cambia el `estado` (antes se movía al editar cualquier campo).
+- Índices nuevos para los filtros del panel y el historial de bitácora.
+- Versión SemVer 0.2.0 sincronizada entre paquetes, OpenAPI y cachés del service worker.
+
+### Fixed
+
+- Migración `2026_11_12_add_performance_indexes`: columna inexistente y sentencias de solo comentario que impedían `migrate:fresh` en PostgreSQL.
+
 ## [0.1.1] - 2026-11-26
 
 ### Fixed
@@ -53,6 +72,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Menú de acciones de usuarios y celdas renderizado en portal: evita recortes en la última fila y scroll espurio.
 - Regresión que ocultaba «Carga de Padrón» a ADMIN: nuevo permiso `padron.view`.
 
-[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.2.0
 [0.1.1]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.1
 [0.1.0]: https://github.com/jaguirreldeveloper/cotel-dectlink-siemens/releases/tag/v0.1.0

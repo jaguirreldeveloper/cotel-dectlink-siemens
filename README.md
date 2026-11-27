@@ -360,12 +360,13 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 **Arquitectura actual**: monorepo pnpm (`frontend/` React 19 + TypeScript, `backend/` Laravel 13 / PHP 8.4, `scripts/` ETL, `packages/types`), PostgreSQL (local `cotel_dectlink` / Supabase), SPA servida por Laravel en producción y por Vite en desarrollo. Autorización con catálogo único en `backend/config/permissions.php`, middleware `permission:` y permisos efectivos en `/api/auth/me` (`rol ∪ extras − denegados`).
 
-**Entregas completas y sincronizadas en `main`** (versión **0.1.1**, tag `v0.1.1`; historial en `CHANGELOG.md`):
+**Entregas completas y sincronizadas en `main`** (versión **0.2.0**, tag `v0.2.0`; historial en `CHANGELOG.md`):
 
 - Panel de Celdas (RFP): KPIs, filtros, subcentral inline, detalle con bitácora, modal con mapa Leaflet y validación de rangos.
 - Escala del padrón: `/api/subscribers/page` y `/summary` agregados en SQL, preparado para 100.000 líneas.
 - 9 roles funcionales (incluye `GERENTE_AREA`, `JEFE_DEPARTAMENTO`, `ENCARGADO_AREA`), 12 operadores demo y portal «Mi línea» con token hasheado.
 - 60 celdas con **60 IDs corridos**: El Alto `1…30` (N° `1…30`, `RFP-ELA-001…030`) y La Paz `31…60` (N° `1…30`, `RFP-LP-001…030`). Ciclo de vida de 8 estados (`PLANEADA`, `INSTALADA`, `EN_SERVICIO`, `SUSPENDIDA`, `FUERA_DE_SERVICIO`, `EN_MANTENIMIENTO`, `BAJA`, `RETIRADA`) con estado eléctrico independiente (`ENCENDIDA`/`APAGADA`/`SIN_ENERGIA`) y bitácora por transición; baja/retiro conservan la fila por auditoría. El panel se organiza como un **grupo del sidebar** con 4 vistas/rutas: Resumen (`/celdas/resumen`, KPIs y distribución), Listado general (`/celdas/general`), Detalle técnico (`/celdas/tecnica`, DPI, medidor, tierras, corrientes, rangos y observaciones) y Generación por lote (`/celdas/lote`). Los filtros y la paginación se conservan entre ambas listas mediante `CeldasFiltersProvider`.
+- Trazabilidad e integridad de celdas: `updated_at` con trigger en PostgreSQL, CHECKs de rango/coherencia y validación de `rangos_numeracion` (forma y solapes), con suite PostgreSQL local dedicada.
 
 **Estado de datos local**:
 
@@ -391,7 +392,7 @@ Ciclo: crear rama desde `main` → implementar → verificar → PR → merge �
 
 ## 🛠️ Cambios recientes
 
-El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.1.1** (tag `v0.1.1`).
+El historial completo de cambios, por versión, está en [`CHANGELOG.md`](CHANGELOG.md). La versión actual es **0.2.0** (tag `v0.2.0`).
 
 ---
 
