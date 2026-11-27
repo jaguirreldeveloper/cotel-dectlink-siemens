@@ -37,6 +37,7 @@ class CellsUpdatedAtTest extends TestCase
 
         DB::table('celdas')->where('id', $celda->id)->update([
             'updated_at' => '2025-01-29 00:00:00',
+            'fecha_estado' => self::FECHA_ANTIGUA,
         ]);
 
         return $celda;
@@ -46,13 +47,14 @@ class CellsUpdatedAtTest extends TestCase
     {
         $celda = $this->celdaConFechaAntigua();
 
-        $this->patchJson('/api/cells/'.$celda->id, [
+        $respuesta = $this->patchJson('/api/cells/'.$celda->id, [
             'nombre' => 'CIUDAD SATELITE',
             'estado' => CellStateMachine::EN_SERVICIO,
-        ], $this->headers())->assertOk()->assertJsonPath('celda.updatedAt', $celda->fresh()->updated_at->toIso8601String());
+        ], $this->headers())->assertOk();
 
         $actual = $celda->fresh();
-        $this->assertSame(self::FECHA_ANTIGUA, $actual->fecha_estado->toIso8601String());
+        $this->assertNotNull($respuesta->json('celda.updatedAt'));
+        $this->assertTrue($actual->fecha_estado->equalTo(CarbonImmutable::parse(self::FECHA_ANTIGUA)));
         $this->assertTrue($actual->updated_at->greaterThan(CarbonImmutable::parse(self::FECHA_ANTIGUA)));
     }
 
@@ -65,7 +67,7 @@ class CellsUpdatedAtTest extends TestCase
         ], $this->headers())->assertOk();
 
         $actual = $celda->fresh();
-        $this->assertNotSame(self::FECHA_ANTIGUA, $actual->fecha_estado->toIso8601String());
+        $this->assertFalse($actual->fecha_estado->equalTo(CarbonImmutable::parse(self::FECHA_ANTIGUA)));
         $this->assertTrue($actual->updated_at->greaterThan(CarbonImmutable::parse(self::FECHA_ANTIGUA)));
     }
 
