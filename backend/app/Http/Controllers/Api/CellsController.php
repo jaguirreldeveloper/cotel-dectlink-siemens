@@ -7,6 +7,7 @@ use App\Models\Cell;
 use App\Models\InfraestructuraBitacora;
 use App\Models\Zone;
 use App\Support\CellBatchGenerator;
+use App\Support\CellNumberingRanges;
 use App\Support\CellStateMachine;
 use App\Support\OperatorToken;
 use Carbon\CarbonImmutable;
@@ -482,6 +483,14 @@ class CellsController extends Controller
             'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
+            'rangos_numeracion' => ['sometimes', 'array', function (string $atributo, mixed $valor, callable $fallar): void {
+                if (! CellNumberingRanges::sonValidos($valor)) {
+                    $fallar('Cada rango debe tener desde y hasta enteros con desde <= hasta.');
+                }
+                if (CellNumberingRanges::solapanConOtras(CellNumberingRanges::normalizar($valor))) {
+                    $fallar('Uno o más rangos ya están asignados a otra celda.');
+                }
+            }],
             'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS)],
             'estado_energia' => ['nullable', Rule::in(CellStateMachine::ESTADOS_ENERGIA)],
             'activo' => ['nullable', 'boolean'],
@@ -506,6 +515,7 @@ class CellsController extends Controller
             'municipio' => $validated['municipio'] ?? null,
             'zona_id' => $validated['zona_id'] ?? null,
             'direccion' => $validated['direccion'] ?? null,
+            'rangos_numeracion' => CellNumberingRanges::normalizar($validated['rangos_numeracion'] ?? []),
             'estado' => $validated['estado'] ?? 'PLANEADA',
             'estado_energia' => $validated['estado_energia'] ?? 'ENCENDIDA',
             'activo' => $validated['activo'] ?? true,
@@ -591,6 +601,14 @@ class CellsController extends Controller
             'municipio' => ['nullable', Rule::in(['EL ALTO', 'LA PAZ'])],
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')],
             'direccion' => ['nullable', 'string', 'max:255'],
+            'rangos_numeracion' => ['sometimes', 'array', function (string $atributo, mixed $valor, callable $fallar) use ($id): void {
+                if (! CellNumberingRanges::sonValidos($valor)) {
+                    $fallar('Cada rango debe tener desde y hasta enteros con desde <= hasta.');
+                }
+                if (CellNumberingRanges::solapanConOtras(CellNumberingRanges::normalizar($valor), $id)) {
+                    $fallar('Uno o más rangos ya están asignados a otra celda.');
+                }
+            }],
             'estado' => ['nullable', Rule::in(CellStateMachine::ESTADOS), function (string $atributo, mixed $valor, callable $fallar) use ($cell): void {
                 if ($valor !== null && $valor !== $cell->estado && ! CellStateMachine::puede($cell->estado, (string) $valor)) {
                     $fallar('Transición de estado no permitida.');
@@ -598,6 +616,10 @@ class CellsController extends Controller
             }],
             'activo' => ['nullable', 'boolean'],
         ]);
+
+        if (isset($validated['rangos_numeracion'])) {
+            $validated['rangos_numeracion'] = CellNumberingRanges::normalizar($validated['rangos_numeracion']);
+        }
 
         $estadoAnterior = $cell->estado;
         $cell->fill($validated);
