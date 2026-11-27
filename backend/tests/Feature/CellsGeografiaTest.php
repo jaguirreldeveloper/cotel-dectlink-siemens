@@ -68,7 +68,7 @@ class CellsGeografiaTest extends TestCase
 
     public function test_valida_codigo_unico_y_municipio(): void
     {
-        Cell::factory()->create(['codigo' => 'RFP-UNICO']);
+        Cell::factory()->create(['codigo' => 'RFP-ELA-901']);
 
         $base = [
             'id' => 901,
@@ -77,12 +77,12 @@ class CellsGeografiaTest extends TestCase
             'longitud' => -68.12,
         ];
 
-        $this->postJson('/api/cells', $base + ['codigo' => 'RFP-UNICO'], $this->headers())
+        $this->postJson('/api/cells', $base + ['codigo' => 'RFP-ELA-901'], $this->headers())
             ->assertStatus(422)
             ->assertJsonValidationErrors(['codigo']);
 
         $this->postJson('/api/cells', $base + [
-            'codigo' => 'RFP-COCHABAMBA',
+            'codigo' => 'RFP-ELA-902',
             'municipio' => 'COCHABAMBA',
         ], $this->headers())
             ->assertStatus(422)
@@ -91,10 +91,10 @@ class CellsGeografiaTest extends TestCase
 
     public function test_edicion_actualiza_perfil_y_registra_bitacora(): void
     {
-        $celda = Cell::factory()->create(['codigo' => 'RFP-EDITAR']);
+        $celda = Cell::factory()->create(['codigo' => 'RFP-ELA-903']);
 
         $this->patchJson('/api/cells/'.$celda->id, [
-            'codigo' => 'RFP-LP-EDITAR',
+            'codigo' => 'RFP-LP-903',
             'municipio' => 'LA PAZ',
             'direccion' => 'Plaza Murillo',
             'capacidad_abonados_prevista' => 64,
@@ -103,7 +103,7 @@ class CellsGeografiaTest extends TestCase
 
         $this->assertDatabaseHas('celdas', [
             'id' => $celda->id,
-            'codigo' => 'RFP-LP-EDITAR',
+            'codigo' => 'RFP-LP-903',
             'municipio' => 'LA PAZ',
             'direccion' => 'Plaza Murillo',
             'capacidad_abonados_prevista' => 64,

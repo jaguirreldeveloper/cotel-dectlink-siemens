@@ -117,7 +117,7 @@ class CeldasHistoricasSeederTest extends TestCase
             'id' => 4,
             'municipio' => 'EL ALTO',
             'numero_celda' => 4,
-            'codigo' => 'RFP-4',
+            'codigo' => 'RFP-ELA-004',
         ]);
 
         $this->seed(CeldasHistoricasSeeder::class);

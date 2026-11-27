@@ -6,7 +6,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-- (sin cambios registrados)
+### Added
+
+- Padrón definitivo: 522 líneas reales exportadas de `CELDAS DECT LINK.xls`, versionadas en `backend/database/data/padron_celdas_dect_link.csv` y cargadas con `PadronRealSeeder` (reemplaza el demo de 20 líneas).
+
+### Changed
+
+- `codigo` de celda queda canónico: `RFP-ELA-NNN` / `RFP-LP-NNN`, con validación en API, factoría, seeders y `CHECK` estricto en PostgreSQL.
 
 ## [0.3.0] - 2026-11-27
 

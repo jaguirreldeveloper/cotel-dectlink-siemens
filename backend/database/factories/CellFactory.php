@@ -24,7 +24,7 @@ class CellFactory extends Factory
 
         return [
             'id' => $id,
-            'codigo' => "RFP-{$id}",
+            'codigo' => sprintf('RFP-ELA-%03d', $id % 1000),
             'nombre' => "CELDA RFP {$id}",
             'tecnologia' => 'DECT-Link',
             'rfp_modelo' => 'Siemens C500',
